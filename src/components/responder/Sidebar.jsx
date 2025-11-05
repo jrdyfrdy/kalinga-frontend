@@ -14,6 +14,7 @@ import {
   User,
   MapPin,
   Navigation,
+  MessageSquare,
 } from "lucide-react";
 import logo from "../../assets/kalinga-logo-white.PNG";
 import { useAuth } from "../../context/AuthContext";
@@ -72,6 +73,11 @@ export default function ResponderSidebar() {
       label: "Incident Logs",
       path: "/responder/incident-logs",
       icon: <FileText size={25} />,
+    },
+    {
+      label: "Messages",
+      path: "/responder/messages",
+      icon: <MessageSquare size={25} />,
     },
     {
       label: "Triage System",

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\LabResultController;
 use App\Http\Controllers\Api\AppointmentController;
 use App\Http\Controllers\Api\IncidentApiController;
 use App\Http\Controllers\Api\RoadBlockadeController;
+use App\Http\Controllers\Api\ChatController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -75,6 +76,17 @@ Route::middleware(['auth:sanctum', 'role:admin,responder'])->group(function () {
         // Patient-specific routes will go here
         Route::get('/lab-results', [LabResultController::class, 'index']);
         Route::get('/appointments', [AppointmentController::class, 'index']);
+    });
+
+    // Chat routes - accessible by both responders and patients
+    Route::middleware(['role:admin,responder,patient'])->prefix('chat')->group(function () {
+        Route::get('/conversations', [ChatController::class, 'getConversations']);
+        Route::post('/conversations', [ChatController::class, 'getOrCreateConversation']);
+        Route::get('/conversations/{conversationId}/messages', [ChatController::class, 'getMessages']);
+        Route::post('/conversations/{conversationId}/messages', [ChatController::class, 'sendMessage']);
+        Route::post('/conversations/{conversationId}/mark-read', [ChatController::class, 'markAsRead']);
+        Route::get('/available-responders', [ChatController::class, 'getAvailableResponders']);
+        Route::get('/active-patients', [ChatController::class, 'getActivePatients']);
     });
 });
 

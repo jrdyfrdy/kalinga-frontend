@@ -9,6 +9,8 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Appointment;
+use App\Models\Conversation;
+use App\Models\Message;
 
 class User extends Authenticatable
 {
@@ -71,5 +73,38 @@ class User extends Authenticatable
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);
+    }
+
+    /**
+     * Get conversations where user is a responder
+     */
+    public function responderConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'responder_id');
+    }
+
+    /**
+     * Get conversations where user is a patient
+     */
+    public function patientConversations(): HasMany
+    {
+        return $this->hasMany(Conversation::class, 'patient_id');
+    }
+
+    /**
+     * Get all conversations (responder or patient)
+     */
+    public function conversations()
+    {
+        return Conversation::where('responder_id', $this->id)
+            ->orWhere('patient_id', $this->id);
+    }
+
+    /**
+     * Get sent messages
+     */
+    public function sentMessages(): HasMany
+    {
+        return $this->hasMany(Message::class, 'sender_id');
     }
 }
