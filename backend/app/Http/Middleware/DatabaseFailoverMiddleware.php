@@ -18,6 +18,12 @@ class DatabaseFailoverMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Disable failover logic entirely in production (e.g. Render)
+        // In production, rely on the standard 'pgsql' configuration via DATABASE_URL 
+        if (app()->environment('production')) {
+            return $next($request);
+        }
+
         // Get the active connection (cloud or local based on availability)
         // Automatic failover: cloud is primary, local is backup
         $activeConnection = DatabaseConnectionManager::getActiveConnection();
