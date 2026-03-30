@@ -755,7 +755,9 @@ const MapFlyTo = ({ target }) => {
     try {
       const [lat, lng] = normalizedTarget;
       // Use panTo for smoother continuous tracking if it's nearby, otherwise flyTo
-      const currentZoom = map.getZoom?.() ?? 13;
+      let currentZoom = typeof map.getZoom === 'function' ? map.getZoom() : 13;
+      if (!Number.isFinite(currentZoom)) currentZoom = 13;
+      
       map.flyTo([lat, lng], Math.max(13, currentZoom), {
         duration: 0.8,
       });
@@ -966,8 +968,13 @@ const HospitalNavigatorMap = () => {
     if (!mapRef.current) return;
     const target =
       (userLocation && [userLocation.lat, userLocation.lng]) || DEFAULT_CENTER;
-    const currentZoom = mapRef.current.getZoom?.() ?? 13;
-    mapRef.current.flyTo(target, Math.max(currentZoom, 14), { duration: 0.6 });
+      
+    try {
+      let currentZoom = typeof mapRef.current.getZoom === 'function' ? mapRef.current.getZoom() : 13;
+      if (!Number.isFinite(currentZoom)) currentZoom = 13;
+      
+      mapRef.current.flyTo(target, Math.max(currentZoom, 14), { duration: 0.6 });
+    } catch(e) {}
   }, [userLocation]);
 
   const bestHospital = sortedHospitals[0] ?? null;
