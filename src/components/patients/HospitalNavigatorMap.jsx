@@ -752,9 +752,17 @@ const MapFlyTo = ({ target }) => {
   useEffect(() => {
     if (!map || !target) return;
     const [lat, lng] = target;
-    map.flyTo([lat, lng], Math.max(13, map.getZoom()), {
-      duration: 0.8,
-    });
+    
+    try {
+      let currentZoom = typeof map.getZoom === 'function' ? map.getZoom() : 13;
+      if (!Number.isFinite(currentZoom)) currentZoom = 13;
+      
+      map.flyTo([lat, lng], Math.max(13, currentZoom), {
+        duration: 0.8,
+      });
+    } catch (e) {
+      console.warn("MapFlyTo: flyTo failed", e);
+    }
   }, [map, target]);
 
   return null;

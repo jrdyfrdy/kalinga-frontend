@@ -761,7 +761,10 @@ const MapFlyTo = ({ target }) => {
     if (!normalizedTarget) return;
     try {
       const [lat, lng] = normalizedTarget;
-      map.flyTo([lat, lng], Math.max(13, map.getZoom()), {
+      let currentZoom = typeof map.getZoom === 'function' ? map.getZoom() : 13;
+      if (!Number.isFinite(currentZoom)) currentZoom = 13;
+      
+      map.flyTo([lat, lng], Math.max(13, currentZoom), {
         duration: 0.8,
       });
     } catch (e) {
@@ -1292,7 +1295,9 @@ export default function LiveResponseMap({
       toLatLngTuple(incidentPosition) ||
       DEFAULT_POSITION;
     try {
-      const currentZoom = mapRef.current.getZoom?.() ?? 13;
+      let currentZoom = typeof mapRef.current.getZoom === 'function' ? mapRef.current.getZoom() : 13;
+      if (!Number.isFinite(currentZoom)) currentZoom = 13;
+      
       mapRef.current.flyTo(target, Math.max(currentZoom, 14), {
         duration: 0.6,
       });
@@ -1473,7 +1478,10 @@ export default function LiveResponseMap({
 
     if (options.centerMap !== false && mapRef.current) {
       try {
-        mapRef.current.flyTo(next, Math.max(13, mapRef.current.getZoom()), {
+        let currentZoom = typeof mapRef.current.getZoom === 'function' ? mapRef.current.getZoom() : 13;
+        if (!Number.isFinite(currentZoom)) currentZoom = 13;
+        
+        mapRef.current.flyTo(next, Math.max(13, currentZoom), {
           duration: 0.6,
         });
       } catch (e) {
@@ -1534,9 +1542,12 @@ export default function LiveResponseMap({
       setResponderPosition(fallback);
       if (mapRef.current) {
         try {
+          let currentZoom = typeof mapRef.current.getZoom === 'function' ? mapRef.current.getZoom() : 13;
+          if (!Number.isFinite(currentZoom)) currentZoom = 13;
+          
           mapRef.current.flyTo(
             fallback,
-            Math.max(13, mapRef.current.getZoom()),
+            Math.max(13, currentZoom),
             { duration: 0.6 },
           );
         } catch (e) {
