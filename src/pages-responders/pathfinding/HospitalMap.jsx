@@ -8,6 +8,11 @@ import React, {
 import { KALINGA_CONFIG } from "../../constants/mapConfig";
 import { useAuth } from "../../context/AuthContext";
 import Layout from "../../layouts/Layout";
+import { 
+  isValidCoordinate, 
+  sanitizeCoordinates, 
+  getSafeBounds 
+} from "../../utils/location";
 import LocationSimulator from "../../components/maps/LocationSimulator";
 import {
   createRouteLog,
@@ -1388,7 +1393,14 @@ export default function HospitalMap({ embedded = false, className = "" }) {
 
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
-        const coords = route.geometry.coordinates.map((c) => [c[1], c[0]]);
+        let coords = route.geometry.coordinates.map((c) => [c[1], c[0]]);
+        
+        coords = sanitizeCoordinates(coords);
+        if (coords.length === 0) {
+          alert("Invalid route coordinates provided by the routing engine.");
+          setIsDrawingRoute(false);
+          return;
+        }
 
         // Store route coordinates for navigation
         setRouteCoordinates(coords);
@@ -1485,10 +1497,17 @@ export default function HospitalMap({ embedded = false, className = "" }) {
 
             if (detourData.routes && detourData.routes.length > 0) {
               const detourRoute = detourData.routes[0];
-              const detourCoords = detourRoute.geometry.coordinates.map((c) => [
+              let detourCoords = detourRoute.geometry.coordinates.map((c) => [
                 c[1],
                 c[0],
               ]);
+              detourCoords = sanitizeCoordinates(detourCoords);
+              if (detourCoords.length === 0) {
+                alert("Invalid detour route coordinates.");
+                setIsDrawingRoute(false);
+                return;
+              }
+
               const lineColor = isNearest ? "#28a745" : "#ff9800";
               const newRouteLine = L.default
                 .polyline(detourCoords, {

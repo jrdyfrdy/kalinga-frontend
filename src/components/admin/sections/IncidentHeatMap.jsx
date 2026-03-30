@@ -21,6 +21,7 @@ import {
 import { SectionHeader } from "../SectionHeader";
 import { formatRelativeTime } from "@/lib/datetime";
 import adminService from "@/services/adminService";
+import { isValidCoordinate, sanitizeCoordinates } from "@/utils/location";
 
 // Map tile configurations - using CartoDB for clean, minimal style
 const MAP_TILES = {
@@ -101,7 +102,7 @@ export const IncidentHeatMap = () => {
       setHistoricalRoutes(
         routes.map((route, index) => ({
           id: route.id,
-          path: route.route_path || [],
+          path: sanitizeCoordinates(route.route_path) || [],
           color: ROUTE_COLORS[index % ROUTE_COLORS.length],
           responder: route.user?.name || `Responder ${route.user_id}`,
           startedAt: route.started_at,
@@ -169,8 +170,16 @@ export const IncidentHeatMap = () => {
         }
 
         // Extract coordinates - API returns lat/lng directly
-        const lat = incident.lat ?? incident.latitude ?? 14.5995;
-        const lng = incident.lng ?? incident.longitude ?? 120.9842;
+        const rawLat = incident.lat ?? incident.latitude;
+        const rawLng = incident.lng ?? incident.longitude;
+        
+        let lat = 14.5995;
+        let lng = 120.9842;
+        
+        if (isValidCoordinate(rawLat, rawLng)) {
+          lat = Number(rawLat);
+          lng = Number(rawLng);
+        }
 
         // Use location string from API
         const locationStr = incident.location || "Reported Location";
@@ -217,11 +226,11 @@ export const IncidentHeatMap = () => {
               const lng = coordinates?.[0];
               const lat = coordinates?.[1];
 
-              if (typeof lat !== "number" || typeof lng !== "number") {
+              if (!isValidCoordinate(lat, lng)) {
                 return null;
               }
 
-              if (!isWithinPhilippines(lat, lng)) {
+              if (!isWithinPhilippines(Number(lat), Number(lng))) {
                 return null;
               }
 

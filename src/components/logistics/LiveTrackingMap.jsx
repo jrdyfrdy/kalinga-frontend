@@ -9,6 +9,7 @@ import {
   ZoomControl,
 } from "react-leaflet";
 import L from "leaflet";
+import { isValidCoordinate, sanitizeCoordinates } from "../../utils/location";
 
 // --- Custom Icon Logic ---
 import iconUrl from "leaflet/dist/images/marker-icon.png";
@@ -66,8 +67,7 @@ export default function LiveTrackingMap({
     if (
       !selectedShipment ||
       !selectedShipment.location ||
-      selectedShipment.location[0] == null ||
-      selectedShipment.location[1] == null
+      !isValidCoordinate(selectedShipment.location[0], selectedShipment.location[1])
     ) {
       setRouteCoords(null);
       return;
@@ -76,7 +76,7 @@ export default function LiveTrackingMap({
     const fetchRoute = async () => {
       // Define Start (Logistics HQ) and End (Shipment Location)
       // Use userLocation if available, otherwise fallback
-      const startCoords = userLocation
+      const startCoords = userLocation && isValidCoordinate(userLocation.lat, userLocation.lng)
         ? [userLocation.lat, userLocation.lng]
         : [14.65, 121.05];
 
@@ -95,7 +95,7 @@ export default function LiveTrackingMap({
           const leafletCoords = data.routes[0].geometry.coordinates.map(
             (coord) => [coord[1], coord[0]],
           );
-          setRouteCoords(leafletCoords);
+          setRouteCoords(sanitizeCoordinates(leafletCoords));
 
           // Recenter map to focus on the truck/destination
           setMapCenter(endCoords);
@@ -131,8 +131,7 @@ export default function LiveTrackingMap({
       {allShipments.map((shipment) => {
         if (
           shipment.location &&
-          shipment.location[0] != null &&
-          shipment.location[1] != null &&
+          isValidCoordinate(shipment.location[0], shipment.location[1]) &&
           shipment.status !== "Delivered"
         ) {
           return (

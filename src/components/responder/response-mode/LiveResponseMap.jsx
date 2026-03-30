@@ -29,6 +29,11 @@ import { useResponderLocationBroadcast } from "../../../hooks/useResponderLocati
 import api from "../../../services/api";
 import { useAuth } from "../../../context/AuthContext";
 import blockadeService from "../../../services/blockadeService";
+import { 
+  isValidCoordinate, 
+  sanitizeCoordinates, 
+  getSafeBounds 
+} from "../../../utils/location";
 
 const DEFAULT_POSITION = [
   KALINGA_CONFIG.DEFAULT_LOCATION.lat,
@@ -95,16 +100,10 @@ const normalizeCoordinate = (value) => {
 };
 
 const toLatLngTuple = (coordinate) => {
-  if (!Array.isArray(coordinate) || coordinate.length !== 2) {
-    return null;
-  }
+  if (!Array.isArray(coordinate) || coordinate.length !== 2) return null;
   const [lat, lng] = coordinate;
-  const normalizedLat = normalizeCoordinate(lat);
-  const normalizedLng = normalizeCoordinate(lng);
-  if (!Number.isFinite(normalizedLat) || !Number.isFinite(normalizedLng)) {
-    return null;
-  }
-  return [normalizedLat, normalizedLng];
+  if (!isValidCoordinate(lat, lng)) return null;
+  return [Number(lat), Number(lng)];
 };
 
 const isValidLatLngTuple = (coordinate) => Boolean(toLatLngTuple(coordinate));

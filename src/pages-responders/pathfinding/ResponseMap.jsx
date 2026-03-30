@@ -2,6 +2,11 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { KALINGA_CONFIG } from "../../constants/mapConfig";
 import { useAuth } from "../../context/AuthContext";
 import Layout from "../../layouts/Layout";
+import { 
+  isValidCoordinate, 
+  sanitizeCoordinates, 
+  getSafeBounds 
+} from "../../utils/location";
 
 // Leaflet CSS is imported in index.css
 
@@ -1544,10 +1549,17 @@ export default function ResponseMap({ embedded = false, className = "" }) {
         const lineColor = isAssigned ? "#28a745" : "#007bff";
 
         // Store route coordinates for navigation
-        setRouteCoordinates(coords);
+        const safeCoords = sanitizeCoordinates(coords);
+        setRouteCoordinates(safeCoords);
+
+        if (safeCoords.length === 0) {
+          alert("Invalid route coordinates provided by the routing engine.");
+          setIsDrawingRoute(false);
+          return;
+        }
 
         const newRouteLine = L.default
-          .polyline(coords, { color: lineColor, weight: 5 })
+          .polyline(safeCoords, { color: lineColor, weight: 5 })
           .addTo(map);
         setRouteLine(newRouteLine);
 

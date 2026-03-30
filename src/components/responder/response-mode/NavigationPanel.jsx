@@ -15,6 +15,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { isValidCoordinate, sanitizeCoordinates } from "../../../utils/location";
 
 const DEFAULT_POSITION = [14.5995, 120.9842];
 
@@ -47,24 +48,20 @@ const normalizeCoordinate = (value) => {
 
 const getIncidentPosition = (incident) => {
   if (!incident) return null;
-  const lat =
-    normalizeCoordinate(incident.latitude) ||
-    normalizeCoordinate(incident.location_lat);
-  const lng =
-    normalizeCoordinate(incident.longitude) ||
-    normalizeCoordinate(incident.location_lng);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return [lat, lng];
+  const lat = incident.latitude ?? incident.location_lat;
+  const lng = incident.longitude ?? incident.location_lng;
+  if (isValidCoordinate(lat, lng)) {
+    return [Number(lat), Number(lng)];
   }
   return null;
 };
 
 const getHospitalPosition = (hospital) => {
   if (!hospital) return null;
-  const lat = normalizeCoordinate(hospital.latitude);
-  const lng = normalizeCoordinate(hospital.longitude);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return [lat, lng];
+  const lat = hospital.latitude;
+  const lng = hospital.longitude;
+  if (isValidCoordinate(lat, lng)) {
+    return [Number(lat), Number(lng)];
   }
   return null;
 };

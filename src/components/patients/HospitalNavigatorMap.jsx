@@ -28,6 +28,11 @@ import {
 import { KALINGA_CONFIG } from "@/constants/mapConfig";
 import hospitalService from "@/services/hospitalService";
 import { useBlockades } from "@/hooks/useBlockades";
+import { 
+  isValidCoordinate, 
+  sanitizeCoordinates, 
+  getSafeBounds 
+} from "@/utils/location";
 import TurnByTurnNavigation from "../responder/response-mode/TurnByTurnNavigation";
 
 const DEFAULT_CENTER = [
@@ -131,16 +136,10 @@ const normalizeCoordinate = (value) => {
 };
 
 const toLatLngTuple = (coordinate) => {
-  if (!Array.isArray(coordinate) || coordinate.length !== 2) {
-    return null;
-  }
+  if (!Array.isArray(coordinate) || coordinate.length !== 2) return null;
   const [lat, lng] = coordinate;
-  const normalizedLat = normalizeCoordinate(lat);
-  const normalizedLng = normalizeCoordinate(lng);
-  if (!Number.isFinite(normalizedLat) || !Number.isFinite(normalizedLng)) {
-    return null;
-  }
-  return [normalizedLat, normalizedLng];
+  if (!isValidCoordinate(lat, lng)) return null;
+  return [Number(lat), Number(lng)];
 };
 
 const normalizeBlockade = (blockade) => {

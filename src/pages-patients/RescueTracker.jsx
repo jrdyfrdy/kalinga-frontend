@@ -21,6 +21,7 @@ import RescueDetailPanel, {
 import { useAuth } from "../context/AuthContext";
 import { getEchoInstance, reconnectEcho } from "../services/echo";
 import { KALINGA_CONFIG } from "../constants/mapConfig";
+import { isValidCoordinate, sanitizeCoordinates, getSafeBounds } from "../utils/location";
 import api from "../services/api";
 
 const DEFAULT_POSITION = [
@@ -141,9 +142,9 @@ const MapController = ({
     if (!shouldCenter) return;
 
     // Always prioritize centering on responder if available
-    if (responderPosition) {
+    if (responderPosition && isValidCoordinate(responderPosition[0], responderPosition[1])) {
       map.setView(responderPosition, 16, { animate: true });
-    } else if (patientPosition) {
+    } else if (patientPosition && isValidCoordinate(patientPosition[0], patientPosition[1])) {
       map.setView(patientPosition, 16, { animate: true });
     }
   }, [map, responderPosition, patientPosition, shouldCenter]);
@@ -248,7 +249,7 @@ export const RescueTracker = () => {
           c[1],
           c[0],
         ]);
-        setRoutePoints(coords);
+        setRoutePoints(sanitizeCoordinates(coords));
       }
     } catch (err) {
       console.error("Failed to fetch route:", err);
@@ -352,16 +353,18 @@ export const RescueTracker = () => {
   // Feature 3: When "En Route to Hospital", the patient is WITH the responder.
   // So the patient's map reference point becomes the responder's live location.
   const patientPosition = useMemo(() => {
-    if (!rescueData?.incident?.coordinates) return null;
+    const coords = rescueData?.incident?.coordinates;
+    if (!coords) return null;
+    if (!isValidCoordinate(coords.latitude, coords.longitude)) return null;
     return [
-      rescueData.incident.coordinates.latitude,
-      rescueData.incident.coordinates.longitude,
+      coords.latitude,
+      coords.longitude,
     ];
   }, [rescueData?.incident?.coordinates]);
 
   // The effective patient position for map centering: follows responder during transport
   const effectivePatientPosition = useMemo(() => {
-    if (isTransporting && responderLocation) {
+    if (isTransporting && responderLocation && isValidCoordinate(responderLocation.lat, responderLocation.lng)) {
       return [responderLocation.lat, responderLocation.lng];
     }
     return patientPosition;
@@ -369,6 +372,7 @@ export const RescueTracker = () => {
 
   const responderPosition = useMemo(() => {
     if (!responderLocation) return null;
+    if (!isValidCoordinate(responderLocation.lat, responderLocation.lng)) return null;
     return [responderLocation.lat, responderLocation.lng];
   }, [responderLocation]);
 
@@ -466,7 +470,9 @@ export const RescueTracker = () => {
                     effectivePatientPosition ||
                     DEFAULT_POSITION
                   }
-                  zoom={16}
+                  zoom={
+                    (responderPosition || effectivePatientPosition) ? 16 : 13
+                  }
                   className="h-full w-full absolute inset-0"
                   zoomControl={false}
                 >
