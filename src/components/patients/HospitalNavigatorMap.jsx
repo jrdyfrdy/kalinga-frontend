@@ -750,10 +750,18 @@ const MapFlyTo = ({ target }) => {
 
   useEffect(() => {
     if (!map || !target) return;
-    const [lat, lng] = target;
-    map.flyTo([lat, lng], Math.max(13, map.getZoom()), {
-      duration: 0.8,
-    });
+    const normalizedTarget = toLatLngTuple(target);
+    if (!normalizedTarget) return;
+    try {
+      const [lat, lng] = normalizedTarget;
+      // Use panTo for smoother continuous tracking if it's nearby, otherwise flyTo
+      const currentZoom = map.getZoom?.() ?? 13;
+      map.flyTo([lat, lng], Math.max(13, currentZoom), {
+        duration: 0.8,
+      });
+    } catch (e) {
+      console.warn("MapFlyTo: flyTo failed", e);
+    }
   }, [map, target]);
 
   return null;

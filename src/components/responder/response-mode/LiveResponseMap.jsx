@@ -760,7 +760,9 @@ const MapFlyTo = ({ target }) => {
     if (!normalizedTarget) return;
     try {
       const [lat, lng] = normalizedTarget;
-      map.flyTo([lat, lng], Math.max(13, map.getZoom()), {
+      // Use current zoom, fallback to 13 if map isn't fully ready
+      const currentZoom = map.getZoom?.() ?? 13;
+      map.flyTo([lat, lng], Math.max(13, currentZoom), {
         duration: 0.8,
       });
     } catch (e) {
