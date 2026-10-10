@@ -27,6 +27,7 @@ import {
 import EchoClient, {
   reconnectEcho,
   getEchoInstance,
+  subscribeChannel,
 } from "../../services/echo";
 import chatService from "../../services/chatService";
 import { useAuth } from "../../context/AuthContext";
@@ -1887,29 +1888,17 @@ export default function MessagesContact() {
     reconnectEcho();
 
     const channelName = `chat.user.${user.id}`;
-    let channel;
 
+    // Shared with Response Mode / other chat views: remove only this
+    // handler instead of leaving the channel for everyone.
     try {
-      channel = echoInstance.private(channelName);
-      channel.listen(".message.sent", handleRealtimeMessage);
+      return subscribeChannel(channelName, "private", {
+        ".message.sent": handleRealtimeMessage,
+      });
     } catch (subscriptionError) {
       console.error("Failed to subscribe to chat channel", subscriptionError);
       return () => {};
     }
-
-    return () => {
-      try {
-        channel?.stopListening(".message.sent");
-      } catch (stopError) {
-        console.warn("Failed to stop listening to chat channel", stopError);
-      }
-
-      try {
-        echoInstance.leave(channelName);
-      } catch (leaveError) {
-        console.warn("Failed to leave chat channel", leaveError);
-      }
-    };
   }, [user, handleRealtimeMessage]);
 
   const visibleOnlineNames = useMemo(() => {

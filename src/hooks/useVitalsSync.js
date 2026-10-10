@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { resolveNodeApiBaseUrl } from "../config/runtime";
 
@@ -13,10 +13,21 @@ export function useVitalsSync({
   onStatusChange,
   onPayload,
 }) {
+  // Callbacks and form helpers change identity on many renders; keep them in
+  // refs so the socket is created once per mount instead of on every
+  // keystroke in the case-number field.
+  const handlersRef = useRef({});
+  handlersRef.current = { getValues, setValue, isFieldLocked, onStatusChange, onPayload };
+  const targetRef = useRef({ caseNo, patientUuid });
+  targetRef.current = { caseNo, patientUuid };
+  const socketRef = useRef(null);
+
+  const hasTarget = Boolean(caseNo || patientUuid);
+
   useEffect(() => {
-    if (!caseNo && !patientUuid) {
-      onStatusChange?.("waiting");
-      return;
+    if (!hasTarget) {
+      handlersRef.current.onStatusChange?.("waiting");
+      return undefined;
     }
 
     const token = localStorage.getItem("token") || undefined;
@@ -28,17 +39,29 @@ export function useVitalsSync({
       reconnectionDelayMax: 5000,
       timeout: 10000,
     });
+    socketRef.current = socket;
 
     socket.on("connect", () => {
-      onStatusChange?.("connected");
-      socket.emit("pcr:subscribe", { caseNo, patientUuid });
+      handlersRef.current.onStatusChange?.("connected");
+      socket.emit("pcr:subscribe", targetRef.current);
     });
 
     socket.on("disconnect", () => {
-      onStatusChange?.("waiting");
+      handlersRef.current.onStatusChange?.("waiting");
+    });
+
+    socket.on("connect_error", () => {
+      handlersRef.current.onStatusChange?.("waiting");
     });
 
     socket.on("pcr:edge-vitals", (payload) => {
+      const target = targetRef.current;
+      // Only apply readings addressed to the case/patient this form is on.
+      const matchesCase = target.caseNo && payload?.caseNo && String(payload.caseNo) === String(target.caseNo);
+      const matchesPatient = target.patientUuid && payload?.patientUuid && String(payload.patientUuid) === String(target.patientUuid);
+      if (!matchesCase && !matchesPatient) return;
+
+      const { getValues, setValue, isFieldLocked, onStatusChange, onPayload } = handlersRef.current;
       onPayload?.(payload);
       onStatusChange?.("ingesting");
 
@@ -92,14 +115,22 @@ export function useVitalsSync({
       window.setTimeout(() => onStatusChange?.("connected"), 900);
     });
 
-    return () => socket.disconnect();
-  }, [
-    caseNo,
-    patientUuid,
-    getValues,
-    isFieldLocked,
-    onPayload,
-    onStatusChange,
-    setValue,
-  ]);
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [hasTarget]);
+
+  // Case/patient changed while connected: switch rooms (debounced so typing a
+  // case number does not resubscribe on every keystroke).
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !hasTarget) return undefined;
+    const timer = setTimeout(() => {
+      if (socket.connected) {
+        socket.emit("pcr:subscribe", { caseNo, patientUuid });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [caseNo, patientUuid, hasTarget]);
 }

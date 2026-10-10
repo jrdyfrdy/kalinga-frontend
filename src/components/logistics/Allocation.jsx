@@ -2987,10 +2987,8 @@ export function Allocation() {
     (state) => state.listenToLogistics,
   );
 
-  useEffect(() => {
-    // start listening to reverb when we mount Allocation
-    listenToLogistics();
-  }, [listenToLogistics]);
+  // Listen to Reverb while Allocation is mounted (unsubscribes on unmount).
+  useEffect(() => listenToLogistics(), [listenToLogistics]);
   const [activeTab, setActiveTab] = useState("incoming");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [toast, setToast] = useState(null);

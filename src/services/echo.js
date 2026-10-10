@@ -184,6 +184,116 @@ export const reconnectEcho = () => {
 
 export const getEchoInstance = () => echo;
 
+// ─── Shared, ref-counted channel subscriptions ───────────────────────────────
+// Several components listen on the same channel (e.g. presence "incidents",
+// private "chat.user.{id}"). Calling echo.leave(name) or
+// channel.stopListening(event) without a callback from one consumer tears
+// down every other consumer's listeners. subscribeChannel() keeps one
+// subscription per channel, removes only the caller's handlers, and leaves
+// the channel when the last subscriber unsubscribes.
+const sharedChannels = new Map();
+
+const openChannel = (name, type) => {
+  if (type === "presence") return echo.join(name);
+  if (type === "private") return echo.private(name);
+  return echo.channel(name);
+};
+
+/**
+ * @param {string} name   channel name without the private-/presence- prefix
+ * @param {"public"|"private"|"presence"} type
+ * @param {Record<string, Function>} listeners  { ".EventName": handler }
+ * @param {{ onSubscribed?: Function, onError?: Function }} [options]
+ * @returns {() => void} unsubscribe
+ */
+export const subscribeChannel = (name, type, listeners = {}, options = {}) => {
+  const key = `${type}:${name}`;
+  let entry = sharedChannels.get(key);
+
+  if (!entry) {
+    const channel = openChannel(name, type);
+    entry = {
+      channel,
+      refs: 0,
+      subscribed: false,
+      failed: null,
+      subscribedCbs: new Set(),
+      errorCbs: new Set(),
+    };
+    const current = entry;
+    try {
+      channel.subscribed?.(() => {
+        current.subscribed = true;
+        current.failed = null;
+        current.subscribedCbs.forEach((cb) => cb());
+      });
+      channel.error?.((error) => {
+        current.failed = error || true;
+        current.errorCbs.forEach((cb) => cb(error));
+      });
+    } catch {
+      // older connectors may not support these hooks
+    }
+    sharedChannels.set(key, entry);
+  }
+
+  entry.refs += 1;
+
+  const { onSubscribed, onError } = options;
+  if (onSubscribed) {
+    entry.subscribedCbs.add(onSubscribed);
+    if (entry.subscribed) onSubscribed();
+  }
+  if (onError) {
+    entry.errorCbs.add(onError);
+    if (entry.failed) onError(entry.failed);
+  }
+
+  Object.entries(listeners).forEach(([event, handler]) => {
+    entry.channel.listen(event, handler);
+  });
+
+  let released = false;
+  const current = entry;
+  return () => {
+    if (released) return;
+    released = true;
+
+    Object.entries(listeners).forEach(([event, handler]) => {
+      try {
+        current.channel.stopListening(event, handler);
+      } catch {
+        // ignore
+      }
+    });
+    if (onSubscribed) current.subscribedCbs.delete(onSubscribed);
+    if (onError) current.errorCbs.delete(onError);
+
+    current.refs -= 1;
+    if (current.refs <= 0 && sharedChannels.get(key) === current) {
+      sharedChannels.delete(key);
+      try {
+        echo.leave(name);
+      } catch {
+        // ignore
+      }
+    }
+  };
+};
+
+/** Drop every shared subscription (used on logout). */
+export const leaveAllSharedChannels = () => {
+  sharedChannels.forEach((_entry, key) => {
+    const name = key.slice(key.indexOf(":") + 1);
+    try {
+      echo.leave(name);
+    } catch {
+      // ignore
+    }
+  });
+  sharedChannels.clear();
+};
+
 export default echo;
 
 // Extra debug helper for manual inspection in console

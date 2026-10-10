@@ -8,6 +8,7 @@ import {
 import authService from "../services/authService";
 
 import nodeApi from "../services/nodeApi";
+import { leaveAllSharedChannels } from "../services/echo";
 
 import { cleanupAuthStorage } from "../utils/storage";
 import { preloadCriticalData, resetPreloader } from "../lib/dataPreloader";
@@ -184,6 +185,9 @@ export const AuthProvider = ({ children }) => {
       setToken(null);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+
+      // Drop realtime subscriptions tied to this session
+      leaveAllSharedChannels();
 
       // Clear all caches on logout
       clearCache();

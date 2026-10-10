@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import forecastService from "../../../services/forecastService";
 import api from "../../../services/api";
-import echo from "../../../services/echo";
+import { subscribeChannel } from "../../../services/echo";
 import { ROUTES } from "../../../config/routes";
 import {
   getDemoSummary,
@@ -280,19 +280,17 @@ export default function ForecastDashboard() {
 
   // ── WebSocket: auto-refresh on new forecast run ────────────
   useEffect(() => {
-    const channel = echo.channel("logistics");
-    channel.listen(".forecast.generated", (event) => {
-      console.info(
-        "[ForecastDashboard] forecast.generated event received",
-        event,
-      );
-      fetchAll();
-      fetchAutoReorders();
+    // "logistics" also carries anomaly.detected; share the subscription.
+    return subscribeChannel("logistics", "public", {
+      ".forecast.generated": (event) => {
+        console.info(
+          "[ForecastDashboard] forecast.generated event received",
+          event,
+        );
+        fetchAll();
+        fetchAutoReorders();
+      },
     });
-    return () => {
-      channel.stopListening(".forecast.generated");
-      echo.leaveChannel("logistics");
-    };
   }, [fetchAll, fetchAutoReorders]);
 
   // ── Derived: triage items sorted by urgency ────────────────

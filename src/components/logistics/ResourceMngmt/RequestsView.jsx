@@ -575,10 +575,12 @@ const RequestsView = ({ facility, hospitalId }) => {
     }
   }, [hospitalId, facility]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (hospitalId) fetchRequests();
-    listenToLogistics();
-  }, [hospitalId, fetchRequests, listenToLogistics]);
+  }, [hospitalId, fetchRequests]);
+
+  // Subscribe once per mount; the store returns an unsubscribe function.
+  useEffect(() => listenToLogistics(), [listenToLogistics]);
 
   const handleSubmitDraft = async (id) => {
     try {
