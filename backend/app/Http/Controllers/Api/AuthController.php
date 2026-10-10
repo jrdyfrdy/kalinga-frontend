@@ -163,7 +163,8 @@ class AuthController extends Controller
             // --- Fields from your User model ---
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'role' => 'nullable|string|max:50', 
+            // 'role' is intentionally not accepted here: users must not be able
+            // to change their own role (admins use PUT /admin/users/{id}).
             'availability' => 'nullable|string|max:255',
             'language' => 'nullable|string|max:50',
             'theme' => 'nullable|string|max:50',

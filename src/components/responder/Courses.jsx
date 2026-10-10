@@ -31,7 +31,7 @@ const Courses = () => {
       {courses.map((course) => (
         <div
           key={course.id}
-          onClick={() => navigate(`/modules/${course.id}`)}
+          onClick={() => navigate(`/responder/modules/${course.id}`)}
           className="cursor-pointer bg-white shadow-md rounded-xl p-4 hover:shadow-lg transition"
         >
           <h3 className="text-lg font-bold text-green-900">{course.title}</h3>

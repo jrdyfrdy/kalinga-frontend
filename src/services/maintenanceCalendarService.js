@@ -1,125 +1,50 @@
 // src/services/maintenanceCalendarService.js
-import { mockAssetService } from './mockAssetService';
+// Calendar-friendly wrapper around the real maintenance API
+// (backend MaintenanceController via maintenanceService).
+import maintenanceService from './maintenanceService';
 
-// FIX: Remove process.env usage
-const USE_MOCK_DATA = true;
+// The UI uses "in-progress"; the API stores "in_progress".
+const toUiStatus = (status) => (status === 'in_progress' ? 'in-progress' : status);
+const toApiStatus = (status) => (status === 'in-progress' ? 'in_progress' : status);
+
+const normalizeItem = (item) => ({
+  ...item,
+  status: toUiStatus(item.status),
+  assetType: item.assetType || item.assetName || 'Unknown',
+  assetName: item.assetName || item.assetType || item.assetId,
+  assetLocation: item.assetLocation || 'Unknown Location',
+  assetCategory: item.assetCategory || 'Unknown Category',
+  assetCondition: item.assetCondition || 'Unknown',
+  priority: item.priority || 'medium',
+});
 
 export const maintenanceCalendarService = {
-  // Get calendar data with enhanced formatting and asset linking
-  getCalendarData: async (filters = {}) => {
-    if (USE_MOCK_DATA) {
-      // Get maintenance data with full details (enhanced structure)
-      const maintenanceData = await mockAssetService.getMaintenanceData({ detail: 'full' });
-      
-      // Get all assets to link with maintenance items
-      const allAssets = await mockAssetService.getAssets();
-      
-      return transformMaintenanceForCalendar(maintenanceData, allAssets);
-    } else {
-      // TODO: Real API call
-      console.log('Would call real API with filters:', filters);
-      const maintenanceData = await mockAssetService.getMaintenanceData({ detail: 'full' });
-      const allAssets = await mockAssetService.getAssets();
-      return transformMaintenanceForCalendar(maintenanceData, allAssets);
-    }
+  // Returns { upcoming, overdue, completed } enriched for the calendar views.
+  getCalendarData: async () => {
+    const data = await maintenanceService.getMaintenanceData();
+    return {
+      upcoming: (data?.upcoming || []).map(normalizeItem),
+      overdue: (data?.overdue || []).map(normalizeItem),
+      completed: (data?.completed || []).map(normalizeItem),
+    };
   },
 
-  // Reschedule maintenance with conflict checking
-  rescheduleMaintenance: async (maintenanceId, newDate, options = {}) => {
-    if (USE_MOCK_DATA) {
-      // For mock data, we need to update the maintenance record
-      // Since we don't have direct update method, we'll simulate it
-      console.log('Mock reschedule:', maintenanceId, newDate);
-      return { 
-        id: maintenanceId, 
-        scheduledDate: newDate,
-        success: true 
-      };
-    } else {
-      // TODO: Real API call with conflict detection
-      console.log('Would reschedule via API:', maintenanceId, newDate, options);
-      return { 
-        id: maintenanceId, 
-        scheduledDate: newDate,
-        success: true 
-      };
-    }
-  },
+  rescheduleMaintenance: async (maintenanceId, newDate) =>
+    maintenanceService.rescheduleMaintenance(maintenanceId, newDate),
 
-  // Quick status update
-  updateMaintenanceStatus: async (maintenanceId, status, notes = '') => {
-    if (USE_MOCK_DATA) {
-      // For mock data, simulate status update
-      console.log('Mock status update:', maintenanceId, status);
-      return { 
-        id: maintenanceId, 
-        status: status,
-        notes: notes,
-        success: true 
-      };
-    } else {
-      // TODO: Real API call
-      console.log('Would update status via API:', maintenanceId, status);
-      return { 
-        id: maintenanceId, 
-        status: status,
-        notes: notes,
-        success: true 
-      };
-    }
-  }
-};
+  updateMaintenanceStatus: async (maintenanceId, status, notes = '') =>
+    maintenanceService.updateMaintenanceStatus(maintenanceId, toApiStatus(status), notes || null),
 
-// FIXED VERSION - Update the transformMaintenanceForCalendar function:
-const transformMaintenanceForCalendar = (maintenanceData, allAssets) => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Create a map for quick asset lookup
-  const assetMap = {};
-  allAssets.forEach(asset => {
-    assetMap[asset.id] = asset;
-  });
-
-  // Helper function to enrich maintenance items with asset data
-  const enrichMaintenanceItems = (items) => {
-    return items.map(item => {
-      const asset = assetMap[item.assetId];
-      const scheduledDate = new Date(item.scheduledDate);
-      const isOverdue = scheduledDate < today && item.status !== 'completed';
-      
-      return {
-        ...item,
-        assetType: asset?.type || 'Unknown',
-        assetName: asset?.type || item.assetId,
-        assetLocation: asset?.location || 'Unknown Location',
-        assetCategory: asset?.category || 'Unknown Category',
-        assetCondition: asset?.condition || 'Unknown',
-        isOverdue: isOverdue,
-        priority: item.priority || 'medium'
-      };
-    });
-  };
-
-  // Separate overdue from upcoming properly
-  const allUpcoming = maintenanceData.upcoming || [];
-  const allCompleted = maintenanceData.completed || [];
-  
-  const overdueItems = allUpcoming.filter(item => {
-    const scheduledDate = new Date(item.scheduledDate);
-    return scheduledDate < today && item.status !== 'completed';
-  });
-  
-  const trueUpcoming = allUpcoming.filter(item => {
-    const scheduledDate = new Date(item.scheduledDate);
-    return scheduledDate >= today || item.status === 'completed';
-  });
-
-  return {
-    upcoming: enrichMaintenanceItems(trueUpcoming),
-    overdue: enrichMaintenanceItems(overdueItems),
-    completed: enrichMaintenanceItems(allCompleted)
-  };
+  scheduleMaintenance: async (formData) =>
+    maintenanceService.scheduleMaintenance({
+      asset_id: formData.assetId,
+      scheduled_date: formData.scheduledDate,
+      description: formData.description,
+      priority: formData.priority,
+      technician: formData.technician || null,
+      cost: formData.estimatedCost === '' || formData.estimatedCost == null ? null : Number(formData.estimatedCost),
+      notes: formData.notes || null,
+    }),
 };
 
 // Asset type icons mapping

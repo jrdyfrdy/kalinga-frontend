@@ -242,7 +242,7 @@ export default function InfoPage() {
     <Layout>
       <div className="info-page">
         <div className="breadcrumbs">
-          <Link to="/modules">Home</Link> /{" "}
+          <Link to="/responder/modules">Home</Link> /{" "}
           <Link to={`/responder/modules/${id}`}>Module</Link> /{" "}
           <span>{formattedTitle}</span>
         </div>

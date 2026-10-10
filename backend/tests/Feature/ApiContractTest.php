@@ -262,4 +262,19 @@ class ApiContractTest extends TestCase
             ->assertOk()
             ->assertJsonStructure(['conversation']);
     }
+
+    public function test_profile_update_cannot_change_role(): void
+    {
+        $user = $this->makeUser('patient');
+        Sanctum::actingAs($user);
+
+        $this->putJson('/api/profile', [
+            'name' => 'Still Patient',
+            'email' => $user->email,
+            'role' => 'admin',
+        ])->assertOk();
+
+        $this->assertSame('patient', $user->fresh()->role);
+        $this->assertSame('Still Patient', $user->fresh()->name);
+    }
 }

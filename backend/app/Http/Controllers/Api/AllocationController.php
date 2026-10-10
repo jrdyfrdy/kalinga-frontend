@@ -265,12 +265,15 @@ public function assign(Request $request, Allocation $allocation)
     }
 
     $request->validate([
-        'asset_id'     => 'required|exists:assets,id',
+        'asset_id'     => 'required', // numeric id or asset_code (registry rows use the code)
         'responder_id' => 'required|exists:responders,id',
     ]);
 
     return DB::transaction(function () use ($request, $allocation) {
-        $asset     = Asset::findOrFail($request->asset_id);
+        $asset     = $this->resolveAsset($request->asset_id);
+        if (!$asset) {
+            return response()->json(['error' => 'Selected vehicle was not found.'], 422);
+        }
         $responder = Responder::findOrFail($request->responder_id);
 
         // 1. Asset must be available
@@ -368,14 +371,17 @@ public function reassign(Request $request, Allocation $allocation)
     }
 
     $request->validate([
-        'asset_id'     => 'required|exists:assets,id',
+        'asset_id'     => 'required', // numeric id or asset_code (registry rows use the code)
         'responder_id' => 'required|exists:responders,id',
     ]);
 
     return DB::transaction(function () use ($request, $allocation) {
         $current = $allocation->allocationVehicles()->latest('id')->first();
 
-        $asset     = Asset::findOrFail($request->asset_id);
+        $asset     = $this->resolveAsset($request->asset_id);
+        if (!$asset) {
+            return response()->json(['error' => 'Selected vehicle was not found.'], 422);
+        }
         $responder = Responder::findOrFail($request->responder_id);
 
         $sameAsset     = $current && (int) $current->asset_id === (int) $asset->id;
@@ -490,6 +496,12 @@ public function assignment($id)
 
 
 
+
+    private function resolveAsset($idOrCode): ?Asset
+    {
+        return Asset::where('asset_code', (string) $idOrCode)->first()
+            ?? (ctype_digit((string) $idOrCode) ? Asset::find((int) $idOrCode) : null);
+    }
 
     private function normalizeCapability(string $handlingClass): string
     {

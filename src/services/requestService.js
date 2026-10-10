@@ -22,7 +22,7 @@ const requestService = {
 
   // Submit Draft → Pending
   submitFromDraft: async (requestId) => {
-    const response = await api.patch(`/requests/${requestId}/submit`);
+    const response = await api.post(`/requests/${requestId}/submit`);
     return response.data.request;
   },
 

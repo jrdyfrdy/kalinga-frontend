@@ -4,6 +4,7 @@ import { ProtectedRoute } from "../components/ProtectedRoute";
 import { ROUTES, ROLES } from "../config/routes";
 
 // Lazy load logistics pages
+const HospitalSafetyIndex = lazy(() => import("../pages-logistics/HospitalSafetyIndex"));
 const DashboardLogistics = lazy(() =>
   import("../pages-logistics/Dashboard").then((module) => ({
     default: module.DashboardLogistics,
@@ -112,12 +113,8 @@ export const LogisticsRoutes = () => (
     <Route
       path={ROUTES.LOGISTICS.HOSPITAL_SAFETY_INDEX}
       element={
-        <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
-          <Navigate
-            to={ROUTES.ADMIN.ROOT}
-            replace
-            state={{ adminSection: "hospital-safety" }}
-          />
+        <ProtectedRoute allowedRoles={[ROLES.LOGISTICS, ROLES.ADMIN]}>
+          <HospitalSafetyIndex />
         </ProtectedRoute>
       }
     />

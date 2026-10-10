@@ -2490,7 +2490,8 @@ function EnhancedSessionAllocationsPanel({ showToast, updateCount }) {
             );
             setAssignmentDetailsMap((prev) => ({
               ...prev,
-              [alloc.id]: details.data,
+              // getAllocationDetails already unwraps response.data
+              [alloc.id]: details?.data ?? details,
             }));
           } catch (err) {
             console.error(
@@ -2570,7 +2571,7 @@ function EnhancedSessionAllocationsPanel({ showToast, updateCount }) {
       // Use the new endpoint with responder.user relationship
       const response =
         await allocationService.getAllocationDetails(allocationId);
-      const details = response.data;
+      const details = response?.data ?? response;
 
       // Cache the details
       setAssignmentDetailsMap((prev) => ({
@@ -2625,11 +2626,11 @@ function EnhancedSessionAllocationsPanel({ showToast, updateCount }) {
         allocation.request_id,
         "in_transit",
       );
-      showToast?.("? Logistics is now in transit!", "success");
-      fetchAllocations();
+      showToast?.("Logistics is now in transit!", "success");
+      fetchMyAllocations();
     } catch (e) {
       console.error(e);
-      showToast?.("? Failed to transition to transit.", "error");
+      showToast?.("Failed to transition to transit.", "error");
     }
   };
 

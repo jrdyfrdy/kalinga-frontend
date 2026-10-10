@@ -58,12 +58,9 @@ export const ProtectedRoute = ({
       responder: "/responder/dashboard",
       patient: "/patient/dashboard",
     };
-    return (
-      <Navigate
-        to={roleRedirects[normalizedRole] || "/patient/dashboard"}
-        replace
-      />
-    );
+    // Unknown roles go home; sending them to /patient/dashboard (which
+    // also rejects them) would loop.
+    return <Navigate to={roleRedirects[normalizedRole] || "/"} replace />;
   }
 
   // Check if patient needs verification (but allow access to verification pages)
@@ -77,8 +74,6 @@ export const ProtectedRoute = ({
 
   if (!isVerificationPage && needsVerification(user)) {
     // User needs verification and is trying to access a protected page
-    console.log("User needs verification, redirecting to appropriate page");
-
     // Determine where to send them based on their verification status
     if (user.verification_status === "pending") {
       return <Navigate to="/verification-pending" replace />;

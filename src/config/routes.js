@@ -14,6 +14,8 @@ export const ROUTES = {
   UPLOAD_ID: "/upload-id",
   FILL_INFO: "/fill-info",
   VERIFICATION_PENDING: "/verification-pending",
+  // Link in the account-verified email (backend/resources/views/emails/user_verified.blade.php)
+  MAGIC_LOGIN: "/magic-login",
 
   // Patient routes
   PATIENT: {
@@ -37,7 +39,8 @@ export const ROUTES = {
   // Admin routes
   ADMIN: {
     ROOT: "/admin",
-    DASHBOARD: "/admin/dashboard",
+    // The admin console is a single page with in-page sections.
+    DASHBOARD: "/admin",
   },
 
   // Responder routes
@@ -89,6 +92,7 @@ export const ROUTES = {
     NOTIFICATIONS: "/logistics/notifications",
     LIVE_MAP: "/logistics/live-map",
     PROFILE: "/logistics/profile",
+    HOSPITAL_FORECAST_DETAIL: "/logistics/forecast/hospital/:hospitalId",
   },
 };
 
