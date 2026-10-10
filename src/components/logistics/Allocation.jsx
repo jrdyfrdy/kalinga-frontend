@@ -1,6 +1,6 @@
 // Allocation.jsx - COMPLETE ENHANCED VERSION WITH FIXED MODALS (2500+ lines)
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link as RouterLink } from "react-router-dom";
 import { useSessionAllocationsStore } from "../../stores/sessionAllocationsStore";
 import { ROUTES } from "../../config/routes";
 
@@ -534,11 +534,11 @@ const RouteVisualization = ({
       </div>
     </div>
     <div className="flex justify-center mt-6">
-      <Link to={ROUTES.LOGISTICS.LIVE_MAP}>
+      <RouterLink to={ROUTES.LOGISTICS.LIVE_MAP}>
         <Button variant="outline" size="sm" icon={Map}>
           View Full Route Map
         </Button>
-      </Link>
+      </RouterLink>
     </div>
   </div>
 );
@@ -840,12 +840,12 @@ const AssignmentSummaryModal = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <Link to={ROUTES.LOGISTICS.LIVE_MAP} className="block">
+                    <RouterLink to={ROUTES.LOGISTICS.LIVE_MAP} className="block">
                       <Button variant="primary" size="sm" fullWidth icon={Play}>
                         Start Live Tracking
                       </Button>
-                    </Link>
-                    <Link to={ROUTES.LOGISTICS.SUPPLY_TRACKING} className="block">
+                    </RouterLink>
+                    <RouterLink to={ROUTES.LOGISTICS.SUPPLY_TRACKING} className="block">
                       <Button
                         variant="outline"
                         size="sm"
@@ -854,7 +854,7 @@ const AssignmentSummaryModal = ({
                       >
                         View Full Details
                       </Button>
-                    </Link>
+                    </RouterLink>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1660,7 +1660,7 @@ const AssignmentSummaryModal = ({
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
-                <Link to={ROUTES.LOGISTICS.LIVE_MAP} className="flex-1 sm:flex-none">
+                <RouterLink to={ROUTES.LOGISTICS.LIVE_MAP} className="flex-1 sm:flex-none">
                   <Button
                     variant="primary"
                     size="lg"
@@ -1670,8 +1670,8 @@ const AssignmentSummaryModal = ({
                     <Play size={22} className="mr-3" />
                     Start Live Tracking
                   </Button>
-                </Link>
-                <Link to={ROUTES.LOGISTICS.SUPPLY_TRACKING} className="flex-1 sm:flex-none">
+                </RouterLink>
+                <RouterLink to={ROUTES.LOGISTICS.SUPPLY_TRACKING} className="flex-1 sm:flex-none">
                   <Button
                     variant="outline"
                     size="lg"
@@ -1681,7 +1681,7 @@ const AssignmentSummaryModal = ({
                     <ExternalLink size={22} className="mr-3" />
                     View Full Route Details
                   </Button>
-                </Link>
+                </RouterLink>
                 <Button
                   variant="ghost"
                   size="lg"
