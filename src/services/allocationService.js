@@ -19,7 +19,8 @@ const allocationService = {
     api.delete(`/allocations/${allocationId}/reject`),
 
   getPendingRequests: () =>
-    api.get("/requests", { params: { status: "pending" } }),
+    // Paginated server-side (15 by default); fetch a full working page.
+    api.get("/requests", { params: { status: "pending", per_page: 100 } }),
 
   getMyAllocations: () => api.get("/allocations/my"),
 

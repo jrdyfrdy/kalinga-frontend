@@ -279,6 +279,53 @@ public function destroy(Request $requestModel)    {
 }
 
     /**
+     * POST /api/requests/{requestModel}/escalate { reason? }
+     * Raise urgency to Critical, record it, and alert administrators.
+     */
+    public function escalate(HttpRequest $httpRequest, Request $requestModel)
+    {
+        $validated = $httpRequest->validate(['reason' => 'nullable|string|max:1000']);
+
+        if (in_array($requestModel->status, ['delivered', 'verified', 'rejected', 'archived', 'draft'], true)) {
+            return response()->json(['error' => "A {$requestModel->status} request cannot be escalated."], 422);
+        }
+
+        $before = $requestModel->urgency_level;
+        $requestModel->update(['urgency_level' => 'Critical']);
+
+        $requestModel->auditLogs()->create([
+            'action'     => 'request_escalated',
+            'details'    => $validated['reason'] ?? 'Escalated to central buffer for immediate attention',
+            'before'     => ['urgency_level' => $before],
+            'after'      => ['urgency_level' => 'Critical'],
+            'user_id'    => Auth::id(),
+            'ip_address' => $httpRequest->ip(),
+            'user_agent' => $httpRequest->header('User-Agent'),
+        ]);
+
+        $resourceName = $requestModel->resource_name;
+        \App\Models\User::where('role', 'admin')->where('is_active', true)->pluck('id')
+            ->each(function ($adminId) use ($requestModel, $resourceName) {
+                try {
+                    $n = \App\Models\Notification::create([
+                        'user_id'     => $adminId,
+                        'title'       => 'Supply request escalated',
+                        'description' => "Request #{$requestModel->id} ({$resourceName}) was escalated to Critical.",
+                        'type'        => 'warning',
+                    ]);
+                    event(new \App\Events\NotificationCreated($n));
+                } catch (\Throwable $e) {
+                    \Log::warning('Escalation notification failed', ['error' => $e->getMessage()]);
+                }
+            });
+
+        return response()->json([
+            'message' => 'Request escalated',
+            'request' => $requestModel->fresh()->load(['resource', 'hospital']),
+        ]);
+    }
+
+    /**
      * PATCH /api/requests/{request}/status
      *
      * Update a request's status (approve, reject, allocate, deliver, etc.).

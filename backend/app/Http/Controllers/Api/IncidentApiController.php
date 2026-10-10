@@ -94,7 +94,12 @@ class IncidentApiController extends Controller
             'locationError'       => ['nullable', 'string', 'max:500'],
             'triggeredAt'         => ['nullable', 'date'],
             'responders_required' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'vehicle_type'        => ['nullable', 'string', 'max:100'],
         ]);
+
+        $vehicleNote = !empty($validated['vehicle_type'])
+            ? 'Requested vehicle: ' . $validated['vehicle_type']
+            : null;
 
         // Don't open a second incident while the patient already has an active one.
         $active = Incident::where('user_id', $user->id)
@@ -102,6 +107,22 @@ class IncidentApiController extends Controller
             ->latest()
             ->first();
         if ($active) {
+            // Vehicle selection after the SOS: attach it to the active incident.
+            if ($vehicleNote) {
+                $active->description = trim($active->description . "\n" . $vehicleNote);
+                $active->save();
+                $active->statusUpdates()->create([
+                    'user_id' => $user->id,
+                    'status'  => $active->status,
+                    'notes'   => $vehicleNote,
+                ]);
+                try {
+                    broadcast(new IncidentUpdated($active->fresh()))->toOthers();
+                } catch (\Throwable $e) {
+                    report($e);
+                }
+            }
+
             return response()->json([
                 'message'  => 'You already have an active emergency. Responders have been notified.',
                 'incident' => $active,
@@ -121,6 +142,7 @@ class IncidentApiController extends Controller
 
         $descriptionParts = array_filter([
             $validated['description'] ?? 'Emergency SOS triggered from the patient app.',
+            $vehicleNote,
             isset($validated['location']['accuracy']) ? 'GPS accuracy: ±' . round($validated['location']['accuracy']) . ' m' : null,
             !$hasCoords ? 'Approximate location used (device location unavailable' . (!empty($validated['locationError']) ? ': ' . $validated['locationError'] : '') . ').' : null,
         ]);

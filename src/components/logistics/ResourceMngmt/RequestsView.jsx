@@ -1,6 +1,8 @@
 // src/components/logistics/ResourceMngmt/RequestsView.jsx
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSessionAllocationsStore } from "../../../stores/sessionAllocationsStore";
+import { ROUTES } from "../../../config/routes";
 import {
   List,
   RefreshCw,
@@ -407,7 +409,12 @@ const PendingDeliveryConfirmation = ({ requests, onConfirmDelivery }) => {
                         <span>Delivery ID: {delivery.id}</span>
                         <span className="text-gray-400">•</span>
                         <Calendar className="h-4 w-4" />
-                        <span>Arrived: {new Date().toLocaleDateString()}</span>
+                        <span>
+                          Arrived:{" "}
+                          {delivery.allocation?.delivered_at || delivery.updated_at
+                            ? new Date(delivery.allocation?.delivered_at || delivery.updated_at).toLocaleDateString()
+                            : "—"}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -422,37 +429,38 @@ const PendingDeliveryConfirmation = ({ requests, onConfirmDelivery }) => {
                     <InfoChip
                       icon={Truck}
                       label="Vehicle"
-                      value={delivery.allocation?.vehicle_plate || "DOH-REF-07"}
+                      value={delivery.allocation?.vehicle_plate || "—"}
                       color="blue"
                     />
                     <InfoChip
                       icon={Building}
                       label="Source Hospital"
-                      value={
-                        delivery.allocation?.source_hospital ||
-                        "General Hospital B"
-                      }
+                      value={delivery.allocation?.source_hospital || "—"}
                       color="purple"
                     />
                     <InfoChip
                       icon={User}
                       label="Driver"
-                      value={delivery.allocation?.driver || "John Doe"}
+                      value={delivery.allocation?.driver || "—"}
                       color="gray"
                     />
                     <InfoChip
                       icon={MapPin}
                       label="Location"
-                      value={delivery.facility?.name || "Main Warehouse"}
+                      value={delivery.facility?.name || delivery.facility || "—"}
                       color="amber"
                     />
                     <InfoChip
                       icon={Clock}
                       label="Arrival Time"
-                      value={new Date().toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      value={
+                        delivery.allocation?.delivered_at || delivery.updated_at
+                          ? new Date(delivery.allocation?.delivered_at || delivery.updated_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "—"
+                      }
                       color="blue"
                     />
                   </div>
@@ -517,6 +525,7 @@ const PendingDeliveryConfirmation = ({ requests, onConfirmDelivery }) => {
 };
 
 const RequestsView = ({ facility, hospitalId }) => {
+  const navigate = useNavigate();
   const { requests, setRequests, listenToLogistics } = useSessionAllocationsStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -1062,7 +1071,7 @@ const RequestsView = ({ facility, hospitalId }) => {
                         {req.status === "pending" && (
                           <Button
                             variant="outline"
-                            onClick={() => {}}
+                            onClick={() => fetchRequests()}
                             className="w-full justify-start gap-2"
                           >
                             <Clock className="h-4 w-4" />
@@ -1085,7 +1094,7 @@ const RequestsView = ({ facility, hospitalId }) => {
                           req.status === "in_transit") && (
                           <Button
                             variant="info"
-                            onClick={() => {}}
+                            onClick={() => navigate(ROUTES.LOGISTICS.SUPPLY_TRACKING)}
                             className="w-full justify-start gap-2"
                           >
                             <MapPin className="h-4 w-4" />

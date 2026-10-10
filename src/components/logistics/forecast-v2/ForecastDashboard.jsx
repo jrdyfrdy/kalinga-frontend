@@ -295,7 +295,8 @@ export default function ForecastDashboard() {
 
   // ── Derived: triage items sorted by urgency ────────────────
   const triageItems = useMemo(() => {
-    const highRisk = summary?.high_risk_items || DEMO_HIGH_RISK_ITEMS;
+    // Sample items only in demo mode; a live API with no risks shows none.
+    const highRisk = summary?.high_risk_items || (isDemo ? DEMO_HIGH_RISK_ITEMS : []);
     return [...highRisk]
       .map((item) => ({
         ...item,
@@ -310,7 +311,7 @@ export default function ForecastDashboard() {
           `Resource ${item.resource_id}`,
       }))
       .sort((a, b) => b.urgencyScore - a.urgencyScore);
-  }, [summary]);
+  }, [summary, isDemo]);
 
   // ── Derived: scenario-adjusted demand ──────────────────────
   const adjustedDemand = useMemo(() => {
@@ -327,10 +328,10 @@ export default function ForecastDashboard() {
   const riskDistribution = useMemo(() => {
     const dist = summary?.risk_distribution;
     if (!dist || (typeof dist === "object" && Object.keys(dist).length === 0)) {
-      return DEMO_RISK_DISTRIBUTION;
+      return isDemo ? DEMO_RISK_DISTRIBUTION : {};
     }
     return dist;
-  }, [summary]);
+  }, [summary, isDemo]);
 
   // ── Derived: headline for CommandBar ───────────────────────
   // Use the same risk_distribution data that drives the KPI cards so the
@@ -353,8 +354,8 @@ export default function ForecastDashboard() {
       const sum = Object.values(dist).reduce((a, b) => a + Number(b || 0), 0);
       if (sum > 0) return sum;
     }
-    return DEMO_TOTAL_PREDICTIONS;
-  }, [riskDistribution]);
+    return isDemo ? DEMO_TOTAL_PREDICTIONS : 0;
+  }, [riskDistribution, isDemo]);
 
   // ── Derived: scenario mode + params ────────────────────────
   const scenarioMode = delayDays > 0 || demandMultiplier !== 1;

@@ -78,6 +78,43 @@ class NotificationController extends Controller
         ], 201);
     }
 
+    /**
+     * POST /api/logistics/hospitals/{hospital}/notify { title?, message }
+     * Notify every user assigned to a hospital (coordination panel "Notify").
+     */
+    public function notifyHospital(Request $request, $hospitalId)
+    {
+        $validated = $request->validate([
+            'title'   => 'nullable|string|max:255',
+            'message' => 'required|string|max:5000',
+            'type'    => 'nullable|string|in:info,warning,emergency,update,alert',
+        ]);
+
+        $hospital = \App\Models\Hospital::findOrFail($hospitalId);
+        $userIds = \Illuminate\Support\Facades\DB::table('hospital_user')
+            ->where('hospital_id', $hospital->id)
+            ->pluck('user_id');
+
+        if ($userIds->isEmpty()) {
+            return response()->json([
+                'message' => 'No users are assigned to this hospital yet.',
+                'recipients' => 0,
+            ], 422);
+        }
+
+        foreach ($userIds as $userId) {
+            $notification = Notification::create([
+                'user_id'     => $userId,
+                'title'       => $validated['title'] ?? 'Logistics update',
+                'description' => $validated['message'],
+                'type'        => $validated['type'] ?? 'info',
+            ]);
+            $this->pushRealtime($notification);
+        }
+
+        return response()->json(['message' => 'Hospital notified', 'recipients' => $userIds->count()], 201);
+    }
+
     /** PATCH /api/notifications/{id}/read */
     public function markAsRead(Request $request, $id)
     {

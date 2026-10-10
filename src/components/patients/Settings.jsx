@@ -406,35 +406,8 @@ function LoggedInDevicesModal({ onClose }) {
         setDevices(response.data);
       } catch (error) {
         console.error("Error fetching devices:", error);
-        setDevices([
-          {
-            id: 1,
-            device_name: "Windows PC",
-            device_type: "desktop",
-            location: "Manila, Philippines",
-            ip_address: "192.168.1.100",
-            last_active: "2025-11-30 10:30:00",
-            is_current: true,
-          },
-          {
-            id: 2,
-            device_name: "iPhone 14",
-            device_type: "mobile",
-            location: "Quezon City, Philippines",
-            ip_address: "192.168.1.101",
-            last_active: "2025-11-29 18:45:00",
-            is_current: false,
-          },
-          {
-            id: 3,
-            device_name: "iPad Pro",
-            device_type: "tablet",
-            location: "Makati, Philippines",
-            ip_address: "192.168.1.102",
-            last_active: "2025-11-28 14:20:00",
-            is_current: false,
-          },
-        ]);
+        // Don't show made-up sessions when the request fails.
+        setDevices([]);
       } finally {
         setIsLoading(false);
       }

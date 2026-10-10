@@ -864,23 +864,51 @@ export default function AssetRegistry({ loading: initialLoading, assets: propAss
     }
   };
 
-  const handleBulkAction = (action) => {
+  const handleBulkAction = async (action) => {
     if (selectedAssets.size === 0) return;
-    
+    const keys = Array.from(selectedAssets.keys());
+    const assets = Array.from(selectedAssets.values());
+
+    const summarize = (results, verb) => {
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed) alert(`${results.length - failed} ${verb}, ${failed} failed.`);
+    };
+
     switch(action) {
       case 'delete':
         if (window.confirm(`Delete ${selectedAssets.size} selected assets?`)) {
-          // Implement bulk delete
-          console.log(`Bulk delete ${selectedAssets.size} assets`, Array.from(selectedAssets.keys()));
+          const results = await Promise.allSettled(keys.map((key) => assetService.deleteAsset(key)));
+          summarize(results, "deleted");
           setSelectedAssets(new Map());
           setShowBulkActions(false);
+          await fetchAssets();
         }
         break;
-      case 'export':
-        console.log(`Export ${selectedAssets.size} assets`, Array.from(selectedAssets.keys()));
+      case 'export': {
+        const columns = ["id", "name", "category", "status", "location", "fuelLevel", "nextMaintenance"];
+        const escape = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+        const csv = [
+          columns.join(","),
+          ...assets.map((a) => columns.map((c) => escape(a[c] ?? a[c.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`)])).join(",")),
+        ].join("\n");
+        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `assets-selected-${new Date().toISOString().slice(0, 10)}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
         break;
-      case 'maintenance':
-        console.log(`Schedule maintenance for ${selectedAssets.size} assets`);
+      }
+      case 'maintenance': {
+        const results = await Promise.allSettled(keys.map((key) => assetService.scheduleRoutineMaintenance(key)));
+        summarize(results, "scheduled");
+        if (results.every((r) => r.status === "fulfilled")) {
+          alert(`Routine maintenance scheduled for ${results.length} asset(s) in 7 days.`);
+        }
+        await fetchAssets();
+        break;
+      }
+      default:
         break;
     }
   };

@@ -1,69 +1,73 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {shelterMapImg} from "@images";
+import api from "../../services/api";
+import { getCurrentLocation } from "../../utils/location";
+
+const formatUpdated = (value) => {
+  if (!value) return "";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime())
+    ? ""
+    : `As of ${d.toLocaleString("en-US", { month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}`;
+};
 
 export default function EvacCenter() {
   const [centerOpen, setCenterOpen] = useState(false);
-  const [selectedCenter, setSelectedCenter] = useState("Evacuation Center 1");
+  const [centers, setCenters] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const centerData = {
-    "Evacuation Center 1": {
-      name: "Baseco Evacuation center",
-      address: "HXR5+4M8, Port Area, Manila, Metro Manila",
-      contact: "+0991 052 6395",
-      update: "As of April 25, 2025 11:00 AM",
-      occupied: "201",
-      available: "299",
-      distance: "4 km",
-      status: "AVAILABLE",
-      resources: {
-        Food: { distribution: "Tomorrow, 8:00 AM" },
-        Water: { distribution: "Today, 3:00 PM" },
-        Medicine: { distribution: "On request at clinic" },
-        "First Aid Kits": { distribution: "On request at clinic" },
-        "Hygiene Kits": { distribution: "Every 2 days, 10:00 AM" },
-        "Blankets & Mats": { distribution: "Ask shelter staff" },
-        "Pet Supplies": { distribution: "On request at clinic" },
-      },
-    },
-    "Evacuation Center 2": {
-      name: "Delpan Evacuation Center",
-      address: "Manila, Metro Manila",
-      contact: "+(02) 8241 4165",
-      update: "As of April 25, 2025 11:00 AM",
-      occupied: "98",
-      available: "102",
-      distance: "21 km",
-      resources: {
-        Food: { distribution: "Tomorrow, 8:00 AM" },
-        Water: { distribution: "Today, 3:00 PM" },
-        Medicine: { distribution: "On request at clinic" },
-        "First Aid Kits": { distribution: "On request at clinic" },
-        "Hygiene Kits": { distribution: "Ask shelter staff" },
-        "Blankets & Mats": { distribution: "Ask shelter staff" },
-        "Infant Supplies": { distribution: "On request at clinic" },
-        "Pet Supplies": { distribution: "On request at clinic" },
-      },
-    },
-    "Evacuation Center 3": {
-      name: "Mandaluyong Evacuation Center ",
-      address: "H38F+84V, Pasig, Metro Manila",
-      contact: "+6390 000 0000",
-      update: "As of April 25, 2025 11:00 AM",
-      occupied: "100",
-      available: "0",
-      distance: "1.2 km",
-      resources: {
-        Food: { distribution: "Tomorrow, 7:00 AM" },
-        Water: { distribution: "Today, 3:00 PM" },
-        Medicine: { distribution: "On request at clinic" },
-        "First Aid Kits": { distribution: "On request at clinic" },
-        "Hygiene Kits": { distribution: "Every 2 days, 10:00 AM" },
-        "Blankets & Mats": { distribution: "Ask shelter staff" }
-      },
-    },
+  // Evacuation centers come from GET /api/evacuation-centers (sorted by
+  // distance when the device location is available).
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      let params = {};
+      try {
+        const loc = await getCurrentLocation({ timeout: 6000 });
+        if (loc.ok) params = { lat: loc.coords.latitude, lng: loc.coords.longitude };
+      } catch {
+        // location is optional
+      }
+      try {
+        const { data } = await api.get("/evacuation-centers", { params });
+        if (cancelled) return;
+        const rows = Array.isArray(data) ? data : data?.data || [];
+        setCenters(rows);
+        setSelectedId((prev) => prev ?? rows[0]?.id ?? null);
+      } catch (err) {
+        console.error("Failed to load evacuation centers", err);
+        if (!cancelled) setError("Unable to load evacuation centers right now.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selected = useMemo(
+    () => centers.find((c) => c.id === selectedId) || centers[0] || null,
+    [centers, selectedId]
+  );
+
+  const center = {
+    name: selected?.name || (loading ? "Loading…" : "No evacuation centers"),
+    address: selected?.address || "",
+    contact: selected?.contact || "",
+    update: formatUpdated(selected?.updated_at),
+    occupied: selected ? String(selected.occupied ?? 0) : "—",
+    available: selected ? String(selected.available ?? Math.max(0, (selected.capacity || 0) - (selected.occupied || 0))) : "—",
+    distance:
+      selected?.distance_km != null ? `${Number(selected.distance_km).toFixed(1)} km` : "unknown distance",
+    resources: selected?.resources || {},
   };
-
-  const center = centerData[selectedCenter] || centerData["Evacuation Center 1"];
+  const selectedLabel = selected?.name || "Select center";
 
   return (
     <div className="flex flex-col lg:grid lg:grid-cols-[5fr_3fr] gap-3">
@@ -92,30 +96,28 @@ export default function EvacCenter() {
               className="bg-[#f0d003] text-white border-none text-xs font-bold rounded-xl px-3 py-1.5 cursor-pointer mt-0 hover:bg-[#2c6b25]"
               onClick={() => setCenterOpen(!centerOpen)}
             >
-              {selectedCenter} ▼
+              {selectedLabel} ▼
             </button>
 
             {centerOpen && (
               <ul className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded-s min-w-[120px] shadow-lg py-2 z-10">
-                {Object.keys(centerData).map((centerKey) => (
+                {centers.map((c) => (
                   <li
-                    key={centerKey}
+                    key={c.id}
                     className="text-[#1A4718] text-sm list-none py-2 px-3 cursor-pointer hover:bg-gray-200"
                     onClick={() => {
-                      setSelectedCenter(centerKey);
-                      // This line was commented out because setSelectedSupply is not defined
-                      // setSelectedSupply(Object.keys(centerData[centerKey].resources)[0]);
+                      setSelectedId(c.id);
                       setCenterOpen(false);
                     }}
                   >
-                    {centerKey}
+                    {c.name}
                   </li>
                 ))}
               </ul>
             )}
           </div>
         </div>
-          <p className="text-[15px] mt-1 text-left">As of April 25, 2025 11:00 AM</p>
+          <p className="text-[15px] mt-1 text-left">{error || center.update}</p>
       </div>
 
 

@@ -545,6 +545,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('/requests/{requestModel}/submit', [RequestController::class, 'submitDraft']);
             Route::post('/requests/{requestModel}/under-review', [RequestController::class, 'markAsUnderReview'])
                 ->name('requests.under-review');
+            Route::post('/requests/{requestModel}/escalate', [RequestController::class, 'escalate']);
+            Route::post('/logistics/hospitals/{hospital}/notify', [NotificationController::class, 'notifyHospital']);
             Route::patch('/requests/{requestModel}/status', [RequestController::class, 'updateStatus'])
                 ->name('requests.update-status');
             

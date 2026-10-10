@@ -1,5 +1,6 @@
 // src/components/logistics/ResourceMngmt/NotificationCenter.jsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useNotifications } from "../../../hooks/useNotifications";
 import {
   Bell,
   CheckCircle,
@@ -13,40 +14,37 @@ import {
 } from "lucide-react";
 
 const NotificationCenter = () => {
-  const [notifications, setNotifications] = useState([]);
   const [showPanel, setShowPanel] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [dismissedIds, setDismissedIds] = useState(() => new Set());
 
-  // Note: Real-time notifications are handled by the useNotifications hook
-  // (Echo/Reverb). This component only renders the notification UI.
-  // No raw WebSocket connection needed here.
+  // Notifications come from the API + realtime (useNotifications); previously
+  // nothing ever called this component's handler, so it was always empty.
+  const {
+    notifications: rawNotifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications({ limit: 50 });
 
-  const handleNewNotification = (notification) => {
-    const newNotification = {
-      ...notification,
-      id: Date.now(),
-      timestamp: new Date(),
-      read: false,
-    };
-
-    setNotifications((prev) => [newNotification, ...prev.slice(0, 49)]);
-    setUnreadCount((prev) => prev + 1);
-
-    // Auto-dismiss certain notifications
-    if (notification.autoDismiss) {
-      setTimeout(() => {
-        dismissNotification(newNotification.id);
-      }, 10000); // 10 seconds
-    }
-  };
+  const notifications = useMemo(
+    () =>
+      rawNotifications
+        .filter((n) => !dismissedIds.has(n.id))
+        .map((n) => ({
+          id: n.id,
+          type: n.type || "info",
+          title: n.title,
+          message: n.description ?? n.message ?? "",
+          timestamp: n.created_at || new Date().toISOString(),
+          read: Boolean(n.read_at),
+        })),
+    [rawNotifications, dismissedIds]
+  );
 
   const dismissNotification = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnreadCount(0);
+    setDismissedIds((prev) => new Set(prev).add(id));
+    const target = rawNotifications.find((n) => n.id === id);
+    if (target && !target.read_at) markAsRead(id);
   };
 
   const getNotificationConfig = (type) => {
