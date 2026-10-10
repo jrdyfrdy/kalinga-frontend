@@ -28,12 +28,14 @@ class LogisticsStatusController extends Controller
             // Sync Allocation status if applicable
             $allocation = Allocation::where("request_id", $id)->latest()->first();
             if ($allocation) {
-                // Determine allocation status mapping
-                $allocStatus = $newStatus;
-
-                // Some mappings if necessary
-                if ($newStatus === "allocated") $allocStatus = "confirmed";
-                if ($newStatus === "matched") $allocStatus = "planned";
+                // Map request lifecycle statuses onto the allocation status set
+                // (planned|confirmed|logistics_assigned|in_transit|delivered|verified|failed|cancelled|archived).
+                $allocStatus = match ($newStatus) {
+                    "under_review", "matched" => "planned",
+                    "allocated" => "confirmed",
+                    "rejected" => "cancelled",
+                    default => $newStatus,
+                };
 
                 $allocation->update([
                     "status" => $allocStatus

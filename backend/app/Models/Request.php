@@ -5,11 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Request extends Model
 {
     use HasFactory;
+    const STATUS_DRAFT        = 'draft';
     const STATUS_PENDING      = 'pending';
+    const STATUS_APPROVED     = 'approved';
+    const STATUS_ARCHIVED     = 'archived';
     const STATUS_UNDER_REVIEW = 'under_review';
     const STATUS_MATCHED      = 'matched';
     const STATUS_ALLOCATED    = 'allocated';
@@ -30,12 +34,15 @@ class Request extends Model
         'status',
         'rejection_reason',
         'created_by',
+        'approved_by',
+        'approved_at',
         'meta'
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'meta' => 'array',
+        'approved_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -69,6 +76,16 @@ class Request extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function auditLogs(): MorphMany
+    {
+        return $this->morphMany(AuditLog::class, 'auditable');
+    }
+
+    public function notifications(): MorphMany
+    {
+        return $this->morphMany(NotificationLog::class, 'notifiable');
+    }
+
     // Scopes
     public function scopeDraft($query)
     {
@@ -82,7 +99,11 @@ class Request extends Model
 
     public function scopeMyHospital($query)
     {
-        return $query->where('hospital_id', auth()->user()->hospital_id);
+        // Users are linked to hospitals through the hospital_user pivot;
+        // there is no users.hospital_id column.
+        $hospitalIds = auth()->user()?->hospitals()->pluck('hospitals.id') ?? collect();
+
+        return $query->whereIn('hospital_id', $hospitalIds);
     }
 
     public function scopeCritical($query)

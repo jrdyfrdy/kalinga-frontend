@@ -14,14 +14,30 @@ class PatientCareReportTest extends TestCase
     public function it_stores_a_fully_filled_patient_care_report()
     {
         // Simulate an authenticated responder
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'responder']);
         $this->actingAs($user);
+
+        $incidentId = \Illuminate\Support\Facades\DB::table('incidents')->insertGetId([
+            'type' => 'Medical',
+            'location' => 'Test location',
+            'latlng' => '14.6,121.0',
+            'description' => 'Test incident',
+            'status' => 'reported',
+            'user_id' => $user->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         // Prepare a fully-filled PCR payload
         $payload = [
             'is_draft' => false,
-            'incident_id' => 1,
-            'patient_user_id' => 1,
+            'incident_id' => $incidentId,
+            'patient_user_id' => $user->id,
+            'case_no' => 'CASE-001',
+            'mobile_unit' => 'AMB-01',
+            'patient_details' => ['name' => 'Juan Dela Cruz'],
+            'physiological_status' => ['chiefComplaint' => 'Chest pain'],
+            'management_transport' => ['transportedTo' => 'General Hospital'],
             'client_submission_id' => 'test-uuid',
             'dispatch_date' => now()->toISOString(),
             'response_times' => [

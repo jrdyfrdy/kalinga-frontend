@@ -10,6 +10,8 @@ use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Validation\Rule;
+use App\Support\HandlingClass;
 
 class RequestController extends Controller
 {
@@ -20,7 +22,7 @@ public function index(HttpRequest $request)
     $user = Auth::user();
 
    
-    if ($user->role === 'logistics') {
+    if (in_array($user->role, ['logistics', 'admin'], true)) {
         $query = Request::with(['hospital', 'resource', 'creator'])->latest();
     } 
    
@@ -39,26 +41,61 @@ public function index(HttpRequest $request)
 
     $requests = $request->boolean('all')
         ? $query->get()
-        : $query->paginate(15);
+        : $query->paginate(min(max((int) $request->input('per_page', 15), 1), 200));
 
     return response()->json($requests);
 }
 
 
-    public function store(HttpRequest $request)
+    /**
+     * Resolve the requesting hospital: an explicit hospital_id must belong to
+     * the user (admins/logistics may pick any); otherwise use the user's
+     * first assigned hospital. Returns null when none can be determined.
+     */
+    private function resolveHospitalId(?int $requestedId): ?int
     {
-        $validated = $request->validate([
+        $user = Auth::user();
+        $userHospitalIds = $user->hospitals()->pluck('hospitals.id')->map(fn ($id) => (int) $id);
+
+        if ($requestedId) {
+            if (in_array($user->role, ['admin', 'logistics'], true) || $userHospitalIds->contains($requestedId)) {
+                return $requestedId;
+            }
+            return null;
+        }
+
+        return $userHospitalIds->first();
+    }
+
+    private function requestRules(): array
+    {
+        return [
             'resource_id'     => 'required|exists:resources,id',
+            'hospital_id'     => 'nullable|integer|exists:hospitals,id',
             'quantity'        => 'required|integer|min:1',
             'urgency_level'   => 'required|in:Low,Medium,High,Critical',
-            'handling_class'  => 'required|in:General,ColdChain,Narcotics,HighValue',
+            'handling_class'  => ['required', Rule::in(HandlingClass::ACCEPTED)],
             'reason'          => 'nullable|string|max:1000',
-        ]);
+            'meta'            => 'nullable|array',
+        ];
+    }
+
+    public function store(HttpRequest $request)
+    {
+        $validated = $request->validate($this->requestRules());
+        $validated['handling_class'] = HandlingClass::canonical($validated['handling_class']);
 
         $resource = Resource::findOrFail($validated['resource_id']);
 
-        return DB::transaction(function () use ($validated, $resource) {
-            $hospitalId = Auth::user()->hospitals()->first()?->id;
+        $hospitalId = $this->resolveHospitalId($validated['hospital_id'] ?? null);
+        if (!$hospitalId) {
+            return response()->json([
+                'message' => 'No hospital is assigned to your account. Select a hospital or ask an administrator to assign one.',
+                'errors'  => ['hospital_id' => ['A valid hospital is required.']],
+            ], 422);
+        }
+
+        return DB::transaction(function () use ($validated, $resource, $hospitalId) {
 
             $req = Request::create([
                 'hospital_id'     => $hospitalId,  
@@ -67,10 +104,10 @@ public function index(HttpRequest $request)
                 'quantity'        => $validated['quantity'],
                 'urgency_level'   => $validated['urgency_level'],
                 'handling_class'  => $validated['handling_class'],
-                'reason'          => $validated['reason'],
+                'reason'          => $validated['reason'] ?? null,
                 'status'          => 'pending', // lowercase
                 'created_by'      => Auth::id(),
-                'meta'            => ['source' => 'hospital_portal'],
+                'meta'            => array_merge(['source' => 'hospital_portal'], $validated['meta'] ?? []),
             ]);
 
             AuditLog::create([
@@ -89,25 +126,29 @@ public function index(HttpRequest $request)
     }
 
 public function storeDraft(HttpRequest $request)    {
-        $validated = $request->validate([
-            'resource_id'     => 'required|exists:resources,id',
-            'quantity'        => 'required|integer|min:1',
-            'urgency_level'   => 'required|in:Low,Medium,High,Critical',
-            'handling_class'  => 'required|in:General,ColdChain,Narcotics,HighValue',
-            'reason'          => 'nullable|string|max:1000',
-        ]);
+        $validated = $request->validate($this->requestRules());
+        $validated['handling_class'] = HandlingClass::canonical($validated['handling_class']);
 
         $resource = Resource::findOrFail($validated['resource_id']);
 
+        $hospitalId = $this->resolveHospitalId($validated['hospital_id'] ?? null);
+        if (!$hospitalId) {
+            return response()->json([
+                'message' => 'No hospital is assigned to your account. Select a hospital or ask an administrator to assign one.',
+                'errors'  => ['hospital_id' => ['A valid hospital is required.']],
+            ], 422);
+        }
+
         $draft = Request::create([
-            'hospital_id' => Auth::user()->hospitals()->first()?->id,
+            'hospital_id' => $hospitalId,
             'resource_id'     => $resource->id,
             'resource_name'   => $resource->name,
             'quantity'        => $validated['quantity'],
             'urgency_level'   => $validated['urgency_level'],
             'handling_class'  => $validated['handling_class'],
-            'reason'          => $validated['reason'],
+            'reason'          => $validated['reason'] ?? null,
             'status'          => 'draft',
+            'meta'            => $validated['meta'] ?? null,
             'created_by'      => Auth::id(),
         ]);
 
@@ -128,9 +169,10 @@ public function updateDraft(HttpRequest $request, Request $requestModel)
         $validated = $request->validate([
             'quantity'       => 'required|integer|min:1',
             'urgency_level'  => 'required|in:Low,Medium,High,Critical',
-                'handling_class' => 'required|in:General,ColdChain,Narcotics,HighValue',
+                'handling_class' => ['required', Rule::in(HandlingClass::ACCEPTED)],
                 'reason'         => 'nullable|string|max:1000',
             ]);
+            $validated['handling_class'] = HandlingClass::canonical($validated['handling_class']);
 
             $requestModel->update($validated);
 
@@ -142,16 +184,7 @@ public function updateDraft(HttpRequest $request, Request $requestModel)
 
 public function submitDraft(HttpRequest $request, Request $requestModel)
 {
-
-    \Log::info('SubmitDraft binding check', [
-    'exists' => $requestModel->exists,
-    'id' => $requestModel->id,
-    'status' => $requestModel->status,
-]);
-
-    if (!$requestModel->exists) {
-        return response()->json(['error' => 'Request not found'], 404);
-    }
+    $this->authorize('update', $requestModel);
 
     if ($requestModel->status !== 'draft') {
         return response()->json(['error' => 'Only draft requests can be submitted'], 403);
@@ -198,8 +231,8 @@ public function destroy(Request $requestModel)    {
 {
     $user = auth()->user();
 
-    // Only DOH Dispatcher can mark as under review
-    if ($user->role !== 'doh_dispatcher') {
+    // Reviewers: dispatchers (DOH), logistics coordinators and admins.
+    if (!in_array($user->role, ['dispatcher', 'logistics', 'admin'], true)) {
         return response()->json(['error' => 'Unauthorized'], 403);
     }
 
@@ -220,7 +253,8 @@ public function destroy(Request $requestModel)    {
         // Audit log
         $requestModel->auditLogs()->create([
             'action'         => 'request_under_review',
-            'details'        => 'DOH Dispatcher started reviewing the request',
+            'details'        => 'Reviewer started reviewing the request',
+            'user_id'        => $user->id,
             'before'         => ['status' => $oldStatus],
             'after'          => ['status' => Request::STATUS_UNDER_REVIEW],
             'ip_address'     => request()->ip(),
@@ -229,6 +263,7 @@ public function destroy(Request $requestModel)    {
 
         // Optional: notify hospital "Your request is being reviewed"
         $requestModel->notifications()->create([
+            'recipient_id' => $requestModel->created_by,
             'type'     => 'request_under_review',
             'message'  => 'Your supply request is now under review by DOH.',
             'channel'  => 'database',

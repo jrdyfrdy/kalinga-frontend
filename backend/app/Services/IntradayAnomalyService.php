@@ -312,8 +312,8 @@ class IntradayAnomalyService
                     $resourceId,
                     $severity,
                 ));
-            } catch (\Exception $e) {
-                // Event class may not exist yet — log and continue
+            } catch (\Throwable $e) {
+                // Broadcasting must never break anomaly recording
                 Log::warning('[IntradayAnomaly] Could not broadcast event', [
                     'error' => $e->getMessage(),
                 ]);

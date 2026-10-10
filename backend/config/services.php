@@ -68,4 +68,9 @@ return [
         'secret' => env('RECAPTCHA_SECRET_KEY'),
     ],
 
+    // Shared secret the EDGE scanner sends as X-Edge-Key (POST /api/sensor/vitals).
+    'edge' => [
+        'key' => env('EDGE_DEVICE_API_KEY'),
+    ],
+
 ];
