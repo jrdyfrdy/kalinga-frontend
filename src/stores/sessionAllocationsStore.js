@@ -1,5 +1,9 @@
 import { create } from "zustand";
-import { getEchoInstance } from "../services/echo";
+import { getEchoInstance, subscribeChannel } from "../services/echo";
+
+// One Reverb listener shared by every component that calls listenToLogistics().
+let logisticsSubscribers = 0;
+let unsubscribeLogistics = null;
 
 export const useSessionAllocationsStore = create((set, get) => ({
   sessionAllocations: [],
@@ -38,12 +42,16 @@ export const useSessionAllocationsStore = create((set, get) => ({
 
   clearSession: () => set({ sessionAllocations: [], requests: [] }),
 
-  // Listen to Reverb
+  // Listen to Reverb. Returns an unsubscribe function; call it on unmount.
+  // (Previously each call stacked another listener that was never removed.)
   listenToLogistics: () => {
     const echo = getEchoInstance?.();
-    if (!echo) return;
+    if (!echo) return () => {};
 
-    echo.channel("logistics-updates").listen(".status.updated", (e) => {
+    logisticsSubscribers += 1;
+    if (!unsubscribeLogistics) {
+      unsubscribeLogistics = subscribeChannel("logistics-updates", "public", {
+        ".status.updated": (e) => {
       const { id, status, allocation } = e.data || e;
       if (id && status) {
         get().updateStatus(id, status);
@@ -68,6 +76,20 @@ export const useSessionAllocationsStore = create((set, get) => ({
           }
         });
       }
-    });
+        },
+      });
+    }
+
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      logisticsSubscribers -= 1;
+      if (logisticsSubscribers <= 0 && unsubscribeLogistics) {
+        unsubscribeLogistics();
+        unsubscribeLogistics = null;
+        logisticsSubscribers = 0;
+      }
+    };
   },
 }));

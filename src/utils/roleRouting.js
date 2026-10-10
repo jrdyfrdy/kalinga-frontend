@@ -98,7 +98,7 @@ export const needsVerification = (user) => {
   if (!user) return false;
 
   // Only patients need verification
-  if (user.role !== "patient") {
+  if (String(user.role || "").toLowerCase() !== "patient") {
     return false;
   }
 

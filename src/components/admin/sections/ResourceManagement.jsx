@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Boxes,
@@ -55,6 +56,7 @@ const formatRelativeTime = (dateString) => {
 };
 
 export const ResourceManagement = () => {
+  const navigate = useNavigate();
   const [resources, setResources] = useState([]);
   const [stats, setStats] = useState(null);
   const [lowStock, setLowStock] = useState([]);
@@ -212,7 +214,10 @@ export const ResourceManagement = () => {
               />
               Refresh
             </button>
-            <button className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:shadow-md">
+            <button
+              onClick={() => navigate("/admin", { state: { adminSection: "logistics" } })}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:shadow-md"
+            >
               <Truck className="h-4 w-4" />
               Launch logistics board
             </button>

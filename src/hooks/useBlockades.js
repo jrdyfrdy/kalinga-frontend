@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getEchoInstance, reconnectEcho } from "../services/echo";
+import { getEchoInstance, reconnectEcho, subscribeChannel } from "../services/echo";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
@@ -24,7 +24,7 @@ export const useBlockades = ({
 
   const subscriptionRef = useRef(null);
   const pollingTimerRef = useRef(null);
-  const wsPollingTimerRef = useRef(null); // Separate ref for WS-adjusted polling
+ // Separate ref for WS-adjusted polling
   const isMountedRef = useRef(true);
 
   // Fetch blockades from API
@@ -133,40 +133,28 @@ export const useBlockades = ({
     };
   }, [enabled, authLoading, isAuthenticated, fetchBlockades, pollingInterval]);
 
-  // Subscribe to WebSocket channel for real-time blockade updates
+  // Subscribe to realtime blockade updates (presence-blockades, broadcast by
+  // RoadBlockadeController). Polling keeps running as the fallback, so a
+  // failed subscription never leaves the map stale.
   useEffect(() => {
     if (!enabled || !isAuthenticated || authLoading || !user?.id) {
       return;
     }
 
-    const echo = getEchoInstance?.();
-    if (!echo) {
+    if (!getEchoInstance?.()) {
       return;
     }
 
     reconnectEcho();
 
-    // Subscribe to blockades channel (presence channel since it's shared data)
-    const channelName = "blockades";
-    let channel;
-
+    let unsubscribe = null;
     try {
-      channel = echo.join(channelName);
-      channel.listen(".BlockadeUpdated", handleRealtimeBlockadeUpdate);
-      channel.listen(".BlockadeCreated", handleRealtimeBlockadeUpdate);
-      channel.listen(".BlockadeCleared", handleRealtimeBlockadeUpdate);
-      subscriptionRef.current = channel;
-
-      // Reduce polling frequency when WebSocket is active
-      if (pollingTimerRef.current && pollingInterval > 0) {
-        // Clear original polling timer
-        clearInterval(pollingTimerRef.current);
-        pollingTimerRef.current = null;
-        // Use a separate ref for WS-adjusted polling so cleanup properly handles both
-        wsPollingTimerRef.current = setInterval(() => {
-          fetchBlockades({ silent: true });
-        }, pollingInterval * 3); // Much longer fallback when WS is active
-      }
+      unsubscribe = subscribeChannel("blockades", "presence", {
+        ".BlockadeUpdated": handleRealtimeBlockadeUpdate,
+        ".BlockadeCreated": handleRealtimeBlockadeUpdate,
+        ".BlockadeCleared": handleRealtimeBlockadeUpdate,
+      });
+      subscriptionRef.current = unsubscribe;
     } catch (subscriptionError) {
       console.error(
         "Failed to subscribe to blockades channel",
@@ -175,36 +163,10 @@ export const useBlockades = ({
     }
 
     return () => {
-      // Clean up WS-adjusted polling timer
-      if (wsPollingTimerRef.current) {
-        clearInterval(wsPollingTimerRef.current);
-        wsPollingTimerRef.current = null;
-      }
-      if (subscriptionRef.current) {
-        try {
-          subscriptionRef.current.stopListening(".BlockadeUpdated");
-          subscriptionRef.current.stopListening(".BlockadeCreated");
-          subscriptionRef.current.stopListening(".BlockadeCleared");
-        } catch (e) {
-          // Ignore
-        }
-        try {
-          echo.leave(channelName);
-        } catch (e) {
-          // Ignore
-        }
-        subscriptionRef.current = null;
-      }
+      unsubscribe?.();
+      subscriptionRef.current = null;
     };
-  }, [
-    enabled,
-    isAuthenticated,
-    authLoading,
-    user?.id,
-    handleRealtimeBlockadeUpdate,
-    fetchBlockades,
-    pollingInterval,
-  ]);
+  }, [enabled, isAuthenticated, authLoading, user?.id, handleRealtimeBlockadeUpdate]);
 
   return {
     blockades,

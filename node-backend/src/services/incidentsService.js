@@ -4,12 +4,12 @@ import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
 // Status values used in the live DB
 const VALID_STATUSES = [
   'reported', 'acknowledged', 'en_route', 'on_scene',
-  'transporting', 'hospital_transfer', 'resolved', 'cancelled',
+  'transporting', 'hospital_transfer', 'needs_support', 'resolved', 'cancelled',
 ];
 
-const VALID_ORDER_COLUMNS = ['created_at', 'type', 'status', 'location', 'id'];
+const VALID_ORDER_COLUMNS = ['created_at', 'updated_at', 'type', 'status', 'location', 'id'];
 
-const getAll = async (query = {}) => {
+const getAll = async (query = {}, viewer = null) => {
   const { from, limit, page, orderBy, orderDir } = parsePagination(query);
   const col = VALID_ORDER_COLUMNS.includes(orderBy) ? orderBy : 'created_at';
   const dir = orderDir ? 'ASC' : 'DESC';
@@ -36,6 +36,20 @@ const getAll = async (query = {}) => {
   if (query.date_to) {
     params.push(query.date_to);
     conditions.push(`i.created_at <= $${params.length}`);
+  }
+  // Incremental polling: anything created OR changed since the given instant.
+  // Laravel writes `timestamp without time zone` in APP_TIMEZONE (Asia/Manila),
+  // so convert the client's ISO instant into that zone before comparing.
+  if (query.updated_after) {
+    params.push(query.updated_after);
+    const tsIdx = params.length;
+    params.push(process.env.DB_TIMEZONE || 'Asia/Manila');
+    conditions.push(`i.updated_at >= ($${tsIdx}::timestamptz AT TIME ZONE $${params.length})`);
+  }
+  // Patients only ever see incidents they reported.
+  if (viewer && viewer.role === 'patient') {
+    params.push(viewer.id);
+    conditions.push(`i.user_id = $${params.length}`);
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -81,14 +95,15 @@ const getById = async (id) => {
 
 const create = async (payload, userId) => {
   const { rows } = await pool.query(
-    `INSERT INTO incidents (type, location, latlng, description, user_id, status)
-     VALUES ($1, $2, $3, $4, $5, 'reported')
+    `INSERT INTO incidents (type, location, latlng, description, user_id, status, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, 'reported', NOW(), NOW())
      RETURNING *`,
     [
+      // location/latlng/description are NOT NULL in the shared schema.
       payload.type || 'general',
-      payload.location || null,
-      payload.latlng || null,
-      payload.description || null,
+      payload.location || 'Location not provided',
+      payload.latlng || '0.000000,0.000000',
+      payload.description || 'No description provided.',
       userId,
     ]
   );

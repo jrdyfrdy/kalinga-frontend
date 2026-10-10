@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Support\HandlingClass;
 use Carbon\Carbon;
 
 class AllocationController extends Controller
@@ -57,7 +58,7 @@ public function show($id)
         'destinationHospital',
         'allocationVehicles.asset',         
         'allocationVehicles.responder.user',  
-        'allocationVehicles.assignedByUser'
+        'allocationVehicles.assignedBy'
     ])
     ->findOrFail($id);
 
@@ -75,8 +76,10 @@ public function myAllocations()
         'allocationVehicles.asset',
         'allocationVehicles.responder.user' 
     ])
-    ->where('created_by', auth()->id())
-    ->orWhereIn('status', ['planned', 'confirmed', 'logistics_assigned'])
+    ->where(function ($q) {
+        $q->where('created_by', auth()->id())
+          ->orWhereIn('status', ['planned', 'confirmed', 'logistics_assigned']);
+    })
     ->latest()
     ->get();
 }
@@ -94,7 +97,7 @@ public function suggestions($requestId)
     $destLat      = $request->hospital->latitude;
     $destLng      = $request->hospital->longitude;
     $requiredQty  = $request->quantity;
-    $handling     = $request->handling_class;   
+    $handling     = HandlingClass::canonical($request->handling_class);
     $resourceName = $request->resource_name;
 
     $query = Resource::select([
@@ -121,11 +124,11 @@ public function suggestions($requestId)
 
     // Handling class filter based on flags
     $query->where(function ($q) use ($handling) {
-        if ($handling === 'Cold Chain') {
+        if ($handling === HandlingClass::COLD_CHAIN) {
             $q->where('resources.requires_cold_chain', true);
-        } elseif ($handling === 'High-Value') {
+        } elseif ($handling === HandlingClass::HIGH_VALUE) {
             $q->where('resources.is_high_value', true);
-        } elseif ($handling === 'Narcotics') {
+        } elseif ($handling === HandlingClass::NARCOTICS) {
             $q->where('resources.is_narcotic', true);
         } else {
             // General: no special flag required
@@ -176,17 +179,18 @@ public function store(Request $request)
         'request_id'         => 'required|exists:requests,id',
         'source_hospital_id' => 'required|exists:hospitals,id',
         'quantity'           => 'required|numeric|min:0.0001',
-        'handling_class'     => 'required|in:General,Cold Chain,Narcotics,High-Value',
+        'handling_class'     => ['required', Rule::in(HandlingClass::ACCEPTED)],
     ]);
 
     $originalRequest = \App\Models\Request::findOrFail($data['request_id']);
 
-    $dbClass = match ($data['handling_class']) {
-        'Cold Chain' => 'Cold Chain',
-        'High-Value' => 'High-Value',
-        'Narcotics'  => 'Narcotics',
-        default      => 'General',
-    };
+    if ((int) $originalRequest->hospital_id === (int) $data['source_hospital_id']) {
+        return response()->json([
+            'error' => 'Source hospital must differ from the requesting hospital.',
+        ], 422);
+    }
+
+    $dbClass = HandlingClass::forAllocation($data['handling_class']);
 
     $allocation = Allocation::create([
         'request_id'              => $data['request_id'],
@@ -209,7 +213,7 @@ public function store(Request $request)
     AuditLog::create([
         'user_id'        => auth()->id(),
         'action'         => 'CREATE_ALLOCATION',
-        'description'    => "Allocation #{$allocation->id} created",
+        'details'        => "Allocation #{$allocation->id} created",
         'auditable_type' => Allocation::class,
         'auditable_id'   => $allocation->id,
     ]);
@@ -261,12 +265,15 @@ public function assign(Request $request, Allocation $allocation)
     }
 
     $request->validate([
-        'asset_id'     => 'required|exists:assets,id',
+        'asset_id'     => 'required', // numeric id or asset_code (registry rows use the code)
         'responder_id' => 'required|exists:responders,id',
     ]);
 
     return DB::transaction(function () use ($request, $allocation) {
-        $asset     = Asset::findOrFail($request->asset_id);
+        $asset     = $this->resolveAsset($request->asset_id);
+        if (!$asset) {
+            return response()->json(['error' => 'Selected vehicle was not found.'], 422);
+        }
         $responder = Responder::findOrFail($request->responder_id);
 
         // 1. Asset must be available
@@ -280,20 +287,11 @@ public function assign(Request $request, Allocation $allocation)
         }
 
         // 3. Capability matching (this is the heart of Phase 3)
-        $requiredCapability = match ($allocation->handling_class) {
-            'HighValue'  => 'high_value',
-            'ColdChain'  => 'cold_chain',
-            'Narcotics'  => 'narcotics',
-            default      => 'general',
-        };
-
-        $assetCapabilities = array_map('strtolower', $asset->capabilities ?? []);
-        $requiredCapability = match ($allocation->handling_class) {
-            'HighValue'  => 'high_value',
-            'ColdChain'  => 'cold_chain',
-            'Narcotics'  => 'narcotics',
-            default      => 'general',
-        };
+        $assetCapabilities = array_map(
+            fn ($c) => HandlingClass::capability((string) $c),
+            (array) ($asset->capabilities ?? [])
+        );
+        $requiredCapability = HandlingClass::capability($allocation->handling_class);
 
         if (!in_array($requiredCapability, $assetCapabilities)) {
             return response()->json([
@@ -361,19 +359,105 @@ public function assign(Request $request, Allocation $allocation)
 }
 
 
+/**
+ * PATCH /api/allocations/{allocation}/reassign { asset_id, responder_id }
+ * Swap the vehicle/responder on an already-assigned allocation, releasing
+ * the previous pair.
+ */
+public function reassign(Request $request, Allocation $allocation)
+{
+    if (!in_array($allocation->status, ['logistics_assigned', 'confirmed'], true)) {
+        return response()->json(['error' => 'Only assigned allocations can be reassigned.'], 422);
+    }
+
+    $request->validate([
+        'asset_id'     => 'required', // numeric id or asset_code (registry rows use the code)
+        'responder_id' => 'required|exists:responders,id',
+    ]);
+
+    return DB::transaction(function () use ($request, $allocation) {
+        $current = $allocation->allocationVehicles()->latest('id')->first();
+
+        $asset     = $this->resolveAsset($request->asset_id);
+        if (!$asset) {
+            return response()->json(['error' => 'Selected vehicle was not found.'], 422);
+        }
+        $responder = Responder::findOrFail($request->responder_id);
+
+        $sameAsset     = $current && (int) $current->asset_id === (int) $asset->id;
+        $sameResponder = $current && (int) $current->responder_id === (int) $responder->id;
+
+        if (!$sameAsset && !in_array($asset->status, ['Operational', 'Standby'], true)) {
+            return response()->json(['error' => 'Selected vehicle is not available.'], 422);
+        }
+        if (!$sameResponder && ($responder->status !== 'Available' || $responder->current_asset_id !== null)) {
+            return response()->json(['error' => 'Selected responder is not available.'], 422);
+        }
+
+        $requiredCapability = HandlingClass::capability($allocation->handling_class);
+        $assetCapabilities = array_map(fn ($c) => HandlingClass::capability((string) $c), (array) ($asset->capabilities ?? []));
+        if (!in_array($requiredCapability, $assetCapabilities, true)) {
+            return response()->json(['error' => "Vehicle does not have required capability: {$requiredCapability}"], 422);
+        }
+
+        // Release the previous assignment.
+        if ($current) {
+            if (!$sameResponder && $current->responder) {
+                $current->responder->update(['status' => 'Available', 'current_asset_id' => null]);
+            }
+            if (!$sameAsset && $current->asset) {
+                $current->asset->update(['status' => 'Operational']);
+            }
+            $current->delete();
+        }
+
+        AllocationVehicle::create([
+            'allocation_id' => $allocation->id,
+            'asset_id'      => $asset->id,
+            'responder_id'  => $responder->id,
+            'assigned_by'   => auth()->id(),
+            'assigned_at'   => now(),
+        ]);
+
+        $asset->update(['status' => 'Standby']);
+        $responder->update(['status' => 'On Duty', 'current_asset_id' => $asset->id]);
+        $allocation->update([
+            'status'      => 'logistics_assigned',
+            'assigned_at' => now(),
+            'assigned_by' => auth()->id(),
+        ]);
+
+        AuditLog::create([
+            'user_id'        => auth()->id(),
+            'action'         => 'REASSIGN_LOGISTICS',
+            'details'        => "Reassigned vehicle {$asset->plate_number} and responder {$responder->full_name} to allocation #{$allocation->id}",
+            'auditable_type' => Allocation::class,
+            'auditable_id'   => $allocation->id,
+        ]);
+
+        return response()->json([
+            'message'    => 'Logistics reassigned successfully!',
+            'allocation' => $allocation->fresh()->load(['allocationVehicles.asset', 'allocationVehicles.responder']),
+        ]);
+    });
+}
+
+
 public function assignment($id)
 {
     $allocation = Allocation::with([
-        'allocationVehicle.asset',      
-        'allocationVehicle.responder'   
+        'allocationVehicles.asset',
+        'allocationVehicles.responder.user'
     ])->findOrFail($id);
 
-    if (!$allocation->allocationVehicle) {
+    $assignment = $allocation->allocationVehicles->sortByDesc('id')->first();
+
+    if (!$assignment) {
         return response()->json(['vehicle' => null, 'responder' => null]);
     }
 
-    $asset     = $allocation->allocationVehicle->asset;
-    $responder = $allocation->allocationVehicle->responder;
+    $asset     = $assignment->asset;
+    $responder = $assignment->responder;
 
     return response()->json([
         'vehicle' => $asset ? [
@@ -384,12 +468,12 @@ public function assignment($id)
             'model'             => $asset->model ?? 'N/A',
             'category'          => $asset->category,
             'manufacturer'      => $asset->manufacturer ?? 'N/A',
-            'year_manufactured' => $asset->year_manufactured,
+            'year_manufactured' => $asset->year,
             'capacity'          => $asset->capacity,
             'location'          => $asset->location ?? 'Not specified',
             'status'            => ucfirst(str_replace('_', ' ', $asset->status)),
             'condition'         => $asset->condition ?? 'Excellent',
-            'condition_rating'  => $asset->condition_rating ?? 85, 
+            'condition_rating'  => null,
             'capabilities'      => $asset->capabilities, 
             'last_maintenance'  => $asset->last_maintenance,
             'next_maintenance'  => $asset->next_maintenance,
@@ -402,7 +486,7 @@ public function assignment($id)
             'contact_number'       => $responder->contact_number,
             'email'                => $responder->user?->email ?? 'N/A',
             'license_number'       => $responder->license_number ?? 'Not provided',
-            'years_experience'     => $responder->years_experience ?? 5,
+            'years_experience'     => null,
             'status'               => ucfirst(str_replace('_', ' ', $responder->status)),
             'handling_capabilities'=> $responder->handling_capabilities,
             'certifications'       => $responder->certifications ?? [],
@@ -413,14 +497,43 @@ public function assignment($id)
 
 
 
+    private function resolveAsset($idOrCode): ?Asset
+    {
+        return Asset::where('asset_code', (string) $idOrCode)->first()
+            ?? (ctype_digit((string) $idOrCode) ? Asset::find((int) $idOrCode) : null);
+    }
+
     private function normalizeCapability(string $handlingClass): string
     {
-        return match ($handlingClass) {
-            'Cold Chain' => 'cold_chain',
-            'Narcotics'  => 'narcotics',
-            'High-Value' => 'high_value',
-            default      => 'general',
-        };
+        return HandlingClass::capability($handlingClass);
+    }
+
+    /**
+     * Record an in-app notification for the destination hospital's users
+     * when an allocation is planned for their request.
+     */
+    private function notifyAllocationCreated(Allocation $allocation): void
+    {
+        try {
+            $recipientIds = DB::table('hospital_user')
+                ->where('hospital_id', $allocation->destination_hospital_id)
+                ->pluck('user_id');
+
+            foreach ($recipientIds as $userId) {
+                NotificationLog::create([
+                    'type'            => 'allocation_created',
+                    'recipient_id'    => $userId,
+                    'notifiable_type' => Allocation::class,
+                    'notifiable_id'   => $allocation->id,
+                    'message'         => "An allocation of {$allocation->resource_type} has been planned for your request.",
+                    'channel'         => 'database',
+                    'status'          => 'sent',
+                    'sent_at'         => now(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('notifyAllocationCreated failed', ['error' => $e->getMessage()]);
+        }
     }
 
 
@@ -432,7 +545,7 @@ public function assignment($id)
         'allocations.*.request_id'          => 'required|exists:requests,id',
         'allocations.*.source_hospital_id'  => 'required|exists:hospitals,id',
         'allocations.*.quantity'            => 'required|numeric|min:0.0001',
-        'allocations.*.handling_class'      => 'required|in:General,Cold Chain,Narcotics,High-Value',
+        'allocations.*.handling_class'      => ['required', Rule::in(HandlingClass::ACCEPTED)],
     ]);
 
     $created = [];
@@ -445,12 +558,7 @@ public function assignment($id)
             continue; // or throw error
         }
 
-        $dbClass = match ($item['handling_class']) {
-            'Cold Chain' => 'Cold Chain',
-            'High-Value' => 'High-Value',
-            'Narcotics'  => 'Narcotics',
-            default      => 'General',
-        };
+        $dbClass = HandlingClass::forAllocation($item['handling_class']);
 
         $allocation = Allocation::create([
             'request_id'              => $item['request_id'],
@@ -468,7 +576,7 @@ public function assignment($id)
         AuditLog::create([
             'user_id'        => auth()->id(),
             'action'         => 'BULK_CREATE_ALLOCATION',
-            'description'    => "Bulk allocation #{$allocation->id} created",
+            'details'        => "Bulk allocation #{$allocation->id} created",
             'auditable_type' => Allocation::class,
             'auditable_id'   => $allocation->id,
             'ip_address'     => $request->ip(),
@@ -478,18 +586,17 @@ public function assignment($id)
         $created[] = $allocation;
     }
 
-return response()->json(
-    $allocation->load([
-        'request.hospital',
-        'sourceHospital',
-        'destinationHospital',
-        'request.resource'
-    ]),
-    201
-);
-
-
-
+    // Return every allocation created (the last one alone was returned before,
+    // and the response crashed when all rows were skipped).
+    return response()->json(
+        collect($created)->each->load([
+            'request.hospital',
+            'sourceHospital',
+            'destinationHospital',
+            'request.resource'
+        ])->values(),
+        201
+    );
 }
 
     // 6. Reject Suggestion 
@@ -510,11 +617,11 @@ public function suggestVehicle(Allocation $allocation)
 {
     $lat = $allocation->sourceHospital->latitude;
     $lng = $allocation->sourceHospital->longitude;
-    $handlingClass = $allocation->handling_class ?? 'General';
+    $capability = HandlingClass::capability($allocation->handling_class);
 
     $vehicle = Asset::query()
         ->where('status', 'Operational')
-        ->whereJsonContains('capabilities', $handlingClass)
+        ->whereJsonContains('capabilities', $capability)
         ->selectRaw("
             *, 
             (6371 * acos(
@@ -532,13 +639,13 @@ public function suggestVehicle(Allocation $allocation)
 
 public function suggestResponder(Allocation $allocation)
 {
-    $handlingClass = $allocation->handling_class ?? 'General';
+    $handlingClass = HandlingClass::canonical($allocation->handling_class);
 
     $responder = Responder::query()
         ->where('status', 'Available')
         ->whereNull('current_asset_id')
         ->whereJsonContains('handling_capabilities', $handlingClass)
-        ->with('homeDepot')
+        ->with('user:id,name,email,phone')
         ->inRandomOrder()
         ->first();
 
@@ -563,7 +670,7 @@ public function availableVehicles(Allocation $allocation, Request $request)
         ", [$lat, $lng, $lat]);
 
     if ($request->capability) {
-        $query->whereJsonContains('capabilities', $request->capability);
+        $query->whereJsonContains('capabilities', HandlingClass::capability($request->capability));
     }
 
     $vehicles = $query->orderBy('distance_km')->get();
@@ -582,7 +689,7 @@ public function availableResponders(Allocation $allocation, Request $request)
         ->whereNull('current_asset_id');
 
     if ($request->capability) {
-        $query->whereJsonContains('handling_capabilities', $request->capability);
+        $query->whereJsonContains('handling_capabilities', HandlingClass::canonical($request->capability));
     }
 
     return response()->json([
@@ -598,7 +705,7 @@ public function assignmentDetails($id)
         'destinationHospital',
         'allocationVehicles.asset',
         'allocationVehicles.responder.user',           // ← GIVES YOU EMAIL, PHOTO, ADDRESS, CITY, ZIP
-        'allocationVehicles.assignedByUser'
+        'allocationVehicles.assignedBy'
     ])
     ->findOrFail($id);
 
@@ -610,7 +717,7 @@ public function assignmentDetails($id)
 
 public function pendingCount()
 {
-    $count = Request::where('status', 'pending')->count();
+    $count = SupplyRequest::where('status', 'pending')->count();
     return response()->json(['count' => $count]);
 }
 

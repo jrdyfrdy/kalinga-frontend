@@ -96,13 +96,21 @@ const regenerateQr = async (userId) => {
  * @param {string} qrUid
  * @param {string} newStatus — 'active' | 'inactive'
  */
-const updateStatus = async (qrUid, newStatus) => {
+const updateStatus = async (qrUid, newStatus, actor = null) => {
   const dbStatus = toDbStatus(newStatus);
+  // Owners manage their own QR; admins/hospital admins/dispatchers manage any.
+  const canManageAny = actor && ['admin', 'hospital_admin', 'dispatcher'].includes(actor.role);
+  const params = [dbStatus, qrUid];
+  let ownerClause = '';
+  if (actor && !canManageAny) {
+    params.push(actor.id);
+    ownerClause = ` AND user_id = $${params.length}`;
+  }
   const { rows } = await pool.query(
     `UPDATE qr_codes SET status = $1, updated_at = NOW()
-     WHERE qr_token = $2
+     WHERE qr_token = $2${ownerClause}
      RETURNING id, user_id, qr_token, status, affiliation, created_at, updated_at`,
-    [dbStatus, qrUid]
+    params
   );
   if (!rows[0]) {
     throw Object.assign(new Error('QR not found'), { statusCode: 404 });

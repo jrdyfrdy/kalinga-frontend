@@ -5,6 +5,7 @@ import Layout from "../layouts/Layout";
 import Footer from "../components/responder/Footer";
 import "../styles/online-training.css";
 import Courses from "../components/responder/Courses";
+import { ROUTES } from "../config/routes";
 
 // Import icons from react-icons
 import {
@@ -376,10 +377,18 @@ const OnlineTraining = () => {
               enhanced their skills through Kalinga.
             </p>
             <div className="cta-actions">
-              <button className="btn-primary large">
+              <button
+                className="btn-primary large"
+                onClick={() => navigate(ROUTES.RESPONDER.MODULES)}
+              >
                 Get Started Today <FaArrowRight />
               </button>
-              <button className="btn-outline large">View All Courses</button>
+              <button
+                className="btn-outline large"
+                onClick={() => navigate(ROUTES.RESPONDER.MODULES)}
+              >
+                View All Courses
+              </button>
             </div>
           </div>
         </motion.section>

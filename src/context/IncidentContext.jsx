@@ -17,7 +17,7 @@ import {
   recordIncidentSocketReceipt,
 } from "../services/incidents";
 import { useRealtime } from "./RealtimeContext";
-import { getEchoInstance } from "../services/echo";
+import { subscribeChannel } from "../services/echo";
 import { INCIDENT_STATUS_PRIORITIES } from "../constants/incidentStatus";
 import { useAuth } from "./AuthContext";
 
@@ -408,21 +408,10 @@ export const IncidentProvider = ({ children }) => {
         const result = await ensureConnected();
         if (!result?.ok || !isMounted) return;
 
-        const echo = getEchoInstance?.();
-        if (!echo) return;
-
-        try {
-          echo.leave("incidents");
-        } catch (leaveError) {
-          console.warn(
-            "Unable to leave incidents channel before subscribing",
-            leaveError,
-          );
-        }
-
-        subscriptionRef.current = echo
-          .join("incidents")
-          .listen(".IncidentUpdated", (payload) => {
+        // Shared, ref-counted subscription: other screens (Response Mode,
+        // useIncidentEvents) listen on the same channel.
+        subscriptionRef.current = subscribeChannel("incidents", "presence", {
+          ".IncidentUpdated": (payload) => {
             if (!payload?.incident) return;
 
             const incomingIncident = payload.incident;
@@ -501,7 +490,8 @@ export const IncidentProvider = ({ children }) => {
             refreshTimerRef.current = setTimeout(() => {
               loadIncidents({ silent: true });
             }, INITIAL_REFRESH_INTERVAL_MS);
-          });
+          },
+        });
       } catch (error) {
         console.error("Failed to subscribe to incidents channel", error);
       }
@@ -512,12 +502,7 @@ export const IncidentProvider = ({ children }) => {
     return () => {
       isMounted = false;
       if (subscriptionRef.current) {
-        try {
-          const echo = getEchoInstance?.();
-          echo?.leave("incidents");
-        } catch (cleanupError) {
-          console.warn("Unable to cleanup incidents channel", cleanupError);
-        }
+        subscriptionRef.current();
         subscriptionRef.current = null;
       }
     };

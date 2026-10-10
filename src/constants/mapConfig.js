@@ -1,3 +1,4 @@
+import { resolveApiBaseUrl } from "../config/runtime";
 // Global constants for the mapping and pathfinding system
 export const KALINGA_CONFIG = {
   // Default fallback location (Rodriguez, Rizal Command Center)
@@ -23,7 +24,9 @@ export const KALINGA_CONFIG = {
   LOCATION_EXPIRY_HOURS: 24,
 
   // API endpoints
-  API_BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:8000",
+  // Same resolution as the axios client (src/services/api.js) so raw fetch()
+  // callers hit the right backend in production too.
+  API_BASE_URL: resolveApiBaseUrl(),
   OSRM_SERVER:
     import.meta.env.VITE_OSRM_SERVER || "https://router.project-osrm.org",
 };

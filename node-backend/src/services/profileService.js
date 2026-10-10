@@ -65,7 +65,9 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   const valid = await bcrypt.compare(currentPassword, normalizedHash);
   if (!valid) throw Object.assign(new Error('Current password is incorrect'), { statusCode: 400 });
 
-  const hash = await bcrypt.hash(newPassword, 10);
+  // Laravel's Hash::check only accepts the $2y$ bcrypt prefix (verify=true),
+  // so store hashes in that form; the digest is identical to $2b$.
+  const hash = (await bcrypt.hash(newPassword, 10)).replace(/^\$2[ab]\$/, '$2y$');
   await pool.query(
     'UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2',
     [hash, userId]
@@ -73,19 +75,25 @@ const changePassword = async (userId, currentPassword, newPassword) => {
   return true;
 };
 
-const getDevices = async (userId) => {
+const getDevices = async (userId, current = {}) => {
   const { rows } = await pool.query(
-    `SELECT id, device_name, device_type, location, ip_address, last_active, is_current_device
+    `SELECT id, device_name, device_type, location, ip_address, last_active
      FROM active_devices WHERE user_id = $1 ORDER BY last_active DESC`,
     [userId]
   );
-  return rows;
+  // is_current_device is computed per request; the stored column is never maintained.
+  return rows.map((row) => ({
+    ...row,
+    is_current_device: row.device_name === current.deviceName && row.ip_address === current.ipAddress,
+  }));
 };
 
-const removeDevice = async (userId, deviceId) => {
+const removeDevice = async (userId, deviceId, current = {}) => {
   const { rowCount } = await pool.query(
-    `DELETE FROM active_devices WHERE id = $1 AND user_id = $2 AND is_current_device = false`,
-    [deviceId, userId]
+    `DELETE FROM active_devices
+     WHERE id = $1 AND user_id = $2
+       AND NOT (device_name IS NOT DISTINCT FROM $3 AND ip_address IS NOT DISTINCT FROM $4)`,
+    [deviceId, userId, current.deviceName ?? null, current.ipAddress ?? null]
   );
   if (rowCount === 0) throw Object.assign(new Error('Device not found or is current device'), { statusCode: 400 });
   return true;

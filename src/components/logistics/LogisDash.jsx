@@ -22,7 +22,6 @@ import {
   BrainCircuit,
   Maximize2,
 } from "lucide-react";
-import { evacMapImg } from "@images";
 import { Link, useNavigate } from "react-router-dom";
 import resourceService from "../../services/resourceService";
 import {

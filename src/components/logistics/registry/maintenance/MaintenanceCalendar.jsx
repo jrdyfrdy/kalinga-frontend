@@ -1,7 +1,12 @@
 // src/components/logistics/registry/maintenance/MaintenanceCalendar.jsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Info, Edit, RefreshCw } from "lucide-react";
-import ScheduleMaintenanceDrawer from "./ScheduleMaintenanceDrawer"; 
+import ScheduleMaintenanceDrawer from "./ScheduleMaintenanceDrawer";
+import {
+  maintenanceCalendarService,
+  assetTypeIcons,
+  priorityColors,
+} from "@/services/maintenanceCalendarService";
 
 const MaintenanceCalendar = ({ maintenanceData, onRefresh, onQuickAction }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -111,10 +116,11 @@ const MaintenanceCalendar = ({ maintenanceData, onRefresh, onQuickAction }) => {
   const handleQuickStatusUpdate = async (maintenanceId, status) => {
     try {
       if (onQuickAction) {
-        await onQuickAction('complete', maintenanceId, { notes: 'Marked complete from calendar' });
+        const action = status === 'in-progress' ? 'start' : 'complete';
+        await onQuickAction(action, maintenanceId, { notes: 'Updated from calendar' });
       } else {
-        await mockAssetService.updateMaintenanceStatus(maintenanceId, status);
-        await fetchMaintenanceData();
+        await maintenanceCalendarService.updateMaintenanceStatus(maintenanceId, status);
+        await onRefresh?.();
       }
       setSelectedMaintenance(null);
     } catch (error) {

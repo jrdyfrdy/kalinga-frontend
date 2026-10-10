@@ -366,6 +366,43 @@ class ResourceController extends Controller
         ]);
     }
 
+    /** GET /api/resources/stats — dashboard summary. */
+    public function stats()
+    {
+        return response()->json([
+            'total'         => Resource::count(),
+            'critical'      => Resource::where(fn ($q) => $q->where('status', 'Critical')->orWhere('is_critical', true))->count(),
+            'lowStock'      => Resource::whereColumn('quantity', '<=', 'minimum_stock')->count(),
+            'outOfStock'    => Resource::where('quantity', '<=', 0)->count(),
+            'totalQuantity' => (float) Resource::sum('quantity'),
+            'expiringSoon'  => Resource::whereNotNull('expiry_date')
+                ->whereBetween('expiry_date', [now()->toDateString(), now()->addDays(30)->toDateString()])
+                ->count(),
+        ]);
+    }
+
+    /** GET /api/resources/by-facility — totals per hospital/location for charts. */
+    public function byFacility()
+    {
+        $rows = Resource::query()
+            ->leftJoin('hospitals', 'hospitals.id', '=', 'resources.hospital_id')
+            ->selectRaw("COALESCE(hospitals.name, resources.location, 'Unassigned') AS name")
+            ->selectRaw('resources.hospital_id')
+            ->selectRaw('SUM(resources.quantity) AS resources')
+            ->selectRaw('COUNT(resources.id) AS item_count')
+            ->groupByRaw("COALESCE(hospitals.name, resources.location, 'Unassigned'), resources.hospital_id")
+            ->orderByDesc('resources')
+            ->get()
+            ->map(fn ($r) => [
+                'name'        => $r->name,
+                'hospital_id' => $r->hospital_id,
+                'resources'   => (float) $r->resources,
+                'item_count'  => (int) $r->item_count,
+            ]);
+
+        return response()->json($rows);
+    }
+
     public function lowStock()
     {
         $resources = Resource::with('hospital')

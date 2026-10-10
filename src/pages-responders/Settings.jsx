@@ -22,6 +22,7 @@ import {
   FaVolumeUp,
 } from "react-icons/fa";
 import nodeApi from "../services/nodeApi";
+import api from "../services/api";
 
 function DutyStatusModal({ onClose }) {
   const [dutyStatus, setDutyStatus] = useState("on-duty");
@@ -208,10 +209,8 @@ function NotificationToneModal({ onClose }) {
   useEffect(() => {
     const fetchToneSettings = async () => {
       try {
-        // const response = await api.get("/notification-tone");
-        // setSelectedTone(response.data.tone);
-        // Simulated data
-        setSelectedTone("soft");
+        const response = await api.get("/notification-tone");
+        if (response.data?.tone) setSelectedTone(response.data.tone);
       } catch (error) {
         console.error("Error fetching tone settings:", error);
       }
@@ -222,8 +221,8 @@ function NotificationToneModal({ onClose }) {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // await api.post("/notification-tone", { tone: selectedTone });
-      alert(`Notification tone changed to ${selectedTone.toUpperCase()} (Simulated)`);
+      await api.post("/notification-tone", { tone: selectedTone });
+      alert(`Notification tone changed to ${selectedTone.toUpperCase()}`);
       onClose();
     } catch (error) {
       console.error("Error updating notification tone:", error);
@@ -348,7 +347,14 @@ function PriorityAlertsModal({ onClose }) {
 
   useEffect(() => {
     const fetchAlertSettings = async () => {
-      // Simulate fetching settings
+      try {
+        const response = await api.get("/notifications/alert-settings");
+        if (response.data && typeof response.data === "object") {
+          setAlertSettings((prev) => ({ ...prev, ...response.data }));
+        }
+      } catch (error) {
+        console.error("Error fetching alert settings:", error);
+      }
     };
     fetchAlertSettings();
   }, []);
@@ -363,8 +369,8 @@ function PriorityAlertsModal({ onClose }) {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // await api.post("/notifications/alert-settings", alertSettings);
-      alert("Alert settings saved successfully! (Simulated)");
+      await api.post("/notifications/alert-settings", alertSettings);
+      alert("Alert settings saved successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving alert settings:", error);
@@ -477,12 +483,12 @@ function MuteNotificationsModal({ onClose }) {
           selectedDuration === null ? d.unit === "permanent" : d.value === selectedDuration
       );
 
-      // await api.post("/notifications/mute", {
-      //   duration: duration.value,
-      //   unit: duration.unit,
-      // });
+      await api.post("/notifications/mute", {
+        duration: duration.value,
+        unit: duration.unit,
+      });
 
-      alert(`Notifications muted for ${duration.label.toLowerCase()} (Simulated)`);
+      alert(`Notifications muted for ${duration.label.toLowerCase()}`);
       onClose();
     } catch (error) {
       console.error("Error muting notifications:", error);
@@ -720,16 +726,18 @@ function LoggedInDevicesModal({ onClose }) {
   useEffect(() => {
     const fetchDevices = async () => {
       try {
-        const { data } = await nodeApi.get("/profile/devices");
+        // Laravel /devices lists real sessions (Sanctum tokens), so logging a
+        // device out actually revokes its access.
+        const { data } = await api.get("/devices");
         setDevices(
-          (data?.data || []).map((d) => ({
+          (Array.isArray(data) ? data : data?.data || []).map((d) => ({
             id: d.id,
             device_name: d.device_name,
             device_type: d.device_type || "desktop",
             location: d.location || "Unknown",
             ip_address: d.ip_address || "N/A",
             last_active: d.last_active,
-            is_current: d.is_current_device,
+            is_current: d.is_current ?? d.is_current_device,
           }))
         );
       } catch (error) {
@@ -756,7 +764,7 @@ function LoggedInDevicesModal({ onClose }) {
   const handleLogout = async (deviceId) => {
     if (window.confirm("Are you sure you want to log out this device?")) {
       try {
-        await nodeApi.delete(`/profile/devices/${deviceId}`);
+        await api.post(`/devices/${deviceId}/logout`);
         setDevices(devices.filter((d) => d.id !== deviceId));
       } catch (error) {
         console.error("Error logging out device:", error);

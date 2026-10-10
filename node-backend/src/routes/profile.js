@@ -3,6 +3,9 @@ import profileController from '../controllers/profileController.js';
 import { authenticate } from '../middleware/auth.js';
 import activityLogger from '../middleware/activityLogger.js';
 import multer from 'multer';
+import path from 'path';
+import crypto from 'crypto';
+import fs from 'fs';
 
 const router = Router();
 
@@ -11,8 +14,19 @@ const avatarFilter = (_req, file, cb) => {
   if (file.mimetype.startsWith('image/')) return cb(null, true);
   cb(Object.assign(new Error('Only image files are allowed'), { statusCode: 400 }), false);
 };
+export const AVATAR_DIR = path.resolve('uploads/avatars');
+fs.mkdirSync(AVATAR_DIR, { recursive: true });
+
+// Keep a real image extension so the file is served with the right Content-Type.
+const storage = multer.diskStorage({
+  destination: AVATAR_DIR,
+  filename: (req, file, cb) => {
+    const ext = (path.extname(file.originalname || '') || '.png').toLowerCase().replace(/[^.a-z0-9]/g, '');
+    cb(null, `${req.dbUser?.id ?? 'user'}-${crypto.randomUUID()}${ext}`);
+  },
+});
 const upload = multer({
-  dest: 'uploads/avatars/',
+  storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: avatarFilter,
 });

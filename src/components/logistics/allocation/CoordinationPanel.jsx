@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import allocationService from "@/services/allocationService";
+import api from "@/services/api";
 import MatchSuggestions from "./MatchSuggestions";
 
 // ==================== TOAST NOTIFICATION SYSTEM ====================
@@ -708,8 +709,19 @@ const CoordinationPanel = () => {
       }));
 
       try {
-        // Simulate API call - replace with actual bulkCreate
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Pick the closest hospital that can fulfil the request and create
+        // a planned allocation from it.
+        const { data: suggestions } = await allocationService.getSuggestions(requestId);
+        const best = (Array.isArray(suggestions) ? suggestions : []).find((m) => m.can_fulfill);
+        if (!best) {
+          throw new Error("No hospital with enough stock");
+        }
+        await allocationService.createAllocation({
+          request_id: requestId,
+          source_hospital_id: best.hospital_id,
+          quantity: request?.quantity,
+          handling_class: request?.handling_class || "General",
+        });
         success.push(requestId);
 
         addToast({
@@ -722,7 +734,9 @@ const CoordinationPanel = () => {
 
         addToast({
           title: "Allocation failed",
-          description: `${request?.resource_name} - ${request?.hospital?.name}`,
+          description: `${request?.resource_name} - ${request?.hospital?.name}: ${
+            err?.response?.data?.error || err?.response?.data?.message || err?.message || "error"
+          }`,
           variant: "destructive",
         });
       }
@@ -791,18 +805,20 @@ const CoordinationPanel = () => {
 
   const handleNotify = async (hospitalId, hospitalName) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await api.post(`/logistics/hospitals/${hospitalId}/notify`, {
+        title: "Logistics coordination",
+        message: `Logistics is coordinating your pending supply requests${hospitalName ? ` for ${hospitalName}` : ""}. Please review your requests.`,
+      });
 
       addToast({
         title: "Notification sent",
         description: `Hospital: ${hospitalName || hospitalId}`,
         variant: "success",
       });
-    } catch {
+    } catch (err) {
       addToast({
         title: "Notification failed",
-        description: "Please try again",
+        description: err?.response?.data?.message || "Please try again",
         variant: "destructive",
       });
     }
@@ -810,8 +826,8 @@ const CoordinationPanel = () => {
 
   const handleEscalate = async (requestId) => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await api.post(`/requests/${requestId}/escalate`);
+      fetchPending(false);
 
       addToast({
         title: "Request escalated",
@@ -819,10 +835,10 @@ const CoordinationPanel = () => {
         variant: "warning",
         persist: true,
       });
-    } catch {
+    } catch (err) {
       addToast({
         title: "Escalation failed",
-        description: "Please try again",
+        description: err?.response?.data?.error || "Please try again",
         variant: "destructive",
       });
     }

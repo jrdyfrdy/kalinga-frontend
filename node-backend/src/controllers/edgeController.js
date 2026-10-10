@@ -5,7 +5,10 @@ import { getIo } from '../realtime/io.js';
 const ingestPcrPayload = async (req, res, next) => {
   try {
     const edgeKey = req.headers['x-edge-key'];
-    if (!process.env.EDGE_DEVICE_API_KEY || edgeKey !== process.env.EDGE_DEVICE_API_KEY) {
+    const expected = Buffer.from(process.env.EDGE_DEVICE_API_KEY || '');
+    const provided = Buffer.from(typeof edgeKey === 'string' ? edgeKey : '');
+    if (!expected.length || provided.length !== expected.length
+        || !crypto.timingSafeEqual(provided, expected)) {
       return response.unauthorized(res, 'Unauthorized edge device.');
     }
 
@@ -32,14 +35,16 @@ const ingestPcrPayload = async (req, res, next) => {
       source: 'edge',
     };
 
+    // Deliver only to forms subscribed to this case/patient (once per socket).
+    // Broadcasting to everyone wrote one patient's vitals into other open PCRs.
     const io = getIo();
     if (io) {
-      io.emit('pcr:edge-vitals', payload);
-      if (payload.caseNo) {
-        io.to(`pcr:case:${payload.caseNo}`).emit('pcr:edge-vitals', payload);
-      }
-      if (payload.patientUuid) {
-        io.to(`pcr:patient:${payload.patientUuid}`).emit('pcr:edge-vitals', payload);
+      const rooms = [
+        payload.caseNo && `pcr:case:${payload.caseNo}`,
+        payload.patientUuid && `pcr:patient:${payload.patientUuid}`,
+      ].filter(Boolean);
+      if (rooms.length) {
+        io.to(rooms).emit('pcr:edge-vitals', payload);
       }
     }
 

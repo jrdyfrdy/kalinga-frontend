@@ -10,8 +10,8 @@ router.use(authenticate);
 // GET /api/account/status
 router.get('/status', accountController.getStatus);
 
-// PUT /api/account/verify      — admin/doh_officer
-router.put('/verify', requireRole(['admin', 'doh_officer']), accountController.verify);
+// PUT /api/account/verify      — admin/hospital_admin/dispatcher
+router.put('/verify', requireRole(['admin', 'hospital_admin', 'dispatcher']), accountController.verify);
 
 // PUT /api/account/deactivate  — admin or self
 router.put('/deactivate', accountController.deactivate);

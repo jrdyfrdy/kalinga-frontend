@@ -68,4 +68,14 @@ return [
         'secret' => env('RECAPTCHA_SECRET_KEY'),
     ],
 
+    // Node/Express backend (node-backend/), probed by the connectivity monitor.
+    'node_api' => [
+        'url' => env('NODE_API_URL', 'http://localhost:5000'),
+    ],
+
+    // Shared secret the EDGE scanner sends as X-Edge-Key (POST /api/sensor/vitals).
+    'edge' => [
+        'key' => env('EDGE_DEVICE_API_KEY'),
+    ],
+
 ];

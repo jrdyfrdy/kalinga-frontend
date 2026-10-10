@@ -32,13 +32,21 @@ const getById = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    const data = await respondersService.create(req.body);
+    const data = await respondersService.create(req.body, req.dbUser.id);
     return response.created(res, data);
   } catch (err) { next(err); }
 };
 
+const MANAGER_ROLES = ['admin', 'dispatcher', 'hospital_admin'];
+
 const update = async (req, res, next) => {
   try {
+    if (!MANAGER_ROLES.includes(req.dbUser.role)) {
+      const responder = await respondersService.getById(req.params.id);
+      if (String(responder.user_id) !== String(req.dbUser.id)) {
+        return response.forbidden(res, 'You can only update your own responder profile.');
+      }
+    }
     const data = await respondersService.update(req.params.id, req.body);
     return response.success(res, data, 'Responder updated');
   } catch (err) { next(err); }
@@ -48,6 +56,10 @@ const updateStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
     if (!status) return response.error(res, 'Status is required', 400);
+    // :id is a user id here — responders change their own duty status.
+    if (String(req.params.id) !== String(req.dbUser.id) && !MANAGER_ROLES.includes(req.dbUser.role)) {
+      return response.forbidden(res, 'You can only change your own duty status.');
+    }
     const data = await respondersService.updateStatusByUserId(req.params.id, status);
     return response.success(res, data, 'Duty status updated');
   } catch (err) { next(err); }

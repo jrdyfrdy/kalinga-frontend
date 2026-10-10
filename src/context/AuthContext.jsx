@@ -8,6 +8,7 @@ import {
 import authService from "../services/authService";
 
 import nodeApi from "../services/nodeApi";
+import { leaveAllSharedChannels } from "../services/echo";
 
 import { cleanupAuthStorage } from "../utils/storage";
 import { preloadCriticalData, resetPreloader } from "../lib/dataPreloader";
@@ -153,25 +154,21 @@ export const AuthProvider = ({ children }) => {
   }, [user, token]);
 
   const login = async (credentials) => {
-    try {
-      const data = await authService.login(credentials);
-      setUser(data.user);
-      setToken(data.token);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+    const data = await authService.login(credentials);
+    setUser(data.user);
+    setToken(data.token);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Preload critical data right after successful login
-      preloadCriticalData({ userRole: data.user.role });
+    // Preload critical data right after successful login
+    preloadCriticalData({ userRole: data.user.role });
 
-      // Record this device/browser in active_devices (fire-and-forget)
-      nodeApi
-        .post("/auth/record-device", { location: "Philippines" })
-        .catch(() => {});
+    // Record this device/browser in active_devices (fire-and-forget)
+    nodeApi
+      .post("/auth/record-device", { location: "Philippines" })
+      .catch(() => {});
 
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    return data;
   };
 
   const logout = async () => {
@@ -185,6 +182,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
 
+      // Drop realtime subscriptions tied to this session
+      leaveAllSharedChannels();
+
       // Clear all caches on logout
       clearCache();
       clearPersistedCache();
@@ -193,16 +193,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (userData) => {
-    try {
-      const data = await authService.register(userData);
-      setUser(data.user);
-      setToken(data.token);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    const data = await authService.register(userData);
+    setUser(data.user);
+    setToken(data.token);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    return data;
   };
 
   const setSession = useCallback((userData, authToken) => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { getEchoInstance, reconnectEcho } from "../services/echo";
+import { reconnectEcho, subscribeChannel } from "../services/echo";
 import { useRealtime } from "../context/RealtimeContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -43,24 +43,13 @@ export const useIncidentEvents = ({
         const result = await ensureConnected();
         if (!result?.ok || !isMounted) return;
 
-        const echo = getEchoInstance?.();
-        if (!echo) {
-          errorRef.current = "Echo instance not available";
-          return;
-        }
-
         reconnectEcho();
 
-        // Leave existing channel before rejoining
-        try {
-          echo.leave("incidents");
-        } catch (leaveError) {
-          // Ignore leave errors
-        }
-
-        subscriptionRef.current = echo
-          .join("incidents")
-          .listen(".IncidentUpdated", handleIncidentUpdate);
+        // Shared subscription; never leave the channel out from under
+        // IncidentContext or Response Mode.
+        subscriptionRef.current = subscribeChannel("incidents", "presence", {
+          ".IncidentUpdated": handleIncidentUpdate,
+        });
 
         isSubscribedRef.current = true;
         errorRef.current = null;
@@ -76,12 +65,7 @@ export const useIncidentEvents = ({
     return () => {
       isMounted = false;
       if (subscriptionRef.current) {
-        try {
-          const echo = getEchoInstance?.();
-          echo?.leave("incidents");
-        } catch (cleanupError) {
-          // Ignore cleanup errors
-        }
+        subscriptionRef.current();
         subscriptionRef.current = null;
         isSubscribedRef.current = false;
       }

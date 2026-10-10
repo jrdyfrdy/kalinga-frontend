@@ -22,7 +22,7 @@ import { ROUTES } from "../config/routes";
 import { useAuth } from "../context/AuthContext";
 import useConversationInsights from "../hooks/useConversationInsights";
 import { useRealtime } from "../context/RealtimeContext";
-import { getEchoInstance, reconnectEcho } from "../services/echo";
+import { getEchoInstance, reconnectEcho, subscribeChannel } from "../services/echo";
 import {
   insertMessageChronologically,
   normalizeMessage,
@@ -446,8 +446,8 @@ export default function ResponseMode() {
       return;
     }
 
-    let chatChannel;
-    let incidentsChannel;
+    let unsubscribeChat;
+    let unsubscribeIncidents;
     let cancelled = false;
 
     const subscribeToRealtime = async () => {
@@ -456,8 +456,7 @@ export default function ResponseMode() {
         return;
       }
 
-      const echoInstance = getEchoInstance?.();
-      if (!echoInstance) {
+      if (!getEchoInstance?.()) {
         return;
       }
 
@@ -466,8 +465,10 @@ export default function ResponseMode() {
       const chatChannelName = `chat.user.${user.id}`;
 
       try {
-        chatChannel = echoInstance.private(chatChannelName);
-        chatChannel.listen(".message.sent", (payload) => {
+        // Shared subscriptions: Messages and IncidentContext use the same
+        // channels, so only this screen's handlers are removed on cleanup.
+        unsubscribeChat = subscribeChannel(chatChannelName, "private", {
+          ".message.sent": (payload) => {
           if (!payload?.message) {
             return;
           }
@@ -532,14 +533,15 @@ export default function ResponseMode() {
             payload?.conversation ?? activeConversation,
           );
           appendRealtimeMessage(payload.message, participantName);
+          },
         });
       } catch (error) {
         console.error("Failed to subscribe to chat realtime channel", error);
       }
 
       try {
-        incidentsChannel = echoInstance.join("incidents");
-        incidentsChannel.listen(".IncidentUpdated", (payload) => {
+        unsubscribeIncidents = subscribeChannel("incidents", "presence", {
+          ".IncidentUpdated": (payload) => {
           if (!payload?.incident) {
             return;
           }
@@ -553,6 +555,7 @@ export default function ResponseMode() {
           }
 
           setIncident((prev) => ({ ...(prev ?? {}), ...payload.incident }));
+          },
         });
       } catch (error) {
         console.error(
@@ -567,21 +570,8 @@ export default function ResponseMode() {
     return () => {
       cancelled = true;
 
-      if (chatChannel) {
-        try {
-          chatChannel.stopListening(".message.sent");
-        } catch (error) {
-          console.warn("Failed to stop chat realtime listener", error);
-        }
-      }
-
-      if (incidentsChannel) {
-        try {
-          incidentsChannel.stopListening(".IncidentUpdated");
-        } catch (error) {
-          console.warn("Failed to stop incident realtime listener", error);
-        }
-      }
+      unsubscribeChat?.();
+      unsubscribeIncidents?.();
     };
   }, [
     incidentId,

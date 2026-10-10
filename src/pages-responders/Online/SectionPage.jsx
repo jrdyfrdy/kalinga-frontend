@@ -1,14 +1,62 @@
 // src/pages/Online/SectionPage.jsx
-import React, { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "../../layouts/Layout";
 import Footer from "../../components/responder/Footer";
 import courseContent from "../../data/courseContent"; // your existing data file
 import { markViewed, getProgress } from "../../lib/progress";
 
-export default function SectionPage({ sectionType }) {
-  const { id, slug } = useParams();
+const slugify = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+/**
+ * Flatten a course's sections into one ordered list of
+ * { slug, title, content, sectionType }. Supports both shapes used in
+ * courseContent: an array of { title } or { general|helpful|training: [...] }.
+ */
+const flattenSections = (sections) => {
+  if (Array.isArray(sections)) {
+    return sections.map((s, index) => ({
+      ...s,
+      slug: s.slug || slugify(s.title) || String(index + 1),
+      sectionType: "general",
+    }));
+  }
+  if (sections && typeof sections === "object") {
+    return ["general", "helpful", "training"].flatMap((type) =>
+      (sections[type] || []).map((s, index) => ({
+        ...s,
+        slug: s.slug || slugify(s.title) || String(index + 1),
+        sectionType: type,
+      })),
+    );
+  }
+  return [];
+};
+
+export default function SectionPage() {
+  // Route: /responder/modules/:id/section/:sectionSlug
+  const { id, sectionSlug } = useParams();
   const course = courseContent[id];
+
+  const list = useMemo(() => flattenSections(course?.sections), [course]);
+  const idx = list.findIndex((s) => s.slug === sectionSlug);
+  const item = idx >= 0 ? list[idx] : null;
+  const next = idx >= 0 ? list[idx + 1] : null;
+
+  // Hooks must run before any early return.
+  useEffect(() => {
+    if (!course || !item) return;
+    const grouped = list.reduce((acc, s) => {
+      (acc[s.sectionType] ||= []).push(s);
+      return acc;
+    }, {});
+    markViewed(id, item.sectionType, item.slug, grouped);
+  }, [id, course, item, list]);
+
   if (!course)
     return (
       <Layout>
@@ -17,8 +65,6 @@ export default function SectionPage({ sectionType }) {
       </Layout>
     );
 
-  const list = (course.sections && course.sections[sectionType]) || [];
-  const item = list.find((s) => s.slug === slug);
   if (!item)
     return (
       <Layout>
@@ -27,34 +73,8 @@ export default function SectionPage({ sectionType }) {
       </Layout>
     );
 
-  useEffect(() => {
-    // mark as viewed when user opens the page (you can change to require clicking "Mark complete")
-    markViewed(id, sectionType, slug, course.sections);
-  }, [id, sectionType, slug, course.sections]);
-
-  // find next element in same section
-  const idx = list.findIndex((s) => s.slug === slug);
-  const next = list[idx + 1];
-
-  // compute next URL if last in section
-  const nextUrlIfLast =
-    sectionType === "general"
-      ? `/responder/modules/${id}/helpful/${
-          (course.sections.helpful &&
-            course.sections.helpful[0] &&
-            course.sections.helpful[0].slug) ||
-          ""
-        }`
-      : sectionType === "helpful"
-      ? `/responder/modules/${id}/training/${
-          (course.sections.training &&
-            course.sections.training[0] &&
-            course.sections.training[0].slug) ||
-          ""
-        }`
-      : `/responder/modules/${id}`;
-
   const progress = getProgress(id);
+  const nextLocked = next && next.sectionType !== item.sectionType && !progress?.unlocked?.[next.sectionType];
 
   return (
     <Layout>
@@ -85,17 +105,16 @@ export default function SectionPage({ sectionType }) {
             Back
           </Link>
 
-          {next ? (
+          {next && !nextLocked ? (
             <Link
-              to={`/responder/modules/${id}/${sectionType}/${next.slug}`}
+              to={`/responder/modules/${id}/section/${next.slug}`}
               className="btn btn-primary"
             >
               Next
             </Link>
           ) : (
-            // if last in section, go to next section start (but respect locks)
-            <Link to={nextUrlIfLast} className="btn btn-primary">
-              Go to next section
+            <Link to={`/responder/modules/${id}`} className="btn btn-primary">
+              Back to course overview
             </Link>
           )}
         </div>

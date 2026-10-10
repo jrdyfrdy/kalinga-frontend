@@ -10,7 +10,7 @@ const getStatus = async (req, res, next) => {
 
 const verify = async (req, res, next) => {
   try {
-    // Admin/DOH Officer can verify any user; otherwise self only
+    // Route is restricted to admin/hospital_admin/dispatcher.
     const targetId = req.body.user_id || req.dbUser.id;
     const data = await accountService.verifyAccount(targetId);
     return response.success(res, data, 'Account verified');
@@ -20,6 +20,9 @@ const verify = async (req, res, next) => {
 const deactivate = async (req, res, next) => {
   try {
     const targetId = req.body.user_id || req.dbUser.id;
+    if (String(targetId) !== String(req.dbUser.id) && req.dbUser.role !== 'admin') {
+      return response.forbidden(res, 'You can only deactivate your own account.');
+    }
     const data = await accountService.deactivateAccount(targetId, req.body.reason);
     return response.success(res, data, 'Account deactivated');
   } catch (err) { next(err); }

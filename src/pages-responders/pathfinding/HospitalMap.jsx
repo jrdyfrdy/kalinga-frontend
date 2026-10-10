@@ -1635,11 +1635,13 @@ export default function HospitalMap({ embedded = false, className = "" }) {
           }`;
           icon = "🚀";
           break;
-        case "turn":
-          const direction = maneuver.modifier;
-          instruction = `Turn ${direction} onto ${step.name || "the road"}`;
+        case "turn": {
+          // OSRM omits `modifier` for some maneuvers.
+          const direction = maneuver.modifier || "";
+          instruction = `Turn ${direction} onto ${step.name || "the road"}`.replace(/\s+/g, " ");
           icon = direction.includes("left") ? "⬅️" : "➡️";
           break;
+        }
         case "merge":
           instruction = `Merge ${maneuver.modifier || ""} onto ${
             step.name || "the road"

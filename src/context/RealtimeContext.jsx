@@ -37,6 +37,16 @@ export const RealtimeProvider = ({ children }) => {
   const presenceActiveRef = useRef(false);
   const connectingPromiseRef = useRef(null);
   const heartbeatRef = useRef(null);
+  // Mirrors presenceStatus so ensureConnected stays referentially stable.
+  // (Depending on presenceStatus re-ran every consumer effect on each status
+  // change, causing an immediate leave/re-join loop on errors.)
+  const presenceStatusRef = useRef("idle");
+  const retryTimerRef = useRef(null);
+  const retryAttemptRef = useRef(0);
+
+  useEffect(() => {
+    presenceStatusRef.current = presenceStatus;
+  }, [presenceStatus]);
 
   const resetState = useCallback((status = "idle") => {
     presenceActiveRef.current = false;
@@ -105,7 +115,7 @@ export const RealtimeProvider = ({ children }) => {
       return Promise.resolve({ ok: false, reason: "unauthenticated" });
     }
 
-    if (presenceActiveRef.current && presenceStatus === "connected") {
+    if (presenceActiveRef.current && presenceStatusRef.current === "connected") {
       return Promise.resolve({ ok: true });
     }
 
@@ -196,26 +206,61 @@ export const RealtimeProvider = ({ children }) => {
     });
 
     return connectingPromiseRef.current;
-  }, [token, presenceStatus, resetState]);
+  }, [token, resetState]);
+
+  const clearRetry = useCallback(() => {
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
+    clearRetry();
+    retryAttemptRef.current = 0;
+
     if (!token) {
-      leaveChannel();
+      // The server marks the user offline on /logout; just drop the channel.
+      const echoInstance = getEchoInstance?.() || EchoClient;
+      try {
+        echoInstance?.leave("online");
+      } catch {
+        // ignore
+      }
+      presenceActiveRef.current = false;
+      stopHeartbeat();
       resetState("unauthenticated");
       return;
     }
 
     let isSubscribed = true;
 
-    ensureConnected().catch((error) => {
-      if (!isSubscribed) return;
-      console.error("Failed to establish realtime presence", error);
-    });
+    const attempt = () => {
+      ensureConnected()
+        .then((result) => {
+          if (!isSubscribed || result?.ok || result?.reason === "unauthenticated") {
+            if (result?.ok) retryAttemptRef.current = 0;
+            return;
+          }
+          // Exponential backoff (5s, 10s, 20s ... max 60s) instead of retrying
+          // in a tight loop when auth fails or Reverb is unreachable.
+          const delay = Math.min(60000, 5000 * 2 ** retryAttemptRef.current);
+          retryAttemptRef.current += 1;
+          retryTimerRef.current = setTimeout(attempt, delay);
+        })
+        .catch((error) => {
+          if (!isSubscribed) return;
+          console.error("Failed to establish realtime presence", error);
+        });
+    };
+
+    attempt();
 
     return () => {
       isSubscribed = false;
+      clearRetry();
     };
-  }, [token, ensureConnected, leaveChannel, resetState]);
+  }, [token, ensureConnected, resetState, stopHeartbeat, clearRetry]);
 
   useEffect(() => () => {
     leaveChannel();
@@ -229,12 +274,14 @@ export const RealtimeProvider = ({ children }) => {
     }
 
     stopHeartbeat();
-    if (presenceStatus !== "idle" && presenceStatus !== "connecting") {
+    // Only announce offline when a live session lost its presence channel;
+    // without a token the request would be rejected anyway.
+    if (token && (presenceStatus === "error" || presenceStatus === "disconnected")) {
       sendPresenceOffline();
     }
 
     return undefined;
-  }, [presenceStatus, sendPresenceOffline, startHeartbeat, stopHeartbeat]);
+  }, [presenceStatus, token, sendPresenceOffline, startHeartbeat, stopHeartbeat]);
 
   const contextValue = {
     presenceStatus,

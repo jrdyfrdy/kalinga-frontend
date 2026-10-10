@@ -112,12 +112,10 @@ export const LogisticsRoutes = () => (
     <Route
       path={ROUTES.LOGISTICS.HOSPITAL_SAFETY_INDEX}
       element={
-        <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
-          <Navigate
-            to={ROUTES.ADMIN.ROOT}
-            replace
-            state={{ adminSection: "hospital-safety" }}
-          />
+        // The Hospital Safety Index UI was retired (commit 367faa1); keep old
+        // links from landing on a dead admin section.
+        <ProtectedRoute allowedRoles={[ROLES.LOGISTICS, ROLES.ADMIN]}>
+          <Navigate to={ROUTES.LOGISTICS.DASHBOARD} replace />
         </ProtectedRoute>
       }
     />

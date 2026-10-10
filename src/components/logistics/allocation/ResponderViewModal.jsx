@@ -8,7 +8,6 @@ import {
   Activity, ThermometerSnowflake, ShieldCheck,
   ShieldAlert, Package, Star, BadgeCheck
 } from "lucide-react";
-import { useState } from "react";
 
 const ResponderViewModal = ({ responder, isOpen, onClose }) => {
   if (!isOpen || !responder) return null;
@@ -343,21 +342,32 @@ const ResponderViewModal = ({ responder, isOpen, onClose }) => {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200">
-            <button className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:opacity-90 transition-all duration-200 flex items-center gap-2">
+            <a
+              href={responder?.contact_number ? `tel:${responder.contact_number}` : undefined}
+              aria-disabled={!responder?.contact_number}
+              className={`px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:opacity-90 transition-all duration-200 flex items-center gap-2 ${
+                responder?.contact_number ? "" : "opacity-50 pointer-events-none"
+              }`}
+            >
               <PhoneCall size={20} />
               Call Responder
-            </button>
-            <button className="px-6 py-3 border-2 border-blue-300 text-blue-900 font-semibold rounded-xl hover:bg-blue-50 transition-all duration-200 flex items-center gap-2">
+            </a>
+            <a
+              href={responder?.contact_number ? `sms:${responder.contact_number}` : undefined}
+              aria-disabled={!responder?.contact_number}
+              className={`px-6 py-3 border-2 border-blue-300 text-blue-900 font-semibold rounded-xl hover:bg-blue-50 transition-all duration-200 flex items-center gap-2 ${
+                responder?.contact_number ? "" : "opacity-50 pointer-events-none"
+              }`}
+            >
               <MessageSquare size={20} />
               Send Message
-            </button>
-            <button className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center gap-2">
+            </a>
+            <button
+              onClick={() => window.print()}
+              className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
+            >
               <Printer size={20} />
               Print Profile
-            </button>
-            <button className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center gap-2 ml-auto">
-              <ExternalLink size={20} />
-              View Full History
             </button>
           </div>
         </div>

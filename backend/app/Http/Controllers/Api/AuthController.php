@@ -13,6 +13,21 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
+     * Issue a Sanctum token and remember where it was issued from so the
+     * Settings > Devices list can describe each session.
+     */
+    private function issueToken(User $user, Request $request, string $name = 'auth_token'): string
+    {
+        $result = $user->createToken($name);
+        $result->accessToken->forceFill([
+            'ip_address' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 1000),
+        ])->save();
+
+        return $result->plainTextToken;
+    }
+
+    /**
      * Register a new user
      */
     public function register(Request $request)
@@ -21,7 +36,9 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:patient,responder,admin,logistics',
+            // Self-registration is for patients only. Staff accounts (responder,
+            // logistics, admin, ...) are provisioned by an administrator.
+            'role' => 'sometimes|in:patient',
             'phone' => 'nullable|string|max:20',
         ]);
 
@@ -29,11 +46,11 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'role' => 'patient',
             'phone' => $request->phone,
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $this->issueToken($user, $request);
 
         return response()->json([
             'message' => 'User registered successfully',
@@ -66,7 +83,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $this->issueToken($user, $request);
 
         return response()->json([
             'message' => 'Login successful',
@@ -80,10 +97,46 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+        $user->currentAccessToken()->delete();
+
+        // Mark the user offline server-side: the client clears its token
+        // before it could send /presence/offline itself.
+        \Illuminate\Support\Facades\Cache::forget(User::presenceCacheKey($user->id));
 
         return response()->json([
             'message' => 'Logged out successfully',
+        ]);
+    }
+
+    /**
+     * Exchange a short-lived magic-link token for a regular session token.
+     * The magic-link token is revoked so the emailed link cannot be reused.
+     */
+    public function exchangeMagicLink(Request $request)
+    {
+        $user = $request->user();
+        $current = $user->currentAccessToken();
+
+        if (!$current || $current->name !== 'magic-link') {
+            return response()->json([
+                'message' => 'Only magic-link tokens can be exchanged.',
+            ], 422);
+        }
+
+        if (!$user->is_active) {
+            return response()->json([
+                'message' => 'Your account has been deactivated.',
+            ], 403);
+        }
+
+        $current->delete();
+        $token = $this->issueToken($user, $request);
+
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => $user,
+            'token' => $token,
         ]);
     }
 
@@ -110,7 +163,8 @@ class AuthController extends Controller
             // --- Fields from your User model ---
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
-            'role' => 'nullable|string|max:50', 
+            // 'role' is intentionally not accepted here: users must not be able
+            // to change their own role (admins use PUT /admin/users/{id}).
             'availability' => 'nullable|string|max:255',
             'language' => 'nullable|string|max:50',
             'theme' => 'nullable|string|max:50',
@@ -209,11 +263,17 @@ class AuthController extends Controller
         }
 
         // Update user with all verification information
+        // The users table stores a single full name and `dob`; there are no
+        // first/middle/last/birthday columns.
+        $fullName = trim(implode(' ', array_filter([
+            $request->first_name,
+            $request->middle_name,
+            $request->last_name,
+        ])));
+
         $user->update([
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'middle_name' => $request->middle_name,
-            'birthday' => $request->birthday,
+            'name' => $fullName ?: $user->name,
+            'dob' => $request->birthday,
             'contact_number' => $request->contact_number,
             'address' => $request->address,
             'id_type' => $request->id_type,
@@ -300,9 +360,30 @@ class AuthController extends Controller
 
         $validatedData = $validator->validated();
 
-        if (isset($validatedData['phoneNumber'])) {
-            $validatedData['phone'] = $validatedData['phoneNumber'];
-            unset($validatedData['phoneNumber']);
+        // Map split-name/birthday inputs onto real columns (name, dob).
+        $nameParts = array_filter([
+            $validatedData['first_name'] ?? null,
+            $validatedData['middle_name'] ?? null,
+            $validatedData['last_name'] ?? null,
+        ]);
+        if (!empty($nameParts) && empty($validatedData['name'])) {
+            $validatedData['name'] = implode(' ', $nameParts);
+        }
+        if (!empty($validatedData['birthday'])) {
+            $validatedData['dob'] = $validatedData['birthday'];
+        }
+        unset(
+            $validatedData['first_name'],
+            $validatedData['middle_name'],
+            $validatedData['last_name'],
+            $validatedData['birthday'],
+        );
+
+        if (isset($validatedData['role'])) {
+            $allowedRoles = ['patient', 'responder', 'admin', 'logistics', 'hospital_admin', 'dispatcher', 'procurement'];
+            if (!in_array($validatedData['role'], $allowedRoles, true)) {
+                return response()->json(['role' => ['Invalid role.']], 422);
+            }
         }
 
         $user->update($validatedData);

@@ -122,6 +122,11 @@ export default function EmergencyNotifications() {
       setSelectedStatus((prev) => ({ ...prev, [incidentId]: "" }));
     } catch (err) {
       console.error("Failed to update incident status", err);
+      alert(
+        err?.response?.status === 403
+          ? "Join this incident before updating its status."
+          : err?.response?.data?.message || "Failed to update the incident status.",
+      );
     } finally {
       setUpdating((prev) => ({ ...prev, [incidentId]: false }));
     }
