@@ -15,18 +15,18 @@ router.get('/stats', optionalAuth, triageController.getStats);
 router.get('/patients', optionalAuth, triageController.getPatients);
 
 // POST /api/triage/patient       — admit new patient to triage
-router.post('/patient', authenticate, requireRole(['admin', 'doh_officer', 'responder']), triageController.addPatient);
+router.post('/patient', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher', 'responder']), triageController.addPatient);
 
 // PUT  /api/triage/patient/:id   — update triage status
-router.put('/patient/:id', authenticate, requireRole(['admin', 'doh_officer', 'responder']), triageController.updatePatient);
+router.put('/patient/:id', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher', 'responder']), triageController.updatePatient);
 
 // GET  /api/triage/:id           — triage summary for a specific hospital
 router.get('/:id', optionalAuth, triageController.getById);
 
 // POST /api/triage               — create triage case
-router.post('/', authenticate, requireRole(['admin', 'doh_officer', 'responder']), triageController.createCase);
+router.post('/', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher', 'responder']), triageController.createCase);
 
 // PUT  /api/triage/:id           — update triage case
-router.put('/:id', authenticate, requireRole(['admin', 'doh_officer', 'responder']), triageController.updateCase);
+router.put('/:id', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher', 'responder']), triageController.updateCase);
 
 export default router;

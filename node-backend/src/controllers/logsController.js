@@ -27,7 +27,7 @@ const create = async (req, res, next) => {
 
 /**
  * GET /api/logs/:userId
- * Return paginated activity_logs for a user (self or admin/doh_officer).
+ * Return paginated activity_logs for a user (self or admin/hospital_admin/dispatcher).
  */
 const getByUser = async (req, res, next) => {
   try {
@@ -37,7 +37,7 @@ const getByUser = async (req, res, next) => {
     }
 
     const role = req.dbUser.role;
-    if (String(req.dbUser.id) !== String(targetId) && !['admin', 'doh_officer'].includes(role)) {
+    if (String(req.dbUser.id) !== String(targetId) && !['admin', 'hospital_admin', 'dispatcher'].includes(role)) {
       return response.error(res, 'Forbidden', 403);
     }
 

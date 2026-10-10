@@ -6,10 +6,12 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { Server } from 'socket.io';
+import path from 'path';
 
 import apiRoutes from './src/routes/index.js';
 import { errorHandler, notFound, requestLogger } from './src/middleware/errorHandler.js';
 import { setIo } from './src/realtime/io.js';
+import { resolveUserFromToken } from './src/middleware/auth.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -74,6 +76,9 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ─── Uploaded files (avatars) ──────────────────────────────────────────────────
+app.use('/uploads', express.static(path.resolve('uploads'), { fallthrough: true, index: false }));
+
 // ─── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api', apiRoutes);
 
@@ -92,8 +97,28 @@ const io = new Server(httpServer, {
 
 setIo(io);
 
+// Live vitals are patient data: require a valid Sanctum/JWT token on connect.
+const VITALS_ROLES = ['responder', 'admin', 'hospital_admin', 'dispatcher'];
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token
+      || (socket.handshake.headers?.authorization || '').replace(/^Bearer\s+/i, '');
+    const user = await resolveUserFromToken(token);
+    if (!user) return next(new Error('unauthorized'));
+    socket.data.user = user;
+    return next();
+  } catch {
+    return next(new Error('unauthorized'));
+  }
+});
+
 io.on('connection', (socket) => {
   socket.on('pcr:subscribe', ({ caseNo, patientUuid } = {}) => {
+    if (!VITALS_ROLES.includes(socket.data.user?.role)) return;
+    // A form may switch cases; only stay in the rooms for the current one.
+    for (const room of socket.rooms) {
+      if (room.startsWith('pcr:')) socket.leave(room);
+    }
     if (caseNo) {
       socket.join(`pcr:case:${caseNo}`);
     }

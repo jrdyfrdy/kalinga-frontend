@@ -20,8 +20,8 @@ router.put('/read-all', notificationsController.markAllAsRead);
 // PUT /api/notifications/:id/read — mark single as read
 router.put('/:id/read', notificationsController.markAsRead);
 
-// POST /api/notifications         — create (admin/doh_officer only)
-router.post('/', requireRole(['admin', 'doh_officer']), notificationsController.createNotification);
+// POST /api/notifications         — create (admin/hospital_admin/dispatcher only)
+router.post('/', requireRole(['admin', 'hospital_admin', 'dispatcher']), notificationsController.createNotification);
 
 // DELETE /api/notifications/:id
 router.delete('/:id', notificationsController.deleteNotification);

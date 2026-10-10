@@ -4,6 +4,8 @@ import morgan from 'morgan';
  * Central error-handling middleware.
  * Must be registered AFTER all routes in server.js.
  */
+// Express identifies error middleware by its 4-argument signature.
+// eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
   console.error(`[ERROR] ${req.method} ${req.path}`, err);
 

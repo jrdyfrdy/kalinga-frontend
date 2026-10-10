@@ -12,10 +12,10 @@ router.get('/', optionalAuth, reportsController.getAll);
 router.get('/:id', optionalAuth, reportsController.getById);
 
 // POST   /api/reports
-router.post('/', authenticate, requireRole(['admin', 'doh_officer', 'responder']), reportsController.create);
+router.post('/', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher', 'responder']), reportsController.create);
 
 // PUT    /api/reports/:id
-router.put('/:id', authenticate, requireRole(['admin', 'doh_officer']), reportsController.update);
+router.put('/:id', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher']), reportsController.update);
 
 // DELETE /api/reports/:id
 router.delete('/:id', authenticate, requireRole(['admin']), reportsController.remove);

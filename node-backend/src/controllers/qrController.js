@@ -17,8 +17,8 @@ const bind = async (req, res, next) => {
       return response.error(res, 'user_id is required', 400);
     }
 
-    // Only self or admin/doh_officer may bind for another user
-    if (String(req.dbUser.id) !== String(userId) && !['admin', 'doh_officer'].includes(req.dbUser.role)) {
+    // Only self or admin/hospital_admin/dispatcher may bind for another user
+    if (String(req.dbUser.id) !== String(userId) && !['admin', 'hospital_admin', 'dispatcher'].includes(req.dbUser.role)) {
       return response.error(res, 'Forbidden', 403);
     }
 
@@ -51,9 +51,9 @@ const getByUser = async (req, res, next) => {
       return response.error(res, 'Invalid userId', 400);
     }
 
-    // Users may only fetch their own QR unless they are admin/doh_officer
+    // Users may only fetch their own QR unless they are admin/hospital_admin/dispatcher
     const role = req.dbUser.role;
-    if (String(req.dbUser.id) !== String(targetId) && !['admin', 'doh_officer'].includes(role)) {
+    if (String(req.dbUser.id) !== String(targetId) && !['admin', 'hospital_admin', 'dispatcher'].includes(role)) {
       return response.error(res, 'Forbidden', 403);
     }
 
@@ -131,7 +131,7 @@ const updateStatus = async (req, res, next) => {
       return response.error(res, 'status must be active or inactive', 400);
     }
 
-    const data = await qrService.updateStatus(qr_uid.trim(), status);
+    const data = await qrService.updateStatus(qr_uid.trim(), status, req.dbUser);
 
     logsService.writeLog(req.dbUser.id, 'qr_status_update', {
       entityType: 'qr_codes',
