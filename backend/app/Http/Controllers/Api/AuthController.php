@@ -13,6 +13,21 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
+     * Issue a Sanctum token and remember where it was issued from so the
+     * Settings > Devices list can describe each session.
+     */
+    private function issueToken(User $user, Request $request, string $name = 'auth_token'): string
+    {
+        $result = $user->createToken($name);
+        $result->accessToken->forceFill([
+            'ip_address' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 1000),
+        ])->save();
+
+        return $result->plainTextToken;
+    }
+
+    /**
      * Register a new user
      */
     public function register(Request $request)
@@ -35,7 +50,7 @@ class AuthController extends Controller
             'phone' => $request->phone,
         ]);
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $this->issueToken($user, $request);
 
         return response()->json([
             'message' => 'User registered successfully',
@@ -68,7 +83,7 @@ class AuthController extends Controller
             ], 403);
         }
 
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $this->issueToken($user, $request);
 
         return response()->json([
             'message' => 'Login successful',
@@ -111,7 +126,7 @@ class AuthController extends Controller
         }
 
         $current->delete();
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $token = $this->issueToken($user, $request);
 
         return response()->json([
             'message' => 'Login successful',

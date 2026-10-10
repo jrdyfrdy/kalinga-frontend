@@ -29,6 +29,11 @@ use App\Http\Controllers\Api\ForecastController;
 use App\Http\Controllers\Api\SensorDataController;
 use App\Http\Controllers\Api\PatientCareReportController;
 use App\Http\Controllers\Api\HealthSimulatorController;
+use App\Http\Controllers\Api\MaintenanceController;
+use App\Http\Controllers\Api\UserSettingsController;
+use App\Http\Controllers\Api\LogisticsReportController;
+use App\Http\Controllers\Api\EvacuationCenterController;
+use App\Http\Controllers\Api\ConnectivityController;
 
 
 use Illuminate\Http\Request;
@@ -456,6 +461,28 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/verify-id', [AuthController::class, 'verifyId']);
     Route::post('/submit-verification', [AuthController::class, 'submitVerification']);
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->whereNumber('id');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+
+    // Per-user preferences, password and sessions (patient + responder Settings)
+    Route::get('/notifications/other-settings', [UserSettingsController::class, 'getOtherNotifications']);
+    Route::post('/notifications/other-settings', [UserSettingsController::class, 'saveOtherNotifications']);
+    Route::get('/notifications/alert-settings', [UserSettingsController::class, 'getAlertSettings']);
+    Route::post('/notifications/alert-settings', [UserSettingsController::class, 'saveAlertSettings']);
+    Route::get('/notifications/mute', [UserSettingsController::class, 'getMute']);
+    Route::post('/notifications/mute', [UserSettingsController::class, 'mute']);
+    Route::delete('/notifications/mute', [UserSettingsController::class, 'unmute']);
+    Route::get('/notification-tone', [UserSettingsController::class, 'getNotificationTone']);
+    Route::post('/notification-tone', [UserSettingsController::class, 'saveNotificationTone']);
+    Route::get('/appointments/settings', [UserSettingsController::class, 'getAppointmentSettings']);
+    Route::post('/appointments/settings', [UserSettingsController::class, 'saveAppointmentSettings']);
+    Route::post('/change-password', [UserSettingsController::class, 'changePassword']);
+    Route::get('/devices', [UserSettingsController::class, 'devices']);
+    Route::post('/devices/{id}/logout', [UserSettingsController::class, 'logoutDevice'])->whereNumber('id');
+
+    // Evacuation centers (read for every signed-in user; writes are admin-only below)
+    Route::get('/evacuation-centers', [EvacuationCenterController::class, 'index']);
+    Route::get('/evacuation-centers/{evacuationCenter}', [EvacuationCenterController::class, 'show']);
     Route::post('/route-logs', [RouteLogController::class, 'store']);
     Route::post('/route-logs/{routeLog}/deviations', [RouteLogController::class, 'storeDeviation']);
     Route::get('/route-logs', [RouteLogController::class, 'index']);
@@ -476,6 +503,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/admin/verifications/{id}/approve', [VerificationController::class, 'approve']);
         Route::post('/admin/verifications/{id}/reject', [VerificationController::class, 'reject']);
         Route::post('/notifications', [NotificationController::class, 'store']);
+
+        Route::get('/admin/connectivity/status', [ConnectivityController::class, 'status']);
+
+        Route::post('/evacuation-centers', [EvacuationCenterController::class, 'store']);
+        Route::put('/evacuation-centers/{evacuationCenter}', [EvacuationCenterController::class, 'update']);
+        Route::delete('/evacuation-centers/{evacuationCenter}', [EvacuationCenterController::class, 'destroy']);
+
+        // Admin logistics overview lists
+        Route::get('/incoming-requests', [LogisticsReportController::class, 'incoming']);
+        Route::get('/outgoing-requests', [LogisticsReportController::class, 'outgoing']);
+        Route::get('/allocation-history', [LogisticsReportController::class, 'history']);
     });
 
     // Admin and Logistics routes
@@ -519,7 +557,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::delete('/allocations/{allocation}/reject', [AllocationController::class, 'rejectSuggestion']);
 
             Route::prefix('allocations')->group(function () {
-            Route::patch('{allocation}/assign', [AllocationController::class, 'assign']); });
+            Route::patch('{allocation}/assign', [AllocationController::class, 'assign']);
+            Route::patch('{allocation}/reassign', [AllocationController::class, 'reassign']); });
 
              Route::get('/allocations/{id}/assignment-details', [AllocationController::class, 'assignmentDetails'])
             ->name('allocations.assignment-details');
@@ -545,6 +584,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::post('assets/{code}/adjust-stock', [AssetController::class, 'adjustStock']);
             Route::apiResource('assets', AssetController::class)->parameters(['assets' => 'code']);
 
+            // Asset maintenance (registry Maintenance tab / calendar)
+            Route::get('/maintenance', [MaintenanceController::class, 'index']);
+            Route::post('/maintenance', [MaintenanceController::class, 'store']);
+            Route::post('/maintenance/{id}/reschedule', [MaintenanceController::class, 'reschedule']);
+            Route::post('/maintenance/{id}/complete', [MaintenanceController::class, 'complete']);
+            Route::patch('/maintenance/{id}/status', [MaintenanceController::class, 'updateStatus']);
+
 
 
         // Calendar & History Routes (from your calendar feature)
@@ -552,6 +598,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/resources/calendar/events/{date}', [ResourceController::class, 'dateEvents']);
         Route::get('/resources/{resource}/history', [ResourceController::class, 'resourceHistory']);
         Route::get('/resources/stock-movements', [ResourceController::class, 'stockMovements']);
+        Route::put('/resources/stock-movements/{id}', [ResourceController::class, 'updateStockMovement']);
+        Route::get('/resources/stats', [ResourceController::class, 'stats']);
+        Route::get('/resources/by-facility', [ResourceController::class, 'byFacility']);
         
         // Stock adjustment (from your calendar feature)
         Route::post('/resources/{id}/adjust-stock', [ResourceController::class, 'adjustStock']);
@@ -617,6 +666,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Shared read-only situational awareness (patients need visibility too)
     Route::middleware(['role:admin,responder,logistics,patient'])->group(function () {
         Route::get('/incidents', [IncidentApiController::class, 'index']);
+        Route::post('/incidents', [IncidentApiController::class, 'store'])->middleware('throttle:10,1');
         Route::get('/incidents/{incident}', [IncidentApiController::class, 'show']);
         Route::get('/incidents/{incident}/history', [IncidentApiController::class, 'history']);
         // Patients get only their own incident's thread (enforced in the controller).

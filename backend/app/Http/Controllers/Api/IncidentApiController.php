@@ -74,6 +74,109 @@ class IncidentApiController extends Controller
         return IncidentResource::collection($incidents);
     }
 
+    /**
+     * POST /api/incidents — one-tap patient SOS (src/components/emergency-sos/Report.jsx).
+     * Payload: { location: {latitude, longitude, accuracy?}, locationError?, triggeredAt?,
+     *            type?, description?, address? }
+     */
+    public function store(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'type'                => ['nullable', 'string', 'max:100'],
+            'description'         => ['nullable', 'string', 'max:5000'],
+            'address'             => ['nullable', 'string', 'max:255'],
+            'location'            => ['nullable', 'array'],
+            'location.latitude'   => ['nullable', 'numeric', 'between:-90,90'],
+            'location.longitude'  => ['nullable', 'numeric', 'between:-180,180'],
+            'location.accuracy'   => ['nullable', 'numeric', 'min:0'],
+            'locationError'       => ['nullable', 'string', 'max:500'],
+            'triggeredAt'         => ['nullable', 'date'],
+            'responders_required' => ['nullable', 'integer', 'min:1', 'max:10'],
+        ]);
+
+        // Don't open a second incident while the patient already has an active one.
+        $active = Incident::where('user_id', $user->id)
+            ->whereNotIn('status', [Incident::STATUS_RESOLVED, Incident::STATUS_CANCELLED])
+            ->latest()
+            ->first();
+        if ($active) {
+            return response()->json([
+                'message'  => 'You already have an active emergency. Responders have been notified.',
+                'incident' => $active,
+                'existing' => true,
+            ]);
+        }
+
+        $lat = $validated['location']['latitude'] ?? null;
+        $lng = $validated['location']['longitude'] ?? null;
+        $hasCoords = $lat !== null && $lng !== null;
+
+        $latlng = $hasCoords
+            ? sprintf('%.6f,%.6f', $lat, $lng)
+            : (string) config('services.maps.default_latlng', '14.599512,120.984222');
+        $locationLabel = $validated['address']
+            ?? ($hasCoords ? $latlng : (string) config('services.maps.default_location_label', 'Location not provided'));
+
+        $descriptionParts = array_filter([
+            $validated['description'] ?? 'Emergency SOS triggered from the patient app.',
+            isset($validated['location']['accuracy']) ? 'GPS accuracy: ±' . round($validated['location']['accuracy']) . ' m' : null,
+            !$hasCoords ? 'Approximate location used (device location unavailable' . (!empty($validated['locationError']) ? ': ' . $validated['locationError'] : '') . ').' : null,
+        ]);
+
+        $incident = DB::transaction(function () use ($user, $validated, $latlng, $locationLabel, $descriptionParts) {
+            $incident = Incident::create([
+                'type'                => $validated['type'] ?? 'Emergency SOS',
+                'location'            => $locationLabel,
+                'latlng'              => $latlng,
+                'description'         => implode("\n", $descriptionParts),
+                'user_id'             => $user->id,
+                'status'              => Incident::STATUS_REPORTED,
+                'responders_required' => $validated['responders_required'] ?? 1,
+            ]);
+
+            $incident->statusUpdates()->create([
+                'user_id' => $user->id,
+                'status'  => Incident::STATUS_REPORTED,
+                'notes'   => 'Emergency SOS created from the patient app.',
+            ]);
+
+            return $incident;
+        });
+
+        // Best-effort: assign the best available, online responder.
+        $assigned = null;
+        try {
+            $best = $this->smartRoutingService->autoAssignBestResponder($incident);
+            if ($best) {
+                $responderUser = User::with('responder')->find($best['responder_id']);
+                if ($responderUser && $responderUser->isResponderAvailable()) {
+                    $incident->assignToResponder($responderUser->id);
+                    $assigned = $responderUser->only(['id', 'name']);
+                }
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $incident->refresh();
+
+        try {
+            broadcast(new IncidentUpdated($incident))->toOthers();
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return response()->json([
+            'message'            => $assigned
+                ? 'Emergency alert sent. A responder has been assigned.'
+                : 'Emergency alert sent. Dispatch will assign the nearest available responder.',
+            'incident'           => $incident,
+            'assigned_responder' => $assigned,
+        ], 201);
+    }
+
     public function show(Request $request, Incident $incident)
     {
         $incident->load([

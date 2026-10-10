@@ -356,6 +356,87 @@ public function assign(Request $request, Allocation $allocation)
 }
 
 
+/**
+ * PATCH /api/allocations/{allocation}/reassign { asset_id, responder_id }
+ * Swap the vehicle/responder on an already-assigned allocation, releasing
+ * the previous pair.
+ */
+public function reassign(Request $request, Allocation $allocation)
+{
+    if (!in_array($allocation->status, ['logistics_assigned', 'confirmed'], true)) {
+        return response()->json(['error' => 'Only assigned allocations can be reassigned.'], 422);
+    }
+
+    $request->validate([
+        'asset_id'     => 'required|exists:assets,id',
+        'responder_id' => 'required|exists:responders,id',
+    ]);
+
+    return DB::transaction(function () use ($request, $allocation) {
+        $current = $allocation->allocationVehicles()->latest('id')->first();
+
+        $asset     = Asset::findOrFail($request->asset_id);
+        $responder = Responder::findOrFail($request->responder_id);
+
+        $sameAsset     = $current && (int) $current->asset_id === (int) $asset->id;
+        $sameResponder = $current && (int) $current->responder_id === (int) $responder->id;
+
+        if (!$sameAsset && !in_array($asset->status, ['Operational', 'Standby'], true)) {
+            return response()->json(['error' => 'Selected vehicle is not available.'], 422);
+        }
+        if (!$sameResponder && ($responder->status !== 'Available' || $responder->current_asset_id !== null)) {
+            return response()->json(['error' => 'Selected responder is not available.'], 422);
+        }
+
+        $requiredCapability = HandlingClass::capability($allocation->handling_class);
+        $assetCapabilities = array_map(fn ($c) => HandlingClass::capability((string) $c), (array) ($asset->capabilities ?? []));
+        if (!in_array($requiredCapability, $assetCapabilities, true)) {
+            return response()->json(['error' => "Vehicle does not have required capability: {$requiredCapability}"], 422);
+        }
+
+        // Release the previous assignment.
+        if ($current) {
+            if (!$sameResponder && $current->responder) {
+                $current->responder->update(['status' => 'Available', 'current_asset_id' => null]);
+            }
+            if (!$sameAsset && $current->asset) {
+                $current->asset->update(['status' => 'Operational']);
+            }
+            $current->delete();
+        }
+
+        AllocationVehicle::create([
+            'allocation_id' => $allocation->id,
+            'asset_id'      => $asset->id,
+            'responder_id'  => $responder->id,
+            'assigned_by'   => auth()->id(),
+            'assigned_at'   => now(),
+        ]);
+
+        $asset->update(['status' => 'Standby']);
+        $responder->update(['status' => 'On Duty', 'current_asset_id' => $asset->id]);
+        $allocation->update([
+            'status'      => 'logistics_assigned',
+            'assigned_at' => now(),
+            'assigned_by' => auth()->id(),
+        ]);
+
+        AuditLog::create([
+            'user_id'        => auth()->id(),
+            'action'         => 'REASSIGN_LOGISTICS',
+            'details'        => "Reassigned vehicle {$asset->plate_number} and responder {$responder->full_name} to allocation #{$allocation->id}",
+            'auditable_type' => Allocation::class,
+            'auditable_id'   => $allocation->id,
+        ]);
+
+        return response()->json([
+            'message'    => 'Logistics reassigned successfully!',
+            'allocation' => $allocation->fresh()->load(['allocationVehicles.asset', 'allocationVehicles.responder']),
+        ]);
+    });
+}
+
+
 public function assignment($id)
 {
     $allocation = Allocation::with([
