@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
+import { resolveApiBaseUrl } from "../config/runtime";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  (typeof window !== "undefined" ? window.location.origin : "");
+const API_BASE_URL = resolveApiBaseUrl();
 
 export function useReverseGeocode(lat, lng) {
   const [address, setAddress] = useState(null);

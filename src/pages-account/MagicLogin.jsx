@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import authService from "@/services/authService";
 import api from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { getDefaultRouteForRole } from "@/utils/roleRouting";
 
 export const MagicLogin = () => {
   const [searchParams] = useSearchParams();
@@ -29,39 +30,29 @@ export const MagicLogin = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
 
       try {
-        // 1. Immediately save the token
+        // The emailed token is short-lived (30 min). Use it once to exchange
+        // for a regular session token; the api interceptor attaches whatever
+        // is in localStorage, so no axios default headers are needed.
         localStorage.setItem("token", token);
-
-        // 2. FORCE Axios to use this exact token immediately for the next request
-        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-        // 3. (CSRF disabled per API setup)
-
-        // 4. Now fetch the user data
-        const userData = await authService.getCurrentUser();
-
-        // 5. Sync session globally using your AuthContext helper
-        setSession(userData, token);
-
-        // 6. Redirect based on the verified role from the API (not the URL param, which is user-controlled)
-        const userRole = userData?.role;
-        if (userRole === "admin") {
-          navigate("/admin/dashboard", { replace: true });
-        } else if (userRole === "patient") {
-          navigate("/patient/dashboard", { replace: true });
-        } else if (userRole === "responder") {
-          navigate("/responder/dashboard", { replace: true });
-        } else if (userRole === "logistics") {
-          navigate("/logistics/dashboard", { replace: true });
-        } else {
-          navigate("/", { replace: true });
+        const { data } = await api.post("/magic-login/exchange");
+        const sessionToken = data?.token;
+        if (!sessionToken) {
+          throw new Error("Magic link exchange did not return a token");
         }
+        localStorage.setItem("token", sessionToken);
+
+        const userData = data?.user ?? (await authService.getCurrentUser());
+        setSession(userData, sessionToken);
+
+        // Redirect based on the verified role from the API (not the URL param, which is user-controlled)
+        navigate(getDefaultRouteForRole(userData?.role, userData), {
+          replace: true,
+        });
       } catch (error) {
         console.error("Magic login failed", error);
 
         // Clean up the invalid token so it doesn't break future normal logins
         localStorage.removeItem("token");
-        delete api.defaults.headers.common["Authorization"];
 
         toast({
           variant: "destructive",

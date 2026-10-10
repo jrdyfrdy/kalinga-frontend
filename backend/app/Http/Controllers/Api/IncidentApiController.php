@@ -90,17 +90,41 @@ class IncidentApiController extends Controller
 
     public function conversation(Request $request, Incident $incident)
     {
-        $responder = $request->user();
+        $viewer = $request->user();
 
-        if (!$responder instanceof User) {
+        if (!$viewer instanceof User) {
             abort(403, 'Unauthorized');
         }
 
-        if (!$this->userCanAccessIncident($responder, $incident)) {
-            abort(403, 'You are not assigned to this incident.');
+        $incident->loadMissing(['user:id,name,role,profile_image,phone']);
+
+        if ($viewer->role === 'patient') {
+            // Patients may only open the conversation for incidents they reported,
+            // and the counterpart is the responder currently assigned to it.
+            if ((int) $incident->user_id !== (int) $viewer->id) {
+                abort(403, 'You did not report this incident.');
+            }
+
+            $assignment = $incident->assignments()
+                ->with('responder:id,name,role,profile_image,phone')
+                ->latest('id')
+                ->first();
+            $responder = $assignment?->responder;
+
+            if (!$responder) {
+                return response()->json([
+                    'conversation' => null,
+                    'message' => 'No responder has been assigned to this incident yet.',
+                ], 404);
+            }
+        } else {
+            $responder = $viewer;
+
+            if (!$this->userCanAccessIncident($responder, $incident)) {
+                abort(403, 'You are not assigned to this incident.');
+            }
         }
 
-        $incident->loadMissing(['user:id,name,role,profile_image,phone']);
         $patient = $incident->user;
 
         if (!$patient) {

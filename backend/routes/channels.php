@@ -16,7 +16,7 @@ Broadcast::channel('incidents', function ($user) {
         return false;
     }
 
-    $allowedRoles = ['admin', 'responder', 'logistics', 'patient'];
+    $allowedRoles = ['admin', 'responder', 'logistics', 'patient', 'hospital_admin', 'dispatcher'];
 
     return in_array($user->role, $allowedRoles, true)
         ? ['id' => $user->id, 'name' => $user->name, 'role' => $user->role]

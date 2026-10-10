@@ -1,6 +1,9 @@
 const RENDER_BACKEND_HOST = "kalinga-backend.onrender.com";
 const RENDER_REALTIME_HOST = "kalinga-reverb.onrender.com";
 const LOCAL_FALLBACK_API = "http://localhost:8000";
+const LOCAL_FALLBACK_NODE_API = "http://localhost:5000";
+// Must match backend/config/reverb.php (REVERB_SERVER_PORT default).
+const LOCAL_FALLBACK_REVERB_PORT = 8080;
 
 const stripProtocol = (value) => {
   if (!value) return "";
@@ -12,7 +15,7 @@ const normalizeUrl = (value) => {
   try {
     const parsed = new URL(value);
     return `${parsed.protocol}//${parsed.host}`.replace(/\/$/, "");
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -63,6 +66,17 @@ export const resolveApiBaseUrl = () => {
   return LOCAL_FALLBACK_API;
 };
 
+/**
+ * Base URL (no trailing slash, no /api suffix) for the Node/Express backend.
+ * Uses VITE_NODE_API_URL when set, otherwise the local dev server on :5000
+ * (node-backend/server.js default PORT).
+ */
+export const resolveNodeApiBaseUrl = () => {
+  const envValue = normalizeUrl(import.meta.env.VITE_NODE_API_URL?.trim());
+  if (envValue) return envValue;
+  return LOCAL_FALLBACK_NODE_API;
+};
+
 export const resolveRealtimeSettings = () => {
   const runtimeHost = getRuntimeHost();
   const runningLocally = runtimeHost ? isLocalHost(runtimeHost) : true;
@@ -100,7 +114,7 @@ export const resolveRealtimeSettings = () => {
       }
     }
     if (!hasValidPort) {
-      port = scheme === "https" ? 443 : 6001;
+      port = scheme === "https" ? 443 : LOCAL_FALLBACK_REVERB_PORT;
     }
   }
 

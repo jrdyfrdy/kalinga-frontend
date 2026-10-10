@@ -51,6 +51,7 @@ class User extends Authenticatable
         'admitted',  
         'emergencyContactName',  
         'emergencyContactPhone',  
+        'contact_number',
     ];
 
     /**

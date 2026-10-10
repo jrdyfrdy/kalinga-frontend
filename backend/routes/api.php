@@ -22,7 +22,6 @@ use App\Http\Controllers\Api\AllocationController;
 use App\Http\Controllers\Api\LogisticsStatusController;
 use App\Http\Controllers\Api\ResponderController;
 use App\Http\Controllers\Api\AssetController;
-use App\Http\Controllers\Api\LogisticsController;
 use App\Http\Controllers\Api\PresenceController;
 
 use App\Http\Controllers\Api\ForecastController;
@@ -220,7 +219,7 @@ Route::middleware(['auth:sanctum'])->post('/debug/broadcast-auth', function (Req
 
     // presence-incidents
     if ($channel === 'presence-incidents') {
-        $allowedRoles = ['admin', 'responder', 'logistics', 'patient'];
+        $allowedRoles = ['admin', 'responder', 'logistics', 'patient', 'hospital_admin', 'dispatcher'];
         $isAllowed = in_array($user->role, $allowedRoles, true);
         $decision = [
             'ok' => $isAllowed,
@@ -291,6 +290,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Common authenticated routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/magic-login/exchange', [AuthController::class, 'exchangeMagicLink']);
     Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::post('/presence/heartbeat', [PresenceController::class, 'heartbeat']);
     Route::post('/presence/offline', [PresenceController::class, 'offline']);
@@ -335,6 +335,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::get('/accuracy',           [ForecastController::class, 'accuracy']);
             Route::post('/trigger',           [ForecastController::class, 'trigger']);
         });
+
+            // Logistics Unified Tracking Event
+            Route::patch('/logistics/requests/{id}/status', [LogisticsStatusController::class, 'updateStatus']);
 
             Route::get('/requests', [RequestController::class, 'index']);
             Route::post('/requests', [RequestController::class, 'store']);
@@ -457,6 +460,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/incidents', [IncidentApiController::class, 'index']);
         Route::get('/incidents/{incident}', [IncidentApiController::class, 'show']);
         Route::get('/incidents/{incident}/history', [IncidentApiController::class, 'history']);
+        // Patients get only their own incident's thread (enforced in the controller).
+        Route::get('/incidents/{incident}/conversation', [IncidentApiController::class, 'conversation']);
         Route::get('/road-blockades', [RoadBlockadeController::class, 'index']);
     });
 
@@ -471,7 +476,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('patient-care-reports/{patientCareReport}/soft-copy', [PatientCareReportController::class, 'generateSoftCopy']);
         Route::get('patient-care-reports/{patientCareReport}/soft-copy', [PatientCareReportController::class, 'downloadSoftCopy']);
 
-        Route::get('/incidents/{incident}/conversation', [IncidentApiController::class, 'conversation']);
         Route::get('/incidents/{incident}/hospital-recommendations', [IncidentApiController::class, 'hospitalRecommendations']);
         Route::post('/incidents/{incident}/assign', [IncidentApiController::class, 'assign']);
         Route::post('/incidents/{incident}/status', [IncidentApiController::class, 'updateStatus']);
@@ -534,8 +538,6 @@ Route::get('/health', function () {
     ]);
 });
 
-// Logistics Unified Tracking Event
-Route::patch('/logistics/requests/{id}/status', [LogisticsStatusController::class, 'updateStatus']);
 
 // Test routes (public)
 Route::get('/test/hospitals', function () {

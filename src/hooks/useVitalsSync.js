@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { io } from "socket.io-client";
+import { resolveNodeApiBaseUrl } from "../config/runtime";
 
-const NODE_BASE = import.meta.env.VITE_NODE_API_URL || "http://localhost:5000";
+const NODE_BASE = resolveNodeApiBaseUrl();
 
 export function useVitalsSync({
   getValues,
