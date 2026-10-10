@@ -8,7 +8,6 @@ import {
   Activity, ThermometerSnowflake, ShieldCheck,
   ShieldAlert, Package, Star, BadgeCheck
 } from "lucide-react";
-import { useState } from "react";
 
 const ResponderViewModal = ({ responder, isOpen, onClose }) => {
   if (!isOpen || !responder) return null;

@@ -33,32 +33,20 @@ const allocationService = {
 
   // Get pending requests count
   getPendingRequestsCount: async () => {
-    try {
-      const response = await api.get("/allocations/pending/count");
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get("/allocations/pending/count");
+    return response.data;
   },
 
   // Get my allocations count by status
   getMyAllocationsCount: async () => {
-    try {
-      const response = await api.get("/allocations/my/count");
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get("/allocations/my/count");
+    return response.data;
   },
 
   // Get allocation with full details including relationships
   getAllocationDetails: async (id) => {
-    try {
-      const response = await api.get(`/allocations/${id}/details`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get(`/allocations/${id}/details`);
+    return response.data;
   },
 
   updateLogisticsStatus: (requestId, status) =>

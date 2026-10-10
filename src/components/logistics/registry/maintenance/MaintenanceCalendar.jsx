@@ -1,5 +1,5 @@
 // src/components/logistics/registry/maintenance/MaintenanceCalendar.jsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Info, Edit, RefreshCw } from "lucide-react";
 import ScheduleMaintenanceDrawer from "./ScheduleMaintenanceDrawer";
 import {

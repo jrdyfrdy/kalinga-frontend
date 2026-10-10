@@ -1,5 +1,5 @@
 // Allocation.jsx - COMPLETE ENHANCED VERSION WITH FIXED MODALS (2500+ lines)
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { useSessionAllocationsStore } from "../../stores/sessionAllocationsStore";
 import { ROUTES } from "../../config/routes";

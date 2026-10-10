@@ -36,7 +36,9 @@ try {
     "key ->",
     appKey
   );
-} catch (e) {}
+} catch {
+  // console may be unavailable
+}
 const buildAuthHeader = () => {
   const token = localStorage.getItem("token");
   return token ? `Bearer ${token}` : "";

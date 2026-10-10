@@ -617,7 +617,7 @@ const RequestsView = ({ facility, hospitalId }) => {
   const handleSaveDraft = async () => {
     try {
       await requestService.updateDraft(editingRequest.id, {
-        quantity: editingRequest.quantity,
+        quantity: Number(editingRequest.quantity),
         urgency_level: editingRequest.urgency_level,
         handling_class: editingRequest.handling_class,
         reason: editingRequest.reason,
@@ -627,6 +627,7 @@ const RequestsView = ({ facility, hospitalId }) => {
       setEditingRequest(null);
     } catch (err) {
       console.error(err);
+      alert(err?.response?.data?.message || err?.response?.data?.error || "Failed to save the draft.");
     }
   };
 
@@ -723,11 +724,12 @@ const RequestsView = ({ facility, hospitalId }) => {
           aValue = parseInt(a.quantity) || 0;
           bValue = parseInt(b.quantity) || 0;
           break;
-        case "urgency":
+        case "urgency": {
           const urgencyOrder = { Critical: 4, High: 3, Medium: 2, Low: 1 };
           aValue = urgencyOrder[a.urgency_level] || 0;
           bValue = urgencyOrder[b.urgency_level] || 0;
           break;
+        }
         default:
           aValue = a[sortBy];
           bValue = b[sortBy];
@@ -1313,6 +1315,90 @@ const RequestsView = ({ facility, hospitalId }) => {
             setDeliveryToConfirm(null);
           }}
         />
+      )}
+
+      {/* Edit Draft Drawer ("Edit Draft" previously set state that nothing rendered) */}
+      {showEditDrawer && editingRequest && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowEditDrawer(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-1 text-lg font-bold text-gray-900">Edit draft request</h3>
+            <p className="mb-4 text-sm text-gray-500">
+              {editingRequest.resource_name || "Supply request"} · #{editingRequest.id}
+            </p>
+            <div className="grid gap-4">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-gray-700">Quantity</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={editingRequest.quantity ?? ""}
+                  onChange={(e) =>
+                    setEditingRequest((prev) => ({ ...prev, quantity: e.target.value }))
+                  }
+                  className="rounded-lg border border-gray-300 px-3 py-2"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-gray-700">Urgency</span>
+                <select
+                  value={editingRequest.urgency_level || "Medium"}
+                  onChange={(e) =>
+                    setEditingRequest((prev) => ({ ...prev, urgency_level: e.target.value }))
+                  }
+                  className="rounded-lg border border-gray-300 px-3 py-2"
+                >
+                  {["Low", "Medium", "High", "Critical"].map((u) => (
+                    <option key={u}>{u}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-gray-700">Handling class</span>
+                <select
+                  value={editingRequest.handling_class || "General"}
+                  onChange={(e) =>
+                    setEditingRequest((prev) => ({ ...prev, handling_class: e.target.value }))
+                  }
+                  className="rounded-lg border border-gray-300 px-3 py-2"
+                >
+                  <option value="General">General</option>
+                  <option value="ColdChain">Cold Chain</option>
+                  <option value="Narcotics">Narcotics</option>
+                  <option value="HighValue">High Value</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="font-medium text-gray-700">Reason</span>
+                <textarea
+                  rows={3}
+                  value={editingRequest.reason || ""}
+                  onChange={(e) =>
+                    setEditingRequest((prev) => ({ ...prev, reason: e.target.value }))
+                  }
+                  className="rounded-lg border border-gray-300 px-3 py-2"
+                />
+              </label>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowEditDrawer(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="success"
+                onClick={handleSaveDraft}
+                disabled={!(Number(editingRequest.quantity) >= 1)}
+              >
+                Save draft
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -7,7 +7,7 @@
  * Both views share the same underlying state passed via props.
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   ChevronUp,
   ChevronDown,
