@@ -3,10 +3,13 @@ import Pusher from "pusher-js";
 import { resolveApiBaseUrl, resolveRealtimeSettings } from "../config/runtime";
 
 window.Pusher = Pusher;
+// Verbose Pusher logging only in development (or when explicitly enabled).
 try {
-  // Surface all Pusher internals in the console for easier prod diagnostics
-  Pusher.logToConsole = true;
-} catch (e) {}
+  Pusher.logToConsole =
+    import.meta.env.DEV || import.meta.env.VITE_REALTIME_DEBUG === "true";
+} catch {
+  // ignore
+}
 
 const API_BASE_URL = resolveApiBaseUrl();
 const {
@@ -314,8 +317,8 @@ export const debugEcho = () => {
   }
 };
 
-// Expose helpers for Ops/QA via DevTools without extra imports
-if (typeof window !== "undefined") {
+// Expose helpers for Ops/QA via DevTools without extra imports (dev only)
+if (typeof window !== "undefined" && (import.meta.env.DEV || import.meta.env.VITE_REALTIME_DEBUG === "true")) {
   window.$echo = echo;
   window.debugEcho = debugEcho;
 }

@@ -4,7 +4,6 @@ import { ProtectedRoute } from "../components/ProtectedRoute";
 import { ROUTES, ROLES } from "../config/routes";
 
 // Lazy load logistics pages
-const HospitalSafetyIndex = lazy(() => import("../pages-logistics/HospitalSafetyIndex"));
 const DashboardLogistics = lazy(() =>
   import("../pages-logistics/Dashboard").then((module) => ({
     default: module.DashboardLogistics,
@@ -113,8 +112,10 @@ export const LogisticsRoutes = () => (
     <Route
       path={ROUTES.LOGISTICS.HOSPITAL_SAFETY_INDEX}
       element={
+        // The Hospital Safety Index UI was retired (commit 367faa1); keep old
+        // links from landing on a dead admin section.
         <ProtectedRoute allowedRoles={[ROLES.LOGISTICS, ROLES.ADMIN]}>
-          <HospitalSafetyIndex />
+          <Navigate to={ROUTES.LOGISTICS.DASHBOARD} replace />
         </ProtectedRoute>
       }
     />
