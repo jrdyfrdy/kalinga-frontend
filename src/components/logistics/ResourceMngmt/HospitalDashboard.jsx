@@ -26,8 +26,11 @@ import DeliveryConfirmModal from "./DeliveryConfirmModal";
 import ReleaseConfirmModal from "./ReleaseConfirmModal";
 import RequestSupply from "../RequestSupply";
 import hospitalService from "../../../services/hospitalService";
+import { useAuth } from "../../../context/AuthContext";
 
 const HospitalDashboard = () => {
+  const { logout } = useAuth();
+  const [showNotice, setShowNotice] = useState(true);
   const [activeTab, setActiveTab] = useState("resources");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showDeliveryModal, setShowDeliveryModal] = useState(false);
@@ -223,6 +226,7 @@ const HospitalDashboard = () => {
       </header>
 
       {/* Alert Banner */}
+      {showNotice && (
       <div className="container mx-auto px-6 mt-4">
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
@@ -236,12 +240,16 @@ const HospitalDashboard = () => {
                 </p>
               </div>
             </div>
-            <button className="text-amber-700 hover:text-amber-900 font-semibold">
+            <button
+              onClick={() => setShowNotice(false)}
+              className="text-amber-700 hover:text-amber-900 font-semibold"
+            >
               Dismiss
             </button>
           </div>
         </div>
       </div>
+      )}
 
       <div className="container mx-auto px-6 py-8">
         <div className="flex gap-8">
@@ -288,7 +296,13 @@ const HospitalDashboard = () => {
 
               {sidebarOpen && (
                 <div className="space-y-3">
-                  <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors mt-6">
+                  <button
+                    onClick={async () => {
+                      await logout();
+                      window.location.assign("/#hero");
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors mt-6"
+                  >
                     <LogOut className="w-5 h-5" />
                     <span>Logout</span>
                   </button>

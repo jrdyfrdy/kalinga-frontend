@@ -82,7 +82,38 @@ const getInitials = (name) => {
 /**
  * Component 1. Conversation List Item (iMessage-style)
  */
-const ConversationListItem = ({ conversation, onSelect, isSelected }) => {
+// Renders files attached to a chat message (signed download URLs from the API).
+const MessageAttachments = ({ attachments }) => {
+  if (!Array.isArray(attachments) || attachments.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-col gap-1">
+      {attachments.map((file) =>
+        file.isImage && file.url ? (
+          <a key={file.id} href={file.url} target="_blank" rel="noreferrer">
+            <img
+              src={file.url}
+              alt={file.name}
+              className="max-h-48 rounded-lg border border-black/10"
+            />
+          </a>
+        ) : (
+          <a
+            key={file.id}
+            href={file.url || undefined}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-sm underline break-all"
+          >
+            <Paperclip size={14} /> {file.name}
+            {!file.url && " (uploading…)"}
+          </a>
+        ),
+      )}
+    </div>
+  );
+};
+
+const ConversationListItem = ({ conversation, onSelect, isSelected, onArchive }) => {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({
     x: 0,
@@ -111,16 +142,8 @@ const ConversationListItem = ({ conversation, onSelect, isSelected }) => {
 
   const handleArchive = (e) => {
     e.stopPropagation();
-    console.log("Archive conversation:", conversation.id);
     setShowContextMenu(false);
-    // TODO: Implement archive functionality
-  };
-
-  const handleMarkUnread = (e) => {
-    e.stopPropagation();
-    console.log("Mark as unread:", conversation.id);
-    setShowContextMenu(false);
-    // TODO: Implement mark as unread functionality
+    onArchive?.(conversation);
   };
 
   useEffect(() => {
@@ -218,12 +241,6 @@ const ConversationListItem = ({ conversation, onSelect, isSelected }) => {
           }}
         >
           <button
-            onClick={handleMarkUnread}
-            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-          >
-            Mark as Unread
-          </button>
-          <button
             onClick={handleArchive}
             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
           >
@@ -276,9 +293,12 @@ const ChatThread = ({
     const file = e.target.files?.[0];
     if (file) {
       setFilePreview({
+        file,
         name: file.name,
         type: file.type.startsWith("image/") ? "image" : "file",
       });
+      // allow re-selecting the same file later
+      e.target.value = "";
     }
   };
 
@@ -286,16 +306,13 @@ const ChatThread = ({
     e.preventDefault();
     if ((!newMessage.trim() && !filePreview) || isArchived) return;
 
-    const textToSend = filePreview
-      ? `📎 ${filePreview.name}${
-          newMessage.trim() ? `\n${newMessage.trim()}` : ""
-        }`
-      : newMessage.trim();
+    const textToSend = newMessage.trim();
+    const fileToSend = filePreview?.file ?? null;
 
     setNewMessage("");
     setFilePreview(null);
 
-    Promise.resolve(onSendMessage(conversation, textToSend)).catch((error) => {
+    Promise.resolve(onSendMessage(conversation, textToSend, fileToSend)).catch((error) => {
       console.error("Failed to send message:", error);
     });
   };
@@ -464,9 +481,6 @@ const ChatThread = ({
               Mark Resolved
             </button>
           )}
-          <button className="chat-header-btn more">
-            <MoreVertical size={16} />
-          </button>
         </div>
       </div>
 
@@ -515,7 +529,8 @@ const ChatThread = ({
 
                   {/* Message Bubble */}
                   <div className="message-bubble">
-                    <p className="message-text">{msg.text}</p>
+                    {msg.text && <p className="message-text">{msg.text}</p>}
+                    <MessageAttachments attachments={msg.attachments} />
                     <div className="message-time">
                       {formatMessageTime(msg.timestamp)}
                       {isOwnMessage && (
@@ -1705,11 +1720,12 @@ export default function MessagesContact() {
 
   // Handle sending a new message
   const handleSendMessage = useCallback(
-    async (conversation, messageText) => {
+    async (conversation, messageText, attachment = null) => {
       if (!conversation || !user) return;
 
-      const trimmed = messageText.trim();
-      if (!trimmed) return;
+      const trimmed = (messageText || "").trim();
+      if (!trimmed && !attachment) return;
+      const previewText = trimmed || (attachment ? `📎 ${attachment.name}` : "");
 
       const receiverId = conversation.participant?.id;
       if (!receiverId) {
@@ -1726,6 +1742,9 @@ export default function MessagesContact() {
         id: tempId,
         clientId: tempId,
         text: trimmed,
+        attachments: attachment
+          ? [{ id: tempId, name: attachment.name, mime: attachment.type, isImage: attachment.type?.startsWith("image/"), url: null }]
+          : [],
         senderId: user.id,
         receiverId,
         sender: user.name,
@@ -1751,7 +1770,7 @@ export default function MessagesContact() {
           return {
             ...conv,
             messages,
-            lastMessage: trimmed,
+            lastMessage: previewText,
             lastMessageTime: timestamp,
             unreadCount: 0,
           };
@@ -1780,7 +1799,7 @@ export default function MessagesContact() {
                   )
                 : [normalizedParticipant],
             messages: [optimisticMessage],
-            lastMessage: trimmed,
+            lastMessage: previewText,
             lastMessageTime: timestamp,
             unreadCount: 0,
           };
@@ -1794,7 +1813,8 @@ export default function MessagesContact() {
       try {
         const payload = await chatService.sendMessage({
           receiver_id: receiverId,
-          message: trimmed,
+          message: trimmed || null,
+          attachment,
         });
 
         const normalizedMessage = normalizeMessage(
@@ -1973,6 +1993,27 @@ export default function MessagesContact() {
     setSelectedConversationId(null);
   };
 
+
+  // Archive (hide) a conversation: PATCH /chat/conversations/{id}/archive
+  const handleArchiveConversation = useCallback(async (conversation) => {
+    const conversationId = conversation?.conversationId;
+    if (!conversationId) {
+      alert("This conversation has not been saved yet, so it cannot be archived.");
+      return;
+    }
+    try {
+      await chatService.archiveConversation(conversationId, true);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.conversationId === conversationId ? { ...c, isArchived: true } : c,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to archive conversation", error);
+      alert(error?.response?.data?.message || "Failed to archive the conversation.");
+    }
+  }, []);
+
   const handleSelectConversation = (conversation) => {
     // Prevent page scroll when selecting conversation
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -2131,6 +2172,7 @@ export default function MessagesContact() {
                 key={conv.id}
                 conversation={conv}
                 onSelect={handleSelectConversation}
+                onArchive={handleArchiveConversation}
                 isSelected={
                   selectedConversation && selectedConversation.id === conv.id
                 }

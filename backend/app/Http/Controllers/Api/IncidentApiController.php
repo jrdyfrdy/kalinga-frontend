@@ -548,6 +548,11 @@ class IncidentApiController extends Controller
             ->where('responder_id', $request->user()->id)
             ->first();
 
+        // Only staff or a responder assigned to this incident may change it.
+        if (!$assignment && !in_array($request->user()->role, ['admin', 'dispatcher'], true)) {
+            abort(403, 'You are not assigned to this incident.');
+        }
+
         DB::transaction(function () use ($incident, $validated, $assignment, $request) {
             $incident->fill([
                 'status' => $validated['status'],

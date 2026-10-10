@@ -9,6 +9,8 @@ import {
   Battery, Zap, Settings, Shield
 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "../../../config/routes";
 
 const VehicleDetailsModal = ({ vehicle, isOpen, onClose }) => {
   if (!isOpen || !vehicle) return null;
@@ -364,18 +366,27 @@ const VehicleDetailsModal = ({ vehicle, isOpen, onClose }) => {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-4 mt-8 pt-6 border-t border-gray-200">
-            <button className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:opacity-90 transition-all duration-200 flex items-center gap-2">
+            <button
+              onClick={() => window.print()}
+              className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:opacity-90 transition-all duration-200 flex items-center gap-2"
+            >
               <Printer size={20} />
               Print Details
             </button>
-            <button className="px-6 py-3 border-2 border-green-300 text-green-900 font-semibold rounded-xl hover:bg-green-50 transition-all duration-200 flex items-center gap-2">
+            <Link
+              to={ROUTES.LOGISTICS.ASSET_REGISTRY}
+              className="px-6 py-3 border-2 border-green-300 text-green-900 font-semibold rounded-xl hover:bg-green-50 transition-all duration-200 flex items-center gap-2"
+            >
               <ExternalLink size={20} />
               View Maintenance History
-            </button>
-            <button className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center gap-2 ml-auto">
+            </Link>
+            <Link
+              to={ROUTES.LOGISTICS.LIVE_MAP}
+              className="px-6 py-3 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-200 flex items-center gap-2 ml-auto"
+            >
               <Navigation size={20} />
               Track Vehicle Location
-            </button>
+            </Link>
           </div>
         </div>
       </div>

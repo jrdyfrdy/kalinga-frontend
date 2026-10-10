@@ -1,6 +1,8 @@
 // Allocation.jsx - COMPLETE ENHANCED VERSION WITH FIXED MODALS (2500+ lines)
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { useSessionAllocationsStore } from "../../stores/sessionAllocationsStore";
+import { ROUTES } from "../../config/routes";
 
 import {
   List,
@@ -532,9 +534,11 @@ const RouteVisualization = ({
       </div>
     </div>
     <div className="flex justify-center mt-6">
-      <Button variant="outline" size="sm" icon={Map}>
-        View Full Route Map
-      </Button>
+      <Link to={ROUTES.LOGISTICS.LIVE_MAP}>
+        <Button variant="outline" size="sm" icon={Map}>
+          View Full Route Map
+        </Button>
+      </Link>
     </div>
   </div>
 );
@@ -836,18 +840,28 @@ const AssignmentSummaryModal = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <Button variant="primary" size="sm" fullWidth icon={Play}>
-                      Start Live Tracking
-                    </Button>
+                    <Link to={ROUTES.LOGISTICS.LIVE_MAP} className="block">
+                      <Button variant="primary" size="sm" fullWidth icon={Play}>
+                        Start Live Tracking
+                      </Button>
+                    </Link>
+                    <Link to={ROUTES.LOGISTICS.SUPPLY_TRACKING} className="block">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        fullWidth
+                        icon={ExternalLink}
+                      >
+                        View Full Details
+                      </Button>
+                    </Link>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       fullWidth
-                      icon={ExternalLink}
+                      icon={Printer}
+                      onClick={() => window.print()}
                     >
-                      View Full Details
-                    </Button>
-                    <Button variant="ghost" size="sm" fullWidth icon={Printer}>
                       Print Summary
                     </Button>
                   </div>
@@ -1151,13 +1165,25 @@ const AssignmentSummaryModal = ({
                             </div>
                           )}
                           <div className="flex items-center gap-4 pt-2">
-                            <Button variant="ghost" size="sm" icon={PhoneCall}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              icon={PhoneCall}
+                              disabled={!(responder?.contact_number || responder?.phone)}
+                              onClick={() =>
+                                (window.location.href = `tel:${responder?.contact_number || responder?.phone}`)
+                              }
+                            >
                               Call
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               icon={MessageSquare}
+                              disabled={!(responder?.contact_number || responder?.phone)}
+                              onClick={() =>
+                                (window.location.href = `sms:${responder?.contact_number || responder?.phone}`)
+                              }
                             >
                               Message
                             </Button>
@@ -1536,7 +1562,24 @@ const AssignmentSummaryModal = ({
                           >
                             {allocation.status.replace("_", " ").toUpperCase()}
                           </Badge>
-                          <Button variant="outline" size="sm" icon={Share2}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            icon={Share2}
+                            onClick={async () => {
+                              const text = `Allocation #${allocation.id}: ${allocation.resource_type || "Supplies"} (${allocation.status})`;
+                              try {
+                                if (navigator.share) {
+                                  await navigator.share({ title: "Kalinga allocation", text });
+                                } else {
+                                  await navigator.clipboard.writeText(text);
+                                  alert("Allocation summary copied to clipboard.");
+                                }
+                              } catch {
+                                // user cancelled share
+                              }
+                            }}
+                          >
                             Share
                           </Button>
                         </div>
@@ -1617,24 +1660,28 @@ const AssignmentSummaryModal = ({
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  icon={Play}
-                  className="flex-1 sm:flex-none"
-                >
-                  <Play size={22} className="mr-3" />
-                  Start Live Tracking
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  icon={ExternalLink}
-                  className="flex-1 sm:flex-none"
-                >
-                  <ExternalLink size={22} className="mr-3" />
-                  View Full Route Details
-                </Button>
+                <Link to={ROUTES.LOGISTICS.LIVE_MAP} className="flex-1 sm:flex-none">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    icon={Play}
+                    className="w-full"
+                  >
+                    <Play size={22} className="mr-3" />
+                    Start Live Tracking
+                  </Button>
+                </Link>
+                <Link to={ROUTES.LOGISTICS.SUPPLY_TRACKING} className="flex-1 sm:flex-none">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    icon={ExternalLink}
+                    className="w-full"
+                  >
+                    <ExternalLink size={22} className="mr-3" />
+                    View Full Route Details
+                  </Button>
+                </Link>
                 <Button
                   variant="ghost"
                   size="lg"

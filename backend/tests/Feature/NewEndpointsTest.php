@@ -184,4 +184,32 @@ class NewEndpointsTest extends TestCase
             ->assertJsonPath('status', 'full')
             ->assertJsonPath('available', 0);
     }
+
+    public function test_chat_attachment_upload_archive_and_signed_download(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $patient = $this->user('patient');
+        $responder = $this->user('responder');
+        Sanctum::actingAs($responder);
+
+        $response = $this->post('/api/chat/messages', [
+            'receiver_id' => $patient->id,
+            'attachment' => \Illuminate\Http\UploadedFile::fake()->image('wound.jpg'),
+        ], ['Accept' => 'application/json'])->assertSuccessful();
+
+        $url = $response->json('data.message.attachments.0.url') ?? $response->json('message.attachments.0.url')
+            ?? collect($response->json())->dot()->first(fn ($v, $k) => str_ends_with($k, 'attachments.0.url'));
+        $this->assertNotEmpty($url, 'attachment url missing: ' . json_encode($response->json()));
+
+        $this->get($url)->assertOk();
+        $this->get(preg_replace('/signature=[^&]+/', 'signature=bad', $url))->assertForbidden();
+
+        $conversationId = DB::table('conversations')->value('id');
+        $this->patchJson("/api/chat/conversations/{$conversationId}/archive", ['archived' => true])
+            ->assertOk()
+            ->assertJsonPath('isArchived', true);
+
+        Sanctum::actingAs($this->user('patient'));
+        $this->patchJson("/api/chat/conversations/{$conversationId}/archive")->assertNotFound();
+    }
 }
