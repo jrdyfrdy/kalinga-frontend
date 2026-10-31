@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getEchoInstance, reconnectEcho } from "../services/echo";
+import { getEchoInstance, reconnectEcho, subscribeChannel } from "../services/echo";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
@@ -24,7 +24,6 @@ export const useSupplyTracking = ({
 
   const subscriptionRef = useRef(null);
   const pollingTimerRef = useRef(null);
-  const wsPollingTimerRef = useRef(null); // Separate ref for WS-adjusted polling
   const isMountedRef = useRef(true);
   const lastFetchedRef = useRef(null);
 
@@ -84,19 +83,6 @@ export const useSupplyTracking = ({
     setShipments((prev) => prev.filter((s) => s.id !== shipmentId));
   }, []);
 
-  // Handle incoming WebSocket supply update
-  const handleRealtimeSupplyUpdate = useCallback(
-    (payload) => {
-      if (payload?.shipment) {
-        updateShipment(payload.shipment);
-      }
-      if (payload?.removed_shipment_id) {
-        removeShipment(payload.removed_shipment_id);
-      }
-    },
-    [updateShipment, removeShipment]
-  );
-
   // Initial fetch and polling setup
   useEffect(() => {
     isMountedRef.current = true;
@@ -124,75 +110,51 @@ export const useSupplyTracking = ({
     };
   }, [enabled, authLoading, isAuthenticated, fetchShipments, pollingInterval]);
 
-  // Subscribe to WebSocket channel for real-time supply updates
+  // Realtime: supply tracking rows are derived from allocations, and the
+  // backend broadcasts every allocation/request status change on the public
+  // "logistics-updates" channel (LogisticsStatusUpdated → .status.updated).
+  // Refetch on those events; normal polling keeps running as the fallback.
   useEffect(() => {
     if (!enabled || !isAuthenticated || authLoading || !user?.id) {
       return;
     }
 
-    const echo = getEchoInstance?.();
-    if (!echo) {
+    if (!getEchoInstance?.()) {
       return;
     }
 
     reconnectEcho();
 
-    // Subscribe to a supply tracking channel
-    const channelName = "supply-tracking";
-    let channel;
+    let refetchTimer = null;
+    const scheduleRefetch = () => {
+      if (refetchTimer) clearTimeout(refetchTimer);
+      refetchTimer = setTimeout(() => fetchShipments({ silent: true }), 500);
+    };
 
+    let unsubscribe = null;
     try {
-      channel = echo.private(channelName);
-      channel.listen(".SupplyUpdated", handleRealtimeSupplyUpdate);
-      channel.listen(".ShipmentStatusChanged", handleRealtimeSupplyUpdate);
-      subscriptionRef.current = channel;
-
-      // When WebSocket is active, we can reduce polling frequency
-      if (pollingTimerRef.current && pollingInterval > 0) {
-        // Clear original polling timer
-        clearInterval(pollingTimerRef.current);
-        pollingTimerRef.current = null;
-        // Use a separate ref for WS-adjusted polling so cleanup properly handles both
-        wsPollingTimerRef.current = setInterval(() => {
-          fetchShipments({ silent: true });
-        }, pollingInterval * 2);
-      }
+      unsubscribe = subscribeChannel("logistics-updates", "public", {
+        ".status.updated": scheduleRefetch,
+      });
+      subscriptionRef.current = unsubscribe;
     } catch (subscriptionError) {
       console.error(
-        "Failed to subscribe to supply tracking channel",
+        "Failed to subscribe to logistics updates channel",
         subscriptionError
       );
     }
 
     return () => {
-      // Clean up WS-adjusted polling timer
-      if (wsPollingTimerRef.current) {
-        clearInterval(wsPollingTimerRef.current);
-        wsPollingTimerRef.current = null;
-      }
-      if (subscriptionRef.current) {
-        try {
-          subscriptionRef.current.stopListening(".SupplyUpdated");
-          subscriptionRef.current.stopListening(".ShipmentStatusChanged");
-        } catch (e) {
-          // Ignore
-        }
-        try {
-          echo.leave(channelName);
-        } catch (e) {
-          // Ignore
-        }
-        subscriptionRef.current = null;
-      }
+      if (refetchTimer) clearTimeout(refetchTimer);
+      unsubscribe?.();
+      subscriptionRef.current = null;
     };
   }, [
     enabled,
     isAuthenticated,
     authLoading,
     user?.id,
-    handleRealtimeSupplyUpdate,
     fetchShipments,
-    pollingInterval,
   ]);
 
   return {

@@ -7,7 +7,6 @@ import {
   Zap,
   ChevronRight,
 } from "lucide-react";
-import forecastService from "../../../services/forecastService";
 import { formatDisplayQuantity } from "../../../utils/formatQuantity";
 
 const URGENCY_DOT = {

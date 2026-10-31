@@ -291,12 +291,20 @@ const Profile = () => {
       setError("");
 
       try {
-        const [profileRes, activityRes, trainingRes, certRes] = await Promise.all([
+        // Only the profile itself is required; activity/training/certifications
+        // are optional panels and must not blank the page if one fails.
+        const [profileResult, activityResult, trainingResult, certResult] = await Promise.allSettled([
           nodeApi.get("/profile"),
           nodeApi.get("/activity", { params: { limit: 10 } }),
           nodeApi.get("/training/progress"),
           nodeApi.get("/training/certifications"),
         ]);
+        if (profileResult.status === "rejected") throw profileResult.reason;
+        const valueOf = (result) => (result.status === "fulfilled" ? result.value : null);
+        const profileRes = profileResult.value;
+        const activityRes = valueOf(activityResult);
+        const trainingRes = valueOf(trainingResult);
+        const certRes = valueOf(certResult);
 
         const profileData = profileRes?.data?.data || {};
         const numericUserId = profileData.id || profileData.user_id || "";

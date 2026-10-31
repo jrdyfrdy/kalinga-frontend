@@ -23,6 +23,7 @@ import logo from "@/assets/kalinga-logo.png";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/lib/datetime";
 import adminService from "@/services/adminService";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const COMMAND_SYNC_INTERVAL_MS = 10 * 1000;
 const QUICK_ACTION_SYNC_INTERVAL_MS = 10 * 1000;
@@ -92,6 +93,25 @@ export const AdminLayout = ({
   const [alertError, setAlertError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isNotifMenuOpen, setIsNotifMenuOpen] = useState(false);
+  const notifMenuRef = useRef(null);
+  const {
+    notifications: adminNotifications,
+    unreadCount: adminUnreadCount,
+    markAsRead: markAdminNotificationRead,
+    markAllAsRead: markAllAdminNotificationsRead,
+  } = useNotifications({ limit: 15 });
+
+  useEffect(() => {
+    if (!isNotifMenuOpen) return undefined;
+    const handleClickOutside = (event) => {
+      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target)) {
+        setIsNotifMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isNotifMenuOpen]);
   const [quickActionMetrics, setQuickActionMetrics] = useState({
     incidents: null,
     resources: null,
@@ -571,9 +591,60 @@ export const AdminLayout = ({
                       <Moon className="h-5 w-5" />
                     )}
                   </button>
-                  <button className="flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background/60 text-foreground/70 transition hover:border-primary/50 hover:text-primary">
-                    <Bell className="h-5 w-5" />
-                  </button>
+                  <div className="relative" ref={notifMenuRef}>
+                    <button
+                      onClick={() => setIsNotifMenuOpen((prev) => !prev)}
+                      className="relative flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background/60 text-foreground/70 transition hover:border-primary/50 hover:text-primary"
+                      aria-label="Notifications"
+                      aria-expanded={isNotifMenuOpen}
+                      aria-haspopup="menu"
+                    >
+                      <Bell className="h-5 w-5" />
+                      {adminUnreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
+                          {adminUnreadCount > 9 ? "9+" : adminUnreadCount}
+                        </span>
+                      )}
+                    </button>
+                    {isNotifMenuOpen && (
+                      <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-border/60 bg-background shadow-lg">
+                        <div className="flex items-center justify-between border-b border-border/60 px-4 py-2">
+                          <span className="text-sm font-semibold">Notifications</span>
+                          <button
+                            onClick={() => markAllAdminNotificationsRead()}
+                            disabled={adminUnreadCount === 0}
+                            className="text-xs text-primary hover:underline disabled:text-foreground/40 disabled:no-underline"
+                          >
+                            Mark all read
+                          </button>
+                        </div>
+                        <ul className="max-h-72 overflow-y-auto text-left">
+                          {adminNotifications.length === 0 ? (
+                            <li className="px-4 py-3 text-sm text-foreground/60">No notifications</li>
+                          ) : (
+                            adminNotifications.map((notification) => (
+                              <li
+                                key={notification.id}
+                                onClick={() => !notification.read_at && markAdminNotificationRead(notification.id)}
+                                className={cn(
+                                  "cursor-pointer px-4 py-2 text-sm hover:bg-foreground/5",
+                                  notification.read_at ? "text-foreground/60" : "font-medium text-foreground",
+                                )}
+                              >
+                                <p>{notification.title}</p>
+                                {notification.description && (
+                                  <p className="line-clamp-2 text-xs text-foreground/60">{notification.description}</p>
+                                )}
+                                {notification.created_at && (
+                                  <p className="text-[11px] text-foreground/40">{formatRelativeTime(notification.created_at)}</p>
+                                )}
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                   <div className="relative">
                     <button
                       ref={profileButtonRef}

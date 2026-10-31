@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\BlockadeChanged;
 use App\Http\Controllers\Controller;
 use App\Models\RoadBlockade;
 use Illuminate\Http\Request;
@@ -9,6 +10,15 @@ use Carbon\Carbon;
 
 class RoadBlockadeController extends Controller
 {
+    private function emit(RoadBlockade $blockade, string $event, string $action): void
+    {
+        try {
+            broadcast(new BlockadeChanged($blockade->toArray(), $event, $action))->toOthers();
+        } catch (\Throwable $e) {
+            report($e); // realtime is best-effort; polling still refreshes clients
+        }
+    }
+
     public function index(Request $request)
     {
         $query = RoadBlockade::with(['reporter:id,name'])
@@ -53,7 +63,7 @@ class RoadBlockadeController extends Controller
             'end_lng' => 'nullable|numeric|between:-180,180',
             'road_name' => 'nullable|string|max:255',
             'severity' => 'required|in:low,medium,high,critical',
-            'reported_by' => 'required|exists:users,id'
+            'reported_by' => 'nullable|exists:users,id'
         ]);
 
         $blockade = RoadBlockade::create([
@@ -65,14 +75,18 @@ class RoadBlockadeController extends Controller
             'end_lng' => $request->end_lng,
             'road_name' => $request->road_name,
             'severity' => $request->severity,
-            'reported_by' => $request->reported_by,
+            // Always attribute to the authenticated reporter (client value is not trusted).
+            'reported_by' => $request->user()->id,
             'reported_at' => Carbon::now(),
             'status' => 'active'
         ]);
 
+        $blockade->load('reporter:id,name');
+        $this->emit($blockade, BlockadeChanged::CREATED, 'created');
+
         return response()->json([
             'message' => 'Road blockade reported successfully',
-            'blockade' => $blockade->load('reporter:id,name')
+            'blockade' => $blockade
         ], 201);
     }
 
@@ -120,6 +134,8 @@ class RoadBlockadeController extends Controller
         }
 
         $blockade->load('reporter:id,name');
+        $resolved = $blockade->status === 'resolved';
+        $this->emit($blockade, $resolved ? BlockadeChanged::CLEARED : BlockadeChanged::UPDATED, $resolved ? 'removed' : 'updated');
         
         return response()->json([
             'message' => 'Road blockade updated successfully',
@@ -131,6 +147,7 @@ class RoadBlockadeController extends Controller
     {
         $blockade = RoadBlockade::findOrFail($id);
         $blockade->delete();
+        $this->emit($blockade, BlockadeChanged::CLEARED, 'removed');
 
         return response()->json(['message' => 'Road blockade deleted successfully']);
     }
@@ -169,6 +186,7 @@ class RoadBlockadeController extends Controller
         $blockade->status = 'resolved';
         $blockade->resolved_at = now();
         $blockade->save();
+        $this->emit($blockade, BlockadeChanged::CLEARED, 'removed');
 
         return response()->json([
             'message' => 'Road blockade has been marked as resolved',

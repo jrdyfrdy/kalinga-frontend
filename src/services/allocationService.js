@@ -19,7 +19,8 @@ const allocationService = {
     api.delete(`/allocations/${allocationId}/reject`),
 
   getPendingRequests: () =>
-    api.get("/requests", { params: { status: "pending" } }),
+    // Paginated server-side (15 by default); fetch a full working page.
+    api.get("/requests", { params: { status: "pending", per_page: 100 } }),
 
   getMyAllocations: () => api.get("/allocations/my"),
 
@@ -32,32 +33,20 @@ const allocationService = {
 
   // Get pending requests count
   getPendingRequestsCount: async () => {
-    try {
-      const response = await api.get("/allocations/pending/count");
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get("/allocations/pending/count");
+    return response.data;
   },
 
   // Get my allocations count by status
   getMyAllocationsCount: async () => {
-    try {
-      const response = await api.get("/allocations/my/count");
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get("/allocations/my/count");
+    return response.data;
   },
 
   // Get allocation with full details including relationships
   getAllocationDetails: async (id) => {
-    try {
-      const response = await api.get(`/allocations/${id}/details`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await api.get(`/allocations/${id}/details`);
+    return response.data;
   },
 
   updateLogisticsStatus: (requestId, status) =>

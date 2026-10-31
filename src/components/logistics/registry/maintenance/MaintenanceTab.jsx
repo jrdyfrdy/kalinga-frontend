@@ -5,6 +5,7 @@ import MaintenanceCalendar from "./MaintenanceCalendar";
 import ServiceHistory from "./ServiceHistory";
 import MaintenanceSchedule from "./MaintenanceSchedule";
 import ScheduleMaintenanceDrawer from "./ScheduleMaintenanceDrawer";
+import { maintenanceCalendarService } from "@/services/maintenanceCalendarService";
 
 export default function MaintenanceTab({ loading }) {
   const [activeView, setActiveView] = useState("calendar");
@@ -31,7 +32,6 @@ export default function MaintenanceTab({ loading }) {
     setRefreshing(true);
     try {
       const data = await maintenanceCalendarService.getCalendarData();
-      console.log('Fetched maintenance data:', data);
       setMaintenanceData(data);
       updateStats(data);
     } catch (error) {

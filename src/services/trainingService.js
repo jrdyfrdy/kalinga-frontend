@@ -14,7 +14,15 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, getBlob, deleteObject } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db, storage, isFirebaseConfigured } from "@/lib/firebase";
+
+const requireFirebase = () => {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error(
+      "Training is unavailable: Firebase is not configured (set VITE_FIREBASE_* in .env).",
+    );
+  }
+};
 
 const COLLECTION = "training_courses";
 const PROGRESS_COLLECTION = "training_progress";
@@ -88,6 +96,7 @@ export function parsePassingScore(passingCriteria) {
  * @returns {Promise<Course[]>}
  */
 export async function listCourses() {
+  requireFirebase();
   const q = query(
     collection(db, COLLECTION),
     orderBy("createdAt", "desc")
@@ -101,6 +110,7 @@ export async function listCourses() {
  * @returns {Promise<Course | null>}
  */
 export async function getCourse(id) {
+  requireFirebase();
   const d = await getDoc(doc(db, COLLECTION, id));
   if (!d.exists()) return null;
   return { id: d.id, ...d.data() };
@@ -173,6 +183,7 @@ function toFirestorePayload(data) {
 }
 
 export async function createCourse(data) {
+  requireFirebase();
   const payload = toFirestorePayload(data);
   payload.createdAt = serverTimestamp();
   payload.updatedAt = serverTimestamp();
@@ -185,6 +196,7 @@ export async function createCourse(data) {
  * @param {Partial<Course>} data
  */
 export async function updateCourse(id, data) {
+  requireFirebase();
   const payload = { ...data, updatedAt: serverTimestamp() };
   delete payload.id;
   delete payload.createdAt;
@@ -195,6 +207,7 @@ export async function updateCourse(id, data) {
  * @param {string} id
  */
 export async function deleteCourse(id) {
+  requireFirebase();
   await deleteDoc(doc(db, COLLECTION, id));
 }
 
@@ -205,6 +218,7 @@ export async function deleteCourse(id) {
  * @returns {Promise<{ storagePath: string, downloadURL: string }>}
  */
 export async function uploadCourseFile(courseId, file, type = "document") {
+  requireFirebase();
   const ext = (file.name || "").split(".").pop() || "bin";
   const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, "_")}`;
   const storagePath = `${STORAGE_PREFIX}/${courseId}/${safeName}`;
@@ -218,6 +232,7 @@ export async function uploadCourseFile(courseId, file, type = "document") {
  * @param {string} storagePath
  */
 export async function deleteCourseFile(storagePath) {
+  requireFirebase();
   const storageRef = ref(storage, storagePath);
   await deleteObject(storageRef);
 }
@@ -230,6 +245,7 @@ export async function deleteCourseFile(storagePath) {
  * @returns {Promise<{ storagePath: string, downloadURL: string }>}
  */
 export async function uploadSubmissionVideo(userId, courseId, file) {
+  requireFirebase();
   const ext = (file.name || "").split(".").pop() || "mp4";
   const safeName = `${Date.now()}_${(file.name || "video").replace(/[^a-zA-Z0-9.-]/g, "_")}`;
   const storagePath = `${SUBMISSIONS_PREFIX}/${userId}/${courseId}/${safeName}`;
@@ -249,6 +265,7 @@ export async function uploadSubmissionVideo(userId, courseId, file) {
  * @returns {Promise<{ completedContent: string[], assessmentResults: Object, certifiedAt: * } | null>}
  */
 export async function getProgress(userId, courseId) {
+  requireFirebase();
   if (!userId || !courseId) return null;
   const id = `${String(userId)}_${String(courseId)}`;
   const d = await getDoc(doc(db, PROGRESS_COLLECTION, id));
@@ -262,6 +279,7 @@ export async function getProgress(userId, courseId) {
  * @returns {Promise<Array<{ progressId: string, userId: string, courseId: string, completedContent?: string[], assessmentResults?: Object, certifiedAt?: *, updatedAt?: * }>>}
  */
 export async function getUserProgress(userId) {
+  requireFirebase();
   if (!userId) return [];
   const uid = String(userId);
   let q = query(
@@ -286,6 +304,7 @@ export async function getUserProgress(userId) {
  * @param {string} contentSlug - Slug of the content item (e.g. from slugify(title))
  */
 export async function markContentComplete(userId, courseId, contentSlug) {
+  requireFirebase();
   if (!userId || !courseId || !contentSlug) return;
   const uid = String(userId);
   const cid = String(courseId);
@@ -315,6 +334,7 @@ export async function markContentComplete(userId, courseId, contentSlug) {
  * @param {{ videoSubmission?: { downloadURL: string, storagePath: string }, evalFormSubmission?: Record<string, string> }} [submission] - For Practical/Simulation (video) or Evaluation Form (form data)
  */
 export async function saveAssessmentResult(userId, courseId, assessmentType, result, course, submission) {
+  requireFirebase();
   if (!userId || !courseId) return;
   const id = `${String(userId)}_${String(courseId)}`;
   const docRef = doc(db, PROGRESS_COLLECTION, id);
@@ -376,6 +396,7 @@ export async function saveAssessmentResult(userId, courseId, assessmentType, res
  * @returns {Promise<boolean>} true if certified (now or already)
  */
 export async function recheckCertification(userId, courseId) {
+  requireFirebase();
   if (!userId || !courseId) return false;
   const [progressData, course] = await Promise.all([getProgress(userId, courseId), getCourse(courseId)]);
   if (!course?.certificationEnabled) return false;
@@ -408,6 +429,7 @@ export async function recheckCertification(userId, courseId) {
  * @param {string} userId
  */
 export async function ensureCertificationsForUser(userId) {
+  requireFirebase();
   if (!userId) return;
   const q = query(
     collection(db, PROGRESS_COLLECTION),
@@ -454,6 +476,7 @@ export async function ensureCertificationsForUser(userId) {
  * @returns {Promise<Array<{ progressId: string, userId: string, courseId: string, videoSubmission?: *, evalFormSubmission?: *, assessmentResults?: *, completedContent?: *, certifiedAt?: * }>>}
  */
 export async function getProgressByCourse(courseId) {
+  requireFirebase();
   if (!courseId) return [];
   const q = query(
     collection(db, PROGRESS_COLLECTION),
@@ -472,6 +495,10 @@ export async function getProgressByCourse(courseId) {
  */
 export function watchProgressByCourse(courseId, onData, onError) {
   if (!courseId || typeof onData !== "function") return () => {};
+  if (!isFirebaseConfigured || !db) {
+    onError?.(new Error("Training is unavailable: Firebase is not configured."));
+    return () => {};
+  }
   const q = query(
     collection(db, PROGRESS_COLLECTION),
     where("courseId", "==", String(courseId))
@@ -494,6 +521,7 @@ export function watchProgressByCourse(courseId, onData, onError) {
  * @param {boolean} passed
  */
 export async function setAssessmentPassed(userId, courseId, passed) {
+  requireFirebase();
   if (!userId || !courseId) return;
   const id = `${String(userId)}_${String(courseId)}`;
   const docRef = doc(db, PROGRESS_COLLECTION, id);
@@ -523,6 +551,7 @@ export async function setAssessmentPassed(userId, courseId, passed) {
  * @returns {Promise<Array<{ courseId: string, courseTitle: string, certifiedAt: * }>>}
  */
 export async function getCertifications(userId) {
+  requireFirebase();
   if (!userId) return [];
   await ensureCertificationsForUser(userId);
   let q = query(
@@ -555,6 +584,7 @@ const CERTIFICATE_TEMPLATE_PATH = "certificates/certificate.pdf";
  * @returns {Promise<string>}
  */
 export async function getCertificateTemplateUrl() {
+  requireFirebase();
   const storageRef = ref(storage, CERTIFICATE_TEMPLATE_PATH);
   return getDownloadURL(storageRef);
 }
@@ -578,6 +608,7 @@ function isPdfBuffer(buffer) {
  * @returns {Promise<ArrayBuffer>}
  */
 export async function getCertificateTemplateBytes() {
+  requireFirebase();
   const tryFirebase = async () => {
     const storageRef = ref(storage, CERTIFICATE_TEMPLATE_PATH);
     const blob = await getBlob(storageRef);

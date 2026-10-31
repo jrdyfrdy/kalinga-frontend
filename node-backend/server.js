@@ -6,17 +6,24 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { Server } from 'socket.io';
+import path from 'path';
 
 import apiRoutes from './src/routes/index.js';
 import { errorHandler, notFound, requestLogger } from './src/middleware/errorHandler.js';
 import { setIo } from './src/realtime/io.js';
+import { resolveUserFromToken } from './src/middleware/auth.js';
 
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 5000;
 
+// Behind Render/other reverse proxies req.ip must come from X-Forwarded-For,
+// otherwise every client shares the proxy's IP (one rate-limit bucket for all).
+app.set('trust proxy', parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10));
+
 // ─── Security ──────────────────────────────────────────────────────────────────
-app.use(helmet());
+// Allow the frontend (different origin) to load served files such as avatars.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 app.use(
   cors({
@@ -32,8 +39,10 @@ const isDev = process.env.NODE_ENV !== 'production';
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 min
   // Development: 2 000 req/window (approx. one per second) so normal usage never triggers 429.
-  // Production: respect the env var or fall back to 100.
-  max: isDev ? 2000 : (parseInt(process.env.RATE_LIMIT_MAX) || 100),
+  // Production: respect the env var or fall back to 1000. A single signed-in
+  // responder polls several endpoints every 15–30s (~150 req/15min), so 100
+  // would throttle normal use.
+  max: isDev ? 2000 : (parseInt(process.env.RATE_LIMIT_MAX) || 1000),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Please try again later.' },
@@ -67,6 +76,9 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ─── Uploaded files (avatars) ──────────────────────────────────────────────────
+app.use('/uploads', express.static(path.resolve('uploads'), { fallthrough: true, index: false }));
+
 // ─── API Routes ────────────────────────────────────────────────────────────────
 app.use('/api', apiRoutes);
 
@@ -85,8 +97,28 @@ const io = new Server(httpServer, {
 
 setIo(io);
 
+// Live vitals are patient data: require a valid Sanctum/JWT token on connect.
+const VITALS_ROLES = ['responder', 'admin', 'hospital_admin', 'dispatcher'];
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth?.token
+      || (socket.handshake.headers?.authorization || '').replace(/^Bearer\s+/i, '');
+    const user = await resolveUserFromToken(token);
+    if (!user) return next(new Error('unauthorized'));
+    socket.data.user = user;
+    return next();
+  } catch {
+    return next(new Error('unauthorized'));
+  }
+});
+
 io.on('connection', (socket) => {
   socket.on('pcr:subscribe', ({ caseNo, patientUuid } = {}) => {
+    if (!VITALS_ROLES.includes(socket.data.user?.role)) return;
+    // A form may switch cases; only stay in the rooms for the current one.
+    for (const room of socket.rooms) {
+      if (room.startsWith('pcr:')) socket.leave(room);
+    }
     if (caseNo) {
       socket.join(`pcr:case:${caseNo}`);
     }

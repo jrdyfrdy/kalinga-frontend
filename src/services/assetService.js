@@ -66,7 +66,7 @@ const assetService = {
    * Triggers: LogisticsAssignment.jsx modal
    */
   assignAssetToAllocation: async (allocationId, assetId, responderId = null) => {
-    const response = await api.post(`/allocations/${allocationId}/assign`, {
+    const response = await api.patch(`/allocations/${allocationId}/assign`, {
       asset_id: assetId,
       responder_id: responderId
     });

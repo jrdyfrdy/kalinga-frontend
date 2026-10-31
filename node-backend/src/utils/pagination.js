@@ -4,9 +4,9 @@
  * @param {object} query - req.query
  * @returns {{ page, limit, from, to, orderBy, orderDir }}
  */
-const parsePagination = (query) => {
+const parsePagination = (query, { maxLimit = 100 } = {}) => {
   const page = Math.max(1, parseInt(query.page) || 1);
-  const limit = Math.min(100, Math.max(1, parseInt(query.limit) || 20));
+  const limit = Math.min(maxLimit, Math.max(1, parseInt(query.limit) || 20));
   const from = (page - 1) * limit;
   const to = from + limit - 1;
   const orderBy = query.sort_by || 'created_at';

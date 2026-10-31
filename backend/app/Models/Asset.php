@@ -14,9 +14,9 @@ class Asset extends Model
 
     protected $fillable = [
         'asset_code', 'type', 'category', 'capacity', 'status', 'location',
-        'current_personnel', 'last_maintenance', 'next_maintenance', 'condition',
-        'manufacturer', 'model', 'year', 'plate_number', 'fuel_type',
-        'mileage', 'fuellevel', 'operating_hours', 'power_source',
+        'personnel', 'last_maintenance', 'next_maintenance', 'condition',
+        'manufacturer', 'model', 'year', 'plate_number',
+        'mileage', 'fuelLevel', 'current_fuel_level', 'operating_hours', 'power_source',
         'setup_time', 'flight_time', 'capabilities', 'value',
         'purchase_date', 'created_by', 'latitude', 'longitude'
     ];
@@ -38,7 +38,12 @@ class Asset extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
     public function maintenanceLogs()
-{
-    return $this->hasMany(MaintenanceLog::class, 'asset_id');
-}
+    {
+        return $this->hasMany(MaintenanceLog::class, 'asset_id');
+    }
+
+    public function allocationVehicles()
+    {
+        return $this->hasMany(AllocationVehicle::class, 'asset_id');
+    }
 }

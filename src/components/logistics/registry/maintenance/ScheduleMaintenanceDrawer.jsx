@@ -1,6 +1,8 @@
 // src/components/logistics/registry/ScheduleMaintenanceDrawer.jsx
 import { useState, useEffect } from "react";
 import { X, Save, Calendar, Wrench, DollarSign } from "lucide-react";
+import assetService from "@/services/assetService";
+import { maintenanceCalendarService } from "@/services/maintenanceCalendarService";
 
 export default function ScheduleMaintenanceDrawer({ isOpen, onClose, onSchedule }) {
   const [formData, setFormData] = useState({
@@ -23,8 +25,8 @@ export default function ScheduleMaintenanceDrawer({ isOpen, onClose, onSchedule 
 
   const fetchAssets = async () => {
     try {
-      const assetsData = await mockAssetService.getAssets();
-      setAssets(assetsData);
+      const assetsData = await assetService.getAssets();
+      setAssets(Array.isArray(assetsData) ? assetsData : assetsData?.data || []);
     } catch (error) {
       console.error('Error fetching assets:', error);
     }
@@ -42,11 +44,7 @@ export default function ScheduleMaintenanceDrawer({ isOpen, onClose, onSchedule 
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Call mock service to schedule maintenance
-      await mockAssetService.scheduleMaintenance(formData);
+      await maintenanceCalendarService.scheduleMaintenance(formData);
       
       // Reset form
       setFormData({
@@ -62,6 +60,7 @@ export default function ScheduleMaintenanceDrawer({ isOpen, onClose, onSchedule 
       onSchedule(); // Notify parent
     } catch (error) {
       console.error('Error scheduling maintenance:', error);
+      alert(error?.response?.data?.message || "Failed to schedule maintenance. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -135,7 +134,7 @@ export default function ScheduleMaintenanceDrawer({ isOpen, onClose, onSchedule 
                     <option value="">Choose an asset...</option>
                     {assets.map(asset => (
                       <option key={asset.id} value={asset.id}>
-                        {asset.id} - {asset.type} ({asset.status})
+                        {asset.id} - {asset.name || asset.type} ({asset.status})
                       </option>
                     ))}
                   </select>

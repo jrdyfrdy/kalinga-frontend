@@ -4,24 +4,24 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Support\HandlingClass;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class AssetController extends Controller
 {
     public function available(Request $request)
     {
-        $handling = $request->query('handling_class', 'general');
+        // assets.capabilities stores snake_case values (cold_chain, high_value, ...)
+        $capability = HandlingClass::capability($request->query('handling_class', 'general'));
 
-        $query = Asset::where('status', 'Operational'); 
+        $query = Asset::where('status', 'Operational');
 
-        if ($handling === 'cold_chain') {
-            $query->whereJsonContains('capabilities', 'ColdChain');
-        } elseif ($handling === 'narcotics') {
-            $query->whereJsonContains('capabilities', 'Narcotics');
-        } elseif ($handling === 'high_value') {
-            $query->whereJsonContains('capabilities', 'HighValue');
+        if ($capability !== 'general') {
+            $query->whereJsonContains('capabilities', $capability);
         }
-       
+
 
         return response()->json([
             'data' => $query->orderBy('plate_number')->get()
@@ -107,9 +107,88 @@ public function index(Request $request)
             ]);
         }
 
+        /**
+         * Map the various field spellings the registry UI sends (list/detail
+         * shape vs. form shape) onto real columns, and clean empty strings.
+         */
+        private function normalizeAssetPayload(Request $request): array
+        {
+            $data = $request->all();
+
+            $aliases = [
+                'name'            => 'type',
+                'plateNumber'     => 'plate_number',
+                'nextMaintenance' => 'next_maintenance',
+                'lastMaintenance' => 'last_maintenance',
+                'purchaseDate'    => 'purchase_date',
+                'current_personnel' => 'personnel',
+            ];
+            foreach ($aliases as $from => $to) {
+                if (array_key_exists($from, $data) && !array_key_exists($to, $data)) {
+                    $data[$to] = $data[$from];
+                }
+            }
+
+            // The list endpoint returns fuel level as the numeric `fuelLevel`.
+            if (!array_key_exists('current_fuel_level', $data) && isset($data['fuelLevel']) && is_numeric($data['fuelLevel'])) {
+                $data['current_fuel_level'] = (int) $data['fuelLevel'];
+            }
+
+            // `value` may come back formatted from the list view ("$185,000").
+            if (isset($data['value']) && is_string($data['value'])) {
+                $clean = preg_replace('/[^0-9.\-]/', '', $data['value']);
+                $data['value'] = $clean === '' ? null : (float) $clean;
+            }
+
+            // Capabilities: accept a list or a {key: bool} map; store a list.
+            if (array_key_exists('capabilities', $data)) {
+                $caps = $data['capabilities'];
+                if (is_array($caps) && !array_is_list($caps)) {
+                    $caps = array_keys(array_filter($caps));
+                }
+                $data['capabilities'] = array_values(array_unique(array_map(
+                    fn ($c) => in_array(strtolower((string) $c), ['cold_chain', 'coldchain', 'cold chain', 'high_value', 'highvalue', 'high-value', 'narcotics', 'general'], true)
+                        ? HandlingClass::capability((string) $c)
+                        : (string) $c,
+                    (array) ($caps ?? [])
+                )));
+            }
+
+            // Empty strings break date/integer/decimal columns in Postgres.
+            foreach ($data as $key => $value) {
+                if ($value === '') {
+                    $data[$key] = null;
+                }
+            }
+
+            // Fields the API returns but the table doesn't have.
+            unset($data['id'], $data['temperatureControl']);
+
+            return $data;
+        }
+
         public function store(Request $request)
         {
-            $asset = Asset::create($request->all());
+            $data = $this->normalizeAssetPayload($request);
+
+            validator($data, [
+                'asset_code' => 'required|string|max:255|unique:assets,asset_code',
+                'type'       => 'required|string|max:255',
+                'category'   => 'required|string|max:255',
+                'status'     => 'nullable|string|max:255',
+                'year'       => 'nullable|integer',
+                'value'      => 'nullable|numeric',
+                'current_fuel_level' => 'nullable|integer|min:0|max:100',
+                'last_maintenance'   => 'nullable|date',
+                'next_maintenance'   => 'nullable|date',
+                'purchase_date'      => 'nullable|date',
+            ])->validate();
+
+            $data['created_by'] = Auth::id();
+            $data['status'] = $data['status'] ?? 'Standby';
+            $data['capabilities'] = $data['capabilities'] ?? ['general'];
+
+            $asset = Asset::create($data);
             
             return response()->json([
                 'id'     => $asset->asset_code,
@@ -123,7 +202,21 @@ public function index(Request $request)
         public function update(Request $request, $code)
         {
             $asset = Asset::where('asset_code', $code)->firstOrFail();
-            $asset->update($request->all());
+
+            $data = $this->normalizeAssetPayload($request);
+            unset($data['created_by']);
+
+            validator($data, [
+                'asset_code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('assets', 'asset_code')->ignore($asset->id)],
+                'year'       => 'nullable|integer',
+                'value'      => 'nullable|numeric',
+                'current_fuel_level' => 'nullable|integer|min:0|max:100',
+                'last_maintenance'   => 'nullable|date',
+                'next_maintenance'   => 'nullable|date',
+                'purchase_date'      => 'nullable|date',
+            ])->validate();
+
+            $asset->update($data);
 
             return response()->json([
                 'id'   => $asset->asset_code,
@@ -149,7 +242,10 @@ public function index(Request $request)
             $underRepair = Asset::where('status', 'Under Repair')->count();
 
             // Optional: assets not assigned to any allocation (if you have allocation table)
-            $unassigned = Asset::whereDoesntHave('allocations')->count(); // or your logic
+            // Assets not currently attached to an active allocation.
+            $unassigned = Asset::whereDoesntHave('allocationVehicles', function ($q) {
+                $q->whereHas('allocation', fn ($a) => $a->whereIn('status', ['logistics_assigned', 'in_transit']));
+            })->count();
 
             return response()->json([
                 'total_assets'         => $total,
@@ -160,28 +256,17 @@ public function index(Request $request)
         }
 
 
-                public function adjustStock(Request $request, $code)
+        /**
+         * Assets are individual units (vehicles/equipment), not stock. Stock
+         * movements are tracked per resource via POST /resources/{id}/adjust-stock.
+         */
+        public function adjustStock(Request $request, $code)
         {
-            $asset = Asset::where('asset_code', $code)->firstOrFail();
-
-            $request->validate([
-                'quantity' => 'required|integer',
-                'reason'   => 'required|string',
-                'type'     => 'required|in:add,remove', // or 'adjustment'
-            ]);
-
-   
-            StockMovement::create([
-                'asset_id' => $asset->id,
-                'quantity' => $request->type === 'remove' ? -$request->quantity : $request->quantity,
-                'reason'   => $request->reason,
-                'created_by' => Auth::id(),
-            ]);
+            Asset::where('asset_code', $code)->firstOrFail();
 
             return response()->json([
-                'message' => 'Stock adjusted successfully',
-                'asset'   => $asset->fresh()
-            ]);
+                'message' => 'Assets are not stock-tracked. Use /resources/{id}/adjust-stock for inventory items.',
+            ], 422);
         }
    
         public function exportCsv()

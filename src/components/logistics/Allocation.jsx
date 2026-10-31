@@ -1,6 +1,8 @@
 // Allocation.jsx - COMPLETE ENHANCED VERSION WITH FIXED MODALS (2500+ lines)
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import { useSessionAllocationsStore } from "../../stores/sessionAllocationsStore";
+import { ROUTES } from "../../config/routes";
 
 import {
   List,
@@ -532,9 +534,11 @@ const RouteVisualization = ({
       </div>
     </div>
     <div className="flex justify-center mt-6">
-      <Button variant="outline" size="sm" icon={Map}>
-        View Full Route Map
-      </Button>
+      <RouterLink to={ROUTES.LOGISTICS.LIVE_MAP}>
+        <Button variant="outline" size="sm" icon={Map}>
+          View Full Route Map
+        </Button>
+      </RouterLink>
     </div>
   </div>
 );
@@ -836,18 +840,28 @@ const AssignmentSummaryModal = ({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <Button variant="primary" size="sm" fullWidth icon={Play}>
-                      Start Live Tracking
-                    </Button>
+                    <RouterLink to={ROUTES.LOGISTICS.LIVE_MAP} className="block">
+                      <Button variant="primary" size="sm" fullWidth icon={Play}>
+                        Start Live Tracking
+                      </Button>
+                    </RouterLink>
+                    <RouterLink to={ROUTES.LOGISTICS.SUPPLY_TRACKING} className="block">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        fullWidth
+                        icon={ExternalLink}
+                      >
+                        View Full Details
+                      </Button>
+                    </RouterLink>
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
                       fullWidth
-                      icon={ExternalLink}
+                      icon={Printer}
+                      onClick={() => window.print()}
                     >
-                      View Full Details
-                    </Button>
-                    <Button variant="ghost" size="sm" fullWidth icon={Printer}>
                       Print Summary
                     </Button>
                   </div>
@@ -1151,13 +1165,25 @@ const AssignmentSummaryModal = ({
                             </div>
                           )}
                           <div className="flex items-center gap-4 pt-2">
-                            <Button variant="ghost" size="sm" icon={PhoneCall}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              icon={PhoneCall}
+                              disabled={!(responder?.contact_number || responder?.phone)}
+                              onClick={() =>
+                                (window.location.href = `tel:${responder?.contact_number || responder?.phone}`)
+                              }
+                            >
                               Call
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               icon={MessageSquare}
+                              disabled={!(responder?.contact_number || responder?.phone)}
+                              onClick={() =>
+                                (window.location.href = `sms:${responder?.contact_number || responder?.phone}`)
+                              }
                             >
                               Message
                             </Button>
@@ -1536,7 +1562,24 @@ const AssignmentSummaryModal = ({
                           >
                             {allocation.status.replace("_", " ").toUpperCase()}
                           </Badge>
-                          <Button variant="outline" size="sm" icon={Share2}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            icon={Share2}
+                            onClick={async () => {
+                              const text = `Allocation #${allocation.id}: ${allocation.resource_type || "Supplies"} (${allocation.status})`;
+                              try {
+                                if (navigator.share) {
+                                  await navigator.share({ title: "Kalinga allocation", text });
+                                } else {
+                                  await navigator.clipboard.writeText(text);
+                                  alert("Allocation summary copied to clipboard.");
+                                }
+                              } catch {
+                                // user cancelled share
+                              }
+                            }}
+                          >
                             Share
                           </Button>
                         </div>
@@ -1617,24 +1660,28 @@ const AssignmentSummaryModal = ({
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
-                <Button
-                  variant="primary"
-                  size="lg"
-                  icon={Play}
-                  className="flex-1 sm:flex-none"
-                >
-                  <Play size={22} className="mr-3" />
-                  Start Live Tracking
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  icon={ExternalLink}
-                  className="flex-1 sm:flex-none"
-                >
-                  <ExternalLink size={22} className="mr-3" />
-                  View Full Route Details
-                </Button>
+                <RouterLink to={ROUTES.LOGISTICS.LIVE_MAP} className="flex-1 sm:flex-none">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    icon={Play}
+                    className="w-full"
+                  >
+                    <Play size={22} className="mr-3" />
+                    Start Live Tracking
+                  </Button>
+                </RouterLink>
+                <RouterLink to={ROUTES.LOGISTICS.SUPPLY_TRACKING} className="flex-1 sm:flex-none">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    icon={ExternalLink}
+                    className="w-full"
+                  >
+                    <ExternalLink size={22} className="mr-3" />
+                    View Full Route Details
+                  </Button>
+                </RouterLink>
                 <Button
                   variant="ghost"
                   size="lg"
@@ -2490,7 +2537,8 @@ function EnhancedSessionAllocationsPanel({ showToast, updateCount }) {
             );
             setAssignmentDetailsMap((prev) => ({
               ...prev,
-              [alloc.id]: details.data,
+              // getAllocationDetails already unwraps response.data
+              [alloc.id]: details?.data ?? details,
             }));
           } catch (err) {
             console.error(
@@ -2570,7 +2618,7 @@ function EnhancedSessionAllocationsPanel({ showToast, updateCount }) {
       // Use the new endpoint with responder.user relationship
       const response =
         await allocationService.getAllocationDetails(allocationId);
-      const details = response.data;
+      const details = response?.data ?? response;
 
       // Cache the details
       setAssignmentDetailsMap((prev) => ({
@@ -2625,11 +2673,11 @@ function EnhancedSessionAllocationsPanel({ showToast, updateCount }) {
         allocation.request_id,
         "in_transit",
       );
-      showToast?.("? Logistics is now in transit!", "success");
-      fetchAllocations();
+      showToast?.("Logistics is now in transit!", "success");
+      fetchMyAllocations();
     } catch (e) {
       console.error(e);
-      showToast?.("? Failed to transition to transit.", "error");
+      showToast?.("Failed to transition to transit.", "error");
     }
   };
 
@@ -2987,10 +3035,8 @@ export function Allocation() {
     (state) => state.listenToLogistics,
   );
 
-  useEffect(() => {
-    // start listening to reverb when we mount Allocation
-    listenToLogistics();
-  }, [listenToLogistics]);
+  // Listen to Reverb while Allocation is mounted (unsubscribes on unmount).
+  useEffect(() => listenToLogistics(), [listenToLogistics]);
   const [activeTab, setActiveTab] = useState("incoming");
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [toast, setToast] = useState(null);

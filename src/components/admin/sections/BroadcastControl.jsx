@@ -13,11 +13,41 @@ import {
 import { SectionHeader } from "../SectionHeader";
 import adminService from "@/services/adminService";
 
+// Only in-app notifications are delivered by the backend today; external
+// channels are listed so operators know they still need manual dispatch.
 const channels = [
-  { name: "SMS Advisory", reach: "18,240 recipients", status: "Alerted" },
-  { name: "Facebook Live", reach: "Municipal page", status: "Ready" },
-  { name: "Community Radio 98.5", reach: "On standby", status: "Live" },
-  { name: "Barangay Viber", reach: "42 barangays", status: "Scheduled" },
+  { name: "In-app notifications", reach: "All active accounts in the audience", status: "Live" },
+  { name: "SMS Advisory", reach: "Not integrated — send manually", status: "Ready" },
+  { name: "Community Radio", reach: "Not integrated — coordinate by phone", status: "Ready" },
+];
+
+const audiences = [
+  { value: "all", label: "Everyone" },
+  { value: "patient", label: "Patients / residents" },
+  { value: "responder", label: "Responders" },
+  { value: "logistics", label: "Logistics" },
+  { value: "admin", label: "Administrators" },
+];
+
+const templates = [
+  {
+    label: "Weather advisory",
+    type: "warning",
+    subject: "Weather advisory",
+    message: "A weather disturbance is expected in your area. Secure loose items, prepare an emergency kit, and monitor official updates.",
+  },
+  {
+    label: "Evacuation notice",
+    type: "emergency",
+    subject: "Evacuation notice",
+    message: "Residents of affected areas are advised to proceed to the nearest evacuation center. Bring IDs, medicines and essentials.",
+  },
+  {
+    label: "All clear",
+    type: "update",
+    subject: "All clear",
+    message: "The situation is now under control. Thank you for your cooperation. Continue to follow official advisories.",
+  },
 ];
 
 const statusTone = {
@@ -45,6 +75,9 @@ export const BroadcastControl = () => {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [notificationType, setNotificationType] = useState("info");
+  const [audience, setAudience] = useState("all");
+  const [showAudienceMenu, setShowAudienceMenu] = useState(false);
+  const [showTemplateMenu, setShowTemplateMenu] = useState(false);
 
   const fetchNotifications = useCallback(async () => {
     setIsLoading(true);
@@ -78,6 +111,7 @@ export const BroadcastControl = () => {
         title: subject,
         message: message,
         type: notificationType,
+        role: audience,
       });
       setSendSuccess(true);
       setSubject("");
@@ -182,12 +216,71 @@ export const BroadcastControl = () => {
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <button className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary">
-                <Users className="h-4 w-4" /> Audience segments
-              </button>
-              <button className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary">
-                <MessageCircle className="h-4 w-4" /> Templates
-              </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAudienceMenu((v) => !v);
+                    setShowTemplateMenu(false);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+                >
+                  <Users className="h-4 w-4" /> Audience:{" "}
+                  {audiences.find((a) => a.value === audience)?.label}
+                </button>
+                {showAudienceMenu && (
+                  <ul className="absolute z-20 mt-2 w-56 rounded-2xl border border-border/60 bg-background p-1 shadow-lg">
+                    {audiences.map((a) => (
+                      <li key={a.value}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAudience(a.value);
+                            setShowAudienceMenu(false);
+                          }}
+                          className={`w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-foreground/5 ${
+                            a.value === audience ? "font-semibold text-primary" : ""
+                          }`}
+                        >
+                          {a.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowTemplateMenu((v) => !v);
+                    setShowAudienceMenu(false);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+                >
+                  <MessageCircle className="h-4 w-4" /> Templates
+                </button>
+                {showTemplateMenu && (
+                  <ul className="absolute z-20 mt-2 w-56 rounded-2xl border border-border/60 bg-background p-1 shadow-lg">
+                    {templates.map((t) => (
+                      <li key={t.label}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSubject(t.subject);
+                            setMessage(t.message);
+                            setNotificationType(t.type);
+                            setShowTemplateMenu(false);
+                          }}
+                          className="w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-foreground/5"
+                        >
+                          {t.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
 

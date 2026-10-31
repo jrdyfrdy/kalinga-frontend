@@ -3,7 +3,8 @@ import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
 import { isSchemaMismatchError, logFallback } from '../utils/dbFallback.js';
 
 const getTriageByHospital = async (query = {}) => {
-  const { from, limit, page } = parsePagination(query);
+  // Triage views aggregate whole hospitals, so allow larger pages than the default 100.
+  const { from, limit, page } = parsePagination(query, { maxLimit: 500 });
 
   try {
     const countRes = await pool.query('SELECT COUNT(*) FROM triage_cases');
@@ -34,7 +35,8 @@ const getTriageByHospital = async (query = {}) => {
 };
 
 const getTriagePatients = async (query = {}) => {
-  const { from, limit, page } = parsePagination(query);
+  // Triage views aggregate whole hospitals, so allow larger pages than the default 100.
+  const { from, limit, page } = parsePagination(query, { maxLimit: 500 });
 
   const conditions = ['triage_level IS NOT NULL'];
   const params = [];

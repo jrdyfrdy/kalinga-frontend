@@ -7,10 +7,34 @@ export default function EditAssetModal({ isOpen, onClose, asset, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({});
 
+  // The registry list returns a display shape (id = asset_code, name, plateNumber,
+  // fuelLevel, nextMaintenance, value "$185,000", capabilities as a list); the
+  // form edits column names, so map between the two.
   useEffect(() => {
-    if (asset) {
-      setFormData({ ...asset });
-    }
+    if (!asset) return;
+    const caps = asset.capabilities;
+    setFormData({
+      ...asset,
+      type: asset.type ?? asset.name,
+      plate_number: asset.plate_number ?? asset.plateNumber ?? "",
+      current_fuel_level: asset.current_fuel_level ?? asset.fuelLevel ?? "",
+      last_maintenance: asset.last_maintenance ?? asset.lastMaintenance ?? "",
+      next_maintenance: asset.next_maintenance ?? asset.nextMaintenance ?? "",
+      value:
+        typeof asset.value === "string"
+          ? asset.value.replace(/[^0-9.-]/g, "")
+          : asset.value ?? "",
+      // Always offer the handling-class capabilities used for allocation matching.
+      capabilities: {
+        general: false,
+        cold_chain: false,
+        high_value: false,
+        narcotics: false,
+        ...(Array.isArray(caps)
+          ? Object.fromEntries(caps.map((c) => [c, true]))
+          : caps || {}),
+      },
+    });
   }, [asset]);
 
   const handleChange = (e) => {
@@ -38,10 +62,21 @@ export default function EditAssetModal({ isOpen, onClose, asset, onSuccess }) {
       // Format data for API
       const submitData = { ...formData };
       
-      // Remove unnecessary fields
+      // Remove display-only / read-only fields
       delete submitData.created_at;
       delete submitData.updated_at;
       delete submitData.created_by;
+      delete submitData.id;
+      delete submitData.name;
+      delete submitData.plateNumber;
+      delete submitData.fuelLevel;
+      delete submitData.nextMaintenance;
+      delete submitData.lastMaintenance;
+      delete submitData.temperatureControl;
+      if (submitData.current_fuel_level !== "" && submitData.current_fuel_level != null) {
+        submitData.current_fuel_level = parseInt(submitData.current_fuel_level, 10);
+      }
+      if (submitData.value === "") submitData.value = null;
       
       await assetService.updateAsset(asset.id, submitData);
       onSuccess();

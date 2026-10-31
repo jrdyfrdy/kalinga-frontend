@@ -22,7 +22,6 @@ use App\Http\Controllers\Api\AllocationController;
 use App\Http\Controllers\Api\LogisticsStatusController;
 use App\Http\Controllers\Api\ResponderController;
 use App\Http\Controllers\Api\AssetController;
-use App\Http\Controllers\Api\LogisticsController;
 use App\Http\Controllers\Api\PresenceController;
 
 use App\Http\Controllers\Api\ForecastController;
@@ -30,6 +29,11 @@ use App\Http\Controllers\Api\ForecastController;
 use App\Http\Controllers\Api\SensorDataController;
 use App\Http\Controllers\Api\PatientCareReportController;
 use App\Http\Controllers\Api\HealthSimulatorController;
+use App\Http\Controllers\Api\MaintenanceController;
+use App\Http\Controllers\Api\UserSettingsController;
+use App\Http\Controllers\Api\LogisticsReportController;
+use App\Http\Controllers\Api\EvacuationCenterController;
+use App\Http\Controllers\Api\ConnectivityController;
 
 
 use Illuminate\Http\Request;
@@ -220,7 +224,7 @@ Route::middleware(['auth:sanctum'])->post('/debug/broadcast-auth', function (Req
 
     // presence-incidents
     if ($channel === 'presence-incidents') {
-        $allowedRoles = ['admin', 'responder', 'logistics', 'patient'];
+        $allowedRoles = ['admin', 'responder', 'logistics', 'patient', 'hospital_admin', 'dispatcher'];
         $isAllowed = in_array($user->role, $allowedRoles, true);
         $decision = [
             'ok' => $isAllowed,
@@ -275,306 +279,13 @@ Route::middleware(['auth:sanctum'])->post('/debug/broadcast-auth', function (Req
         'context' => $decision['context'] ?? null,
     ]);
 });
-// Public read-only routes for testing
-Route::middleware([])->group(function () {
-    Route::get('/hospitals', [HospitalController::class, 'index']);
-    Route::get('/resources', [ResourceController::class, 'index']);
-});
-
-// Secure Image Serving (Requires Valid Signature)
-Route::get('/secure-document', [\App\Http\Controllers\VerificationController::class, 'showDocument'])
-    ->middleware('signed')
-    ->name('secure.document');
-
-// Protected routes (require authentication + rate limiting)
-Route::middleware(['auth:sanctum'])->group(function () {
-    // Common authenticated routes
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/me', [AuthController::class, 'me']);
-    Route::put('/profile', [AuthController::class, 'updateProfile']);
-    Route::post('/presence/heartbeat', [PresenceController::class, 'heartbeat']);
-    Route::post('/presence/offline', [PresenceController::class, 'offline']);
-    Route::post('/verify-id', [AuthController::class, 'verifyId']);
-    Route::post('/submit-verification', [AuthController::class, 'submitVerification']);
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::post('/route-logs', [RouteLogController::class, 'store']);
-    Route::post('/route-logs/{routeLog}/deviations', [RouteLogController::class, 'storeDeviation']);
-    Route::get('/route-logs', [RouteLogController::class, 'index']);
-    Route::post('/book-appointment', [AppointmentController::class, 'store']);
-    Route::post('/parse-id', [OCRController::class, 'processImage']);
-
-    // Identity Verification
-    Route::post('/verify-identity', [VerificationController::class, 'store']);
-  
-    // Admin only routes
-    Route::middleware(['role:admin'])->group(function () {
-        Route::get('/admin/users', [AuthController::class, 'getAllUsers']);
-        Route::put('/admin/users/{id}/activate', [AuthController::class, 'activateUser']);
-        Route::put('/admin/users/{id}/deactivate', [AuthController::class, 'deactivateUser']);
-        Route::put('/admin/users/{id}/hospital', [AuthController::class, 'updateUserHospital']);
-        Route::put('/admin/users/{id}', [AuthController::class, 'updateUser']);
-        Route::get('/admin/verifications', [VerificationController::class, 'index']);
-        Route::post('/admin/verifications/{id}/approve', [VerificationController::class, 'approve']);
-        Route::post('/admin/verifications/{id}/reject', [VerificationController::class, 'reject']);
-        Route::post('/notifications', [NotificationController::class, 'store']);
-    });
-
-    // Admin and Logistics routes
-    Route::middleware(['role:admin,logistics'])->group(function () {
-
-        // ── AI Forecasting Routes ────────────────────────────
-        Route::prefix('forecasts')->group(function () {
-            Route::get('/demand',             [ForecastController::class, 'demand']);
-            Route::get('/risk',               [ForecastController::class, 'risk']);
-            Route::get('/summary',            [ForecastController::class, 'summary']);
-            Route::get('/hospital/{hospital}', [ForecastController::class, 'hospitalDetail']);
-            Route::get('/narrative',          [ForecastController::class, 'narrative']);
-            Route::get('/auto-reorders',      [ForecastController::class, 'autoReorders']);
-            Route::get('/health',             [ForecastController::class, 'health']);
-            Route::get('/history',            [ForecastController::class, 'history']);
-            Route::get('/accuracy',           [ForecastController::class, 'accuracy']);
-            Route::post('/trigger',           [ForecastController::class, 'trigger']);
-        });
-
-            Route::get('/requests', [RequestController::class, 'index']);
-            Route::post('/requests', [RequestController::class, 'store']);
-            Route::get('/requests/{request}', [RequestController::class, 'show']);
-            Route::post('/requests/draft', [RequestController::class, 'storeDraft']);
-            Route::delete('/requests/{request}', [RequestController::class, 'destroy']);
-            Route::patch('/requests/{request}/draft', [RequestController::class, 'updateDraft']);
-            Route::post('/requests/{request}/submit', [RequestController::class, 'submitDraft']);
-            Route::post('/requests/{request}/under-review', [RequestController::class, 'markAsUnderReview'])
-                ->name('requests.under-review');
-            Route::patch('/requests/{request}/status', [RequestController::class, 'updateStatus'])
-                ->name('requests.update-status');
-            
-            Route::get('/allocations', [AllocationController::class, 'index']);
-            Route::post('/allocations', [AllocationController::class, 'store']);
-            Route::post('/allocations/bulk', [AllocationController::class, 'bulkCreate']);
-            Route::get('/allocations/my', [AllocationController::class, 'myAllocations']);
-            Route::patch('/allocations/{allocation}/confirm', [AllocationController::class, 'confirm']);
-            Route::get('/allocations/suggestions/{request}', [AllocationController::class, 'suggestions']);
-            Route::delete('/allocations/{allocation}/reject', [AllocationController::class, 'rejectSuggestion']);
-
-            Route::prefix('allocations')->group(function () {
-            Route::patch('{allocation}/assign', [AllocationController::class, 'assign']); });
-
-             Route::get('/allocations/{id}/assignment-details', [AllocationController::class, 'assignmentDetails'])
-            ->name('allocations.assignment-details');
-
-            Route::get('/allocations/pending/count', [AllocationController::class, 'pendingCount']);
-            Route::get('/allocations/my/count', [AllocationController::class, 'myAllocationsCount']);
-            Route::get('/allocations/{id}/details', [AllocationController::class, 'showWithDetails']);
-
-            Route::get('/allocations/{id}', [AllocationController::class, 'show']);
-            Route::get('/allocations/{id}/assignment', [AllocationController::class, 'assignment']);
-            Route::get('/allocations/{allocation}/suggest-vehicle', [AllocationController::class, 'suggestVehicle']);
-            Route::get('/allocations/{allocation}/suggest-responder', [AllocationController::class, 'suggestResponder']);
-            Route::get('/allocations/{allocation}/available-vehicles', [AllocationController::class, 'availableVehicles']);
-            Route::get('/allocations/{allocation}/available-responders', [AllocationController::class, 'availableResponders']);
-
-            Route::get('/supply-tracking', [AllocationController::class, 'getSupplyTracking']);
-                
-            Route::get('/responders/available', [ResponderController::class, 'available']);
-
-            Route::get('assets/metrics', [AssetController::class, 'metrics']);
-            Route::get('assets/export/csv', [AssetController::class, 'exportCsv']);
-            Route::get('/assets/available', [AssetController::class, 'available']);
-            Route::post('assets/{code}/adjust-stock', [AssetController::class, 'adjustStock']);
-            Route::apiResource('assets', AssetController::class)->parameters(['assets' => 'code']);
-
-
-
-        // Calendar & History Routes (from your calendar feature)
-        Route::get('/resources/calendar/events', [ResourceController::class, 'calendarEvents']);
-        Route::get('/resources/calendar/events/{date}', [ResourceController::class, 'dateEvents']);
-        Route::get('/resources/{resource}/history', [ResourceController::class, 'resourceHistory']);
-        Route::get('/resources/stock-movements', [ResourceController::class, 'stockMovements']);
-        
-        // Stock adjustment (from your calendar feature)
-        Route::post('/resources/{id}/adjust-stock', [ResourceController::class, 'adjustStock']);
-        
-        // Special queries (from your calendar feature)
-        Route::get('/resources/low-stock', [ResourceController::class, 'lowStock']);
-        Route::get('/resources/critical', [ResourceController::class, 'critical']);
-        Route::get('/resources/expiring', [ResourceController::class, 'expiring']);
-        
-        // Full CRUD resources (except index which stays public)
-        Route::apiResource('resources', ResourceController::class)->except(['index']);
-        Route::apiResource('hospitals', HospitalController::class)->except(['index']);
-
-        // 
-        // Hospital Safety Index (HSI) Routes
-        // 
-        Route::prefix('hsi')->group(function () {
-            // Dashboard & Overview
-            Route::get('/dashboard', [HospitalSafetyIndexController::class, 'dashboard']);
-            
-            // Hospital-specific routes
-            Route::prefix('hospitals/{hospital}')->group(function () {
-                // Compliance & Simulation
-                Route::get('/compliance', [HospitalSafetyIndexController::class, 'hospitalCompliance']);
-                Route::post('/simulate-disaster', [HospitalSafetyIndexController::class, 'simulateDisaster']);
-                Route::post('/recalculate', [HospitalSafetyIndexController::class, 'recalculateResilience']);
-                
-                // Disaster Mode
-                Route::post('/disaster-mode/activate', [HospitalSafetyIndexController::class, 'activateDisasterMode']);
-                Route::post('/disaster-mode/deactivate', [HospitalSafetyIndexController::class, 'deactivateDisasterMode']);
-                
-                // Safety Assessments
-                Route::get('/assessments', [HospitalSafetyIndexController::class, 'assessments']);
-                Route::post('/assessments', [HospitalSafetyIndexController::class, 'storeAssessment']);
-                
-                // Tanks
-                Route::get('/tanks', [HospitalSafetyIndexController::class, 'tanks']);
-                Route::post('/tanks', [HospitalSafetyIndexController::class, 'storeTank']);
-                
-                // Vendors
-                Route::get('/vendors', [HospitalSafetyIndexController::class, 'vendors']);
-                Route::post('/vendors', [HospitalSafetyIndexController::class, 'storeVendor']);
-                
-                // Resilience Configs
-                Route::get('/resilience-configs', [HospitalSafetyIndexController::class, 'resilienceConfigs']);
-                Route::post('/resilience-configs', [HospitalSafetyIndexController::class, 'storeResilienceConfig']);
-            });
-
-            // Resilience config single-resource routes (outside hospital prefix)
-            Route::patch('/resilience-configs/{config}', [HospitalSafetyIndexController::class, 'updateResilienceConfig']);
-            Route::delete('/resilience-configs/{config}', [HospitalSafetyIndexController::class, 'deleteResilienceConfig']);
-            
-            // Individual resource routes
-            Route::get('/assessments/{assessment}', [HospitalSafetyIndexController::class, 'showAssessment']);
-            Route::patch('/tanks/{tank}/level', [HospitalSafetyIndexController::class, 'updateTankLevel']);
-            Route::post('/tanks/{tank}/refill', [HospitalSafetyIndexController::class, 'refillTank']);
-            Route::get('/tanks/{tank}/history', [HospitalSafetyIndexController::class, 'tankHistory']);
-            Route::patch('/vendors/{vendor}', [HospitalSafetyIndexController::class, 'updateVendor']);
-            Route::post('/vendors/{vendor}/trigger', [HospitalSafetyIndexController::class, 'triggerVendor']);
-        });
-    });
-
-    // Shared read-only situational awareness (patients need visibility too)
-    Route::middleware(['role:admin,responder,logistics,patient'])->group(function () {
-        Route::get('/incidents', [IncidentApiController::class, 'index']);
-        Route::get('/incidents/{incident}', [IncidentApiController::class, 'show']);
-        Route::get('/incidents/{incident}/history', [IncidentApiController::class, 'history']);
-        Route::get('/road-blockades', [RoadBlockadeController::class, 'index']);
-    });
-
-    // Gemini context generation (backend proxy) - authenticated only
-    Route::post('/gemini/context', [GeminiController::class, 'generate']);
-    
-    // Responder (and Logistics) routes
-    Route::middleware(['role:admin,responder,logistics'])->group(function () {
-        // Pathfinding routes
-        Route::apiResource('patient-care-reports', PatientCareReportController::class)
-            ->only(['index', 'show', 'store']);
-        Route::post('patient-care-reports/{patientCareReport}/soft-copy', [PatientCareReportController::class, 'generateSoftCopy']);
-        Route::get('patient-care-reports/{patientCareReport}/soft-copy', [PatientCareReportController::class, 'downloadSoftCopy']);
-
-        Route::get('/incidents/{incident}/conversation', [IncidentApiController::class, 'conversation']);
-        Route::get('/incidents/{incident}/hospital-recommendations', [IncidentApiController::class, 'hospitalRecommendations']);
-        Route::post('/incidents/{incident}/assign', [IncidentApiController::class, 'assign']);
-        Route::post('/incidents/{incident}/status', [IncidentApiController::class, 'updateStatus']);
-        Route::post('/incidents/{incident}/telemetry/socket-receipt', [IncidentTelemetryController::class, 'storeSocketReceipt']);
-        Route::post('/incidents/assign-nearest', [IncidentApiController::class, 'assignNearest']);
-        
-        // AI Smart Routing endpoints
-        Route::get('/incidents/{incident}/smart-responder-recommendations', [IncidentApiController::class, 'smartResponderRecommendations']);
-        Route::post('/incidents/{incident}/smart-auto-assign', [IncidentApiController::class, 'smartAutoAssign']);
-        
-        Route::apiResource('road-blockades', RoadBlockadeController::class)->except(['index']);
-        Route::post('/road-blockades/route', [RoadBlockadeController::class, 'getRouteBlockades']);
-        Route::patch('/road-blockades/{id}/remove', [RoadBlockadeController::class, 'removeBlockade']);
-    });
-    
-    // Patient routes
-    Route::middleware(['role:admin,patient'])->group(function () {
-        Route::get('/lab-results', [LabResultController::class, 'index']);
-        Route::get('/my-patient-care-reports', [PatientCareReportController::class, 'myReports']);
-        Route::get('/appointments', [AppointmentController::class, 'index']);
-        Route::delete('/appointments/{id}', [AppointmentController::class, 'destroy']);
-        
-        // Patient rescue tracking - view responder location
-        Route::get('/rescue/active', [ResponderTrackingController::class, 'getMyActiveRescue']);
-        Route::get('/incidents/{incident}/responder-location', [ResponderTrackingController::class, 'getResponderLocation']);
-    });
-
-    // Responder location tracking - update location during active response
-    Route::middleware(['role:admin,responder'])->group(function () {
-        Route::post('/incidents/{incident}/responder-location', [ResponderTrackingController::class, 'updateLocation']);
-    });
-
-    // Chat routes (all authenticated users)
-    Route::prefix('chat')->group(function () {
-        Route::get('/conversations', [ChatController::class, 'getConversations']);
-        Route::get('/messages/{userId}', [ChatController::class, 'getMessages']);
-        Route::post('/messages', [ChatController::class, 'sendMessage']);
-        Route::delete('/messages/{messageId}', [ChatController::class, 'deleteMessage']);
-    });
-
-    // NLP Analysis routes (AI-powered message analysis)
-    Route::prefix('nlp')->group(function () {
-        Route::post('/analyze-message', [NLPController::class, 'analyzeMessage']);
-        Route::post('/urgency-check', [NLPController::class, 'urgencyCheck']);
-        Route::post('/analyze-conversation', [NLPController::class, 'analyzeConversation']);
-        Route::post('/bulk-urgency', [NLPController::class, 'bulkUrgencyAnalysis']);
-    });
-
-    // NLP Analysis for incidents (admin/responder only)
-    Route::middleware(['role:admin,responder'])->group(function () {
-        Route::get('/nlp/incident/{incident}/analysis', [NLPController::class, 'analyzeIncidentMessages']);
-    });
-});
-
-// Health check
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'timestamp' => now()->toIso8601String(),
-    ]);
-});
-
-// Logistics Unified Tracking Event
-Route::patch('/logistics/requests/{id}/status', [LogisticsStatusController::class, 'updateStatus']);
-
-// Test routes (public)
-Route::get('/test/hospitals', function () {
-    return response()->json(\App\Models\Hospital::all());
-});
-
-Route::get('/test/resources', function () {
-    return response()->json(\App\Models\Resource::with('hospital')->get());
-});
-
-// ======
-// Alisto Sensor Data & Health Simulator Routes
-// ======
-
-// Public sensor endpoints (RPi pushes data here; dashboard reads it)
-Route::middleware([])->prefix('sensor')->group(function () {
-    Route::get('/vitals/latest',  [SensorDataController::class, 'latest']);
-    Route::get('/vitals/history', [SensorDataController::class, 'history']);
-    Route::get('/vitals/summary', [SensorDataController::class, 'summary']);
-    Route::get('/status',         [SensorDataController::class, 'deviceStatus']);
-    Route::post('/vitals',        [SensorDataController::class, 'store']);
-});
-
-// Simulator endpoints (protected — admin/responder only)
-Route::middleware(['auth:sanctum'])->prefix('simulator')->group(function () {
-    Route::get('/scenarios',  [HealthSimulatorController::class, 'scenarios']);
-    Route::post('/start',     [HealthSimulatorController::class, 'start']);
-    Route::post('/stream',    [HealthSimulatorController::class, 'stream']);
-    Route::delete('/cleanup', [HealthSimulatorController::class, 'cleanup']);
-});
-
+// Registered before the hospitals/incidents resource routes so that
+// '/hospitals/{hospital}' and '/incidents/{incident}' do not shadow them.
 // ======
 // Hospital Patient Distribution (bridged to DB capacity)
 // ======
 Route::middleware([])->get('/hospitals/patient-distribution', function () {
-    $hospitals = \App\Models\Hospital::whereNotNull('capacity')
-        ->where('is_active', true)
-        ->select('id', 'name', 'capacity', 'bed_capacity', 'icu_capacity')
-        ->get();
+    $hospitals = \App\Models\Hospital::where('is_active', true)->get();
 
     if ($hospitals->isEmpty()) {
         // Mock distribution when no hospitals are configured
@@ -591,16 +302,18 @@ Route::middleware([])->get('/hospitals/patient-distribution', function () {
     }
 
     $data = $hospitals->map(function ($h) {
-        $totalCapacity = $h->bed_capacity ?? $h->capacity ?? 100;
-        $simulatedPatients = (int) round($totalCapacity * (mt_rand(55, 90) / 100));
+        $totalCapacity = (int) ($h->bed_capacity ?: $h->capacity ?: 0);
+        // Real census: Laravel tracks current_occupancy; node-backend's
+        // migration adds current_patients. Prefer whichever is populated.
+        $patients = (int) ($h->current_occupancy ?: ($h->current_patients ?? 0));
         return [
             'hospital'      => $h->name,
             'hospital_id'   => $h->id,
-            'patients'      => $simulatedPatients,
+            'patients'      => $patients,
             'capacity'      => $totalCapacity,
-            'occupancy_pct' => $totalCapacity > 0 ? round($simulatedPatients / $totalCapacity * 100) : 0,
+            'occupancy_pct' => $totalCapacity > 0 ? (int) round($patients / $totalCapacity * 100) : 0,
         ];
-    });
+    })->values();
 
     return response()->json([
         'source' => 'database',
@@ -612,9 +325,7 @@ Route::middleware([])->get('/hospitals/patient-distribution', function () {
 // DOH Hospital Reports — Priority categorization by occupancy
 // ======
 Route::middleware([])->get('/reports/doh-hospital', function () {
-    $hospitals = \App\Models\Hospital::where('is_active', true)
-        ->select('id', 'name', 'capacity', 'bed_capacity', 'icu_capacity', 'emergency_services')
-        ->get();
+    $hospitals = \App\Models\Hospital::where('is_active', true)->get();
 
     if ($hospitals->isEmpty()) {
         return response()->json([
@@ -628,8 +339,9 @@ Route::middleware([])->get('/reports/doh-hospital', function () {
     }
 
     $reports = $hospitals->map(function ($h) {
-        $totalCapacity = $h->bed_capacity ?? $h->capacity ?? 100;
-        $occupancy     = mt_rand(45, 98);
+        $totalCapacity = (int) ($h->bed_capacity ?: $h->capacity ?: 0);
+        $patients      = (int) ($h->current_occupancy ?: ($h->current_patients ?? 0));
+        $occupancy     = $totalCapacity > 0 ? (int) round($patients / $totalCapacity * 100) : 0;
 
         if ($occupancy >= 85) {
             $priority = 'Critical';
@@ -708,7 +420,7 @@ Route::middleware([])->get('/reports/doh-triage', function () {
 // ======
 // Incident Logs Polling Endpoint (lightweight)
 // ======
-Route::middleware([])->get('/incidents/poll', function (\Illuminate\Http\Request $request) {
+Route::middleware(['auth:sanctum'])->get('/incidents/poll', function (\Illuminate\Http\Request $request) {
     $since = $request->query('since');
     $query = \App\Models\Incident::query()
         ->with(['assignments.responder:id,name,role', 'latestStatusUpdate.user:id,name,role'])
@@ -726,4 +438,350 @@ Route::middleware([])->get('/incidents/poll', function (\Illuminate\Http\Request
     ]);
 });
 
+// Public read-only routes for testing
+Route::middleware([])->group(function () {
+    Route::get('/hospitals', [HospitalController::class, 'index']);
+    Route::get('/resources', [ResourceController::class, 'index']);
+});
 
+// Chat attachment download (signed URL generated by ChatController)
+Route::get('/chat/attachments/{attachment}', [ChatController::class, 'downloadAttachment'])
+    ->middleware('signed')
+    ->name('chat.attachment');
+
+// Secure Image Serving (Requires Valid Signature)
+Route::get('/secure-document', [\App\Http\Controllers\VerificationController::class, 'showDocument'])
+    ->middleware('signed')
+    ->name('secure.document');
+
+// Protected routes (require authentication + rate limiting)
+Route::middleware(['auth:sanctum'])->group(function () {
+    // Common authenticated routes
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/magic-login/exchange', [AuthController::class, 'exchangeMagicLink']);
+    Route::put('/profile', [AuthController::class, 'updateProfile']);
+    Route::post('/presence/heartbeat', [PresenceController::class, 'heartbeat']);
+    Route::post('/presence/offline', [PresenceController::class, 'offline']);
+    Route::post('/verify-id', [AuthController::class, 'verifyId']);
+    Route::post('/submit-verification', [AuthController::class, 'submitVerification']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->whereNumber('id');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+
+    // Per-user preferences, password and sessions (patient + responder Settings)
+    Route::get('/notifications/other-settings', [UserSettingsController::class, 'getOtherNotifications']);
+    Route::post('/notifications/other-settings', [UserSettingsController::class, 'saveOtherNotifications']);
+    Route::get('/notifications/alert-settings', [UserSettingsController::class, 'getAlertSettings']);
+    Route::post('/notifications/alert-settings', [UserSettingsController::class, 'saveAlertSettings']);
+    Route::get('/notifications/mute', [UserSettingsController::class, 'getMute']);
+    Route::post('/notifications/mute', [UserSettingsController::class, 'mute']);
+    Route::delete('/notifications/mute', [UserSettingsController::class, 'unmute']);
+    Route::get('/notification-tone', [UserSettingsController::class, 'getNotificationTone']);
+    Route::post('/notification-tone', [UserSettingsController::class, 'saveNotificationTone']);
+    Route::get('/appointments/settings', [UserSettingsController::class, 'getAppointmentSettings']);
+    Route::post('/appointments/settings', [UserSettingsController::class, 'saveAppointmentSettings']);
+    Route::post('/change-password', [UserSettingsController::class, 'changePassword']);
+    Route::get('/devices', [UserSettingsController::class, 'devices']);
+    Route::post('/devices/{id}/logout', [UserSettingsController::class, 'logoutDevice'])->whereNumber('id');
+
+    // Evacuation centers (read for every signed-in user; writes are admin-only below)
+    Route::get('/evacuation-centers', [EvacuationCenterController::class, 'index']);
+    Route::get('/evacuation-centers/{evacuationCenter}', [EvacuationCenterController::class, 'show']);
+    Route::post('/route-logs', [RouteLogController::class, 'store']);
+    Route::post('/route-logs/{routeLog}/deviations', [RouteLogController::class, 'storeDeviation']);
+    Route::get('/route-logs', [RouteLogController::class, 'index']);
+    Route::post('/book-appointment', [AppointmentController::class, 'store']);
+    Route::post('/parse-id', [OCRController::class, 'processImage']);
+
+    // Identity Verification
+    Route::post('/verify-identity', [VerificationController::class, 'store']);
+  
+    // Admin only routes
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/admin/users', [AuthController::class, 'getAllUsers']);
+        Route::put('/admin/users/{id}/activate', [AuthController::class, 'activateUser']);
+        Route::put('/admin/users/{id}/deactivate', [AuthController::class, 'deactivateUser']);
+        Route::put('/admin/users/{id}/hospital', [AuthController::class, 'updateUserHospital']);
+        Route::put('/admin/users/{id}', [AuthController::class, 'updateUser']);
+        Route::get('/admin/verifications', [VerificationController::class, 'index']);
+        Route::post('/admin/verifications/{id}/approve', [VerificationController::class, 'approve']);
+        Route::post('/admin/verifications/{id}/reject', [VerificationController::class, 'reject']);
+        Route::post('/notifications', [NotificationController::class, 'store']);
+
+        Route::get('/admin/connectivity/status', [ConnectivityController::class, 'status']);
+
+        Route::post('/evacuation-centers', [EvacuationCenterController::class, 'store']);
+        Route::put('/evacuation-centers/{evacuationCenter}', [EvacuationCenterController::class, 'update']);
+        Route::delete('/evacuation-centers/{evacuationCenter}', [EvacuationCenterController::class, 'destroy']);
+
+        // Admin logistics overview lists
+        Route::get('/incoming-requests', [LogisticsReportController::class, 'incoming']);
+        Route::get('/outgoing-requests', [LogisticsReportController::class, 'outgoing']);
+        Route::get('/allocation-history', [LogisticsReportController::class, 'history']);
+    });
+
+    // Admin and Logistics routes
+    Route::middleware(['role:admin,logistics'])->group(function () {
+
+        // ── AI Forecasting Routes ────────────────────────────
+        Route::prefix('forecasts')->group(function () {
+            Route::get('/demand',             [ForecastController::class, 'demand']);
+            Route::get('/risk',               [ForecastController::class, 'risk']);
+            Route::get('/summary',            [ForecastController::class, 'summary']);
+            Route::get('/hospital/{hospital}', [ForecastController::class, 'hospitalDetail']);
+            Route::get('/narrative',          [ForecastController::class, 'narrative']);
+            Route::get('/auto-reorders',      [ForecastController::class, 'autoReorders']);
+            Route::get('/health',             [ForecastController::class, 'health']);
+            Route::get('/history',            [ForecastController::class, 'history']);
+            Route::get('/accuracy',           [ForecastController::class, 'accuracy']);
+            Route::post('/trigger',           [ForecastController::class, 'trigger']);
+        });
+
+            // Logistics Unified Tracking Event
+            Route::patch('/logistics/requests/{id}/status', [LogisticsStatusController::class, 'updateStatus']);
+
+            Route::get('/requests', [RequestController::class, 'index']);
+            Route::post('/requests', [RequestController::class, 'store']);
+            Route::get('/requests/{requestModel}', [RequestController::class, 'show']);
+            Route::post('/requests/draft', [RequestController::class, 'storeDraft']);
+            Route::delete('/requests/{requestModel}', [RequestController::class, 'destroy']);
+            Route::patch('/requests/{requestModel}/draft', [RequestController::class, 'updateDraft']);
+            Route::post('/requests/{requestModel}/submit', [RequestController::class, 'submitDraft']);
+            Route::post('/requests/{requestModel}/under-review', [RequestController::class, 'markAsUnderReview'])
+                ->name('requests.under-review');
+            Route::post('/requests/{requestModel}/escalate', [RequestController::class, 'escalate']);
+            Route::post('/logistics/hospitals/{hospital}/notify', [NotificationController::class, 'notifyHospital']);
+            Route::patch('/requests/{requestModel}/status', [RequestController::class, 'updateStatus'])
+                ->name('requests.update-status');
+            
+            Route::get('/allocations', [AllocationController::class, 'index']);
+            Route::post('/allocations', [AllocationController::class, 'store']);
+            Route::post('/allocations/bulk', [AllocationController::class, 'bulkCreate']);
+            Route::get('/allocations/my', [AllocationController::class, 'myAllocations']);
+            Route::patch('/allocations/{allocation}/confirm', [AllocationController::class, 'confirm']);
+            Route::get('/allocations/suggestions/{request}', [AllocationController::class, 'suggestions']);
+            Route::delete('/allocations/{allocation}/reject', [AllocationController::class, 'rejectSuggestion']);
+
+            Route::prefix('allocations')->group(function () {
+            Route::patch('{allocation}/assign', [AllocationController::class, 'assign']);
+            Route::patch('{allocation}/reassign', [AllocationController::class, 'reassign']); });
+
+             Route::get('/allocations/{id}/assignment-details', [AllocationController::class, 'assignmentDetails'])
+            ->name('allocations.assignment-details');
+
+            Route::get('/allocations/pending/count', [AllocationController::class, 'pendingCount']);
+            Route::get('/allocations/my/count', [AllocationController::class, 'myAllocationsCount']);
+            Route::get('/allocations/{id}/details', [AllocationController::class, 'showWithDetails']);
+
+            Route::get('/allocations/{id}', [AllocationController::class, 'show']);
+            Route::get('/allocations/{id}/assignment', [AllocationController::class, 'assignment']);
+            Route::get('/allocations/{allocation}/suggest-vehicle', [AllocationController::class, 'suggestVehicle']);
+            Route::get('/allocations/{allocation}/suggest-responder', [AllocationController::class, 'suggestResponder']);
+            Route::get('/allocations/{allocation}/available-vehicles', [AllocationController::class, 'availableVehicles']);
+            Route::get('/allocations/{allocation}/available-responders', [AllocationController::class, 'availableResponders']);
+
+            Route::get('/supply-tracking', [AllocationController::class, 'getSupplyTracking']);
+                
+            Route::get('/responders/available', [ResponderController::class, 'available']);
+
+            Route::get('assets/metrics', [AssetController::class, 'metrics']);
+            Route::get('assets/export/csv', [AssetController::class, 'exportCsv']);
+            Route::get('/assets/available', [AssetController::class, 'available']);
+            Route::post('assets/{code}/adjust-stock', [AssetController::class, 'adjustStock']);
+            Route::apiResource('assets', AssetController::class)->parameters(['assets' => 'code']);
+
+            // Asset maintenance (registry Maintenance tab / calendar)
+            Route::get('/maintenance', [MaintenanceController::class, 'index']);
+            Route::post('/maintenance', [MaintenanceController::class, 'store']);
+            Route::post('/maintenance/{id}/reschedule', [MaintenanceController::class, 'reschedule']);
+            Route::post('/maintenance/{id}/complete', [MaintenanceController::class, 'complete']);
+            Route::patch('/maintenance/{id}/status', [MaintenanceController::class, 'updateStatus']);
+
+
+
+        // Calendar & History Routes (from your calendar feature)
+        Route::get('/resources/calendar/events', [ResourceController::class, 'calendarEvents']);
+        Route::get('/resources/calendar/events/{date}', [ResourceController::class, 'dateEvents']);
+        Route::get('/resources/{resource}/history', [ResourceController::class, 'resourceHistory']);
+        Route::get('/resources/stock-movements', [ResourceController::class, 'stockMovements']);
+        Route::put('/resources/stock-movements/{id}', [ResourceController::class, 'updateStockMovement']);
+        Route::get('/resources/stats', [ResourceController::class, 'stats']);
+        Route::get('/resources/by-facility', [ResourceController::class, 'byFacility']);
+        
+        // Stock adjustment (from your calendar feature)
+        Route::post('/resources/{id}/adjust-stock', [ResourceController::class, 'adjustStock']);
+        
+        // Special queries (from your calendar feature)
+        Route::get('/resources/low-stock', [ResourceController::class, 'lowStock']);
+        Route::get('/resources/critical', [ResourceController::class, 'critical']);
+        Route::get('/resources/expiring', [ResourceController::class, 'expiring']);
+        
+        // Full CRUD resources (except index which stays public)
+        Route::apiResource('resources', ResourceController::class)->except(['index']);
+        Route::apiResource('hospitals', HospitalController::class)->except(['index']);
+
+        // 
+        // Hospital Safety Index (HSI) Routes
+        // 
+        Route::prefix('hsi')->group(function () {
+            // Dashboard & Overview
+            Route::get('/dashboard', [HospitalSafetyIndexController::class, 'dashboard']);
+            
+            // Hospital-specific routes
+            Route::prefix('hospitals/{hospital}')->group(function () {
+                // Compliance & Simulation
+                Route::get('/compliance', [HospitalSafetyIndexController::class, 'hospitalCompliance']);
+                Route::post('/simulate-disaster', [HospitalSafetyIndexController::class, 'simulateDisaster']);
+                Route::post('/recalculate', [HospitalSafetyIndexController::class, 'recalculateResilience']);
+                
+                // Disaster Mode
+                Route::post('/disaster-mode/activate', [HospitalSafetyIndexController::class, 'activateDisasterMode']);
+                Route::post('/disaster-mode/deactivate', [HospitalSafetyIndexController::class, 'deactivateDisasterMode']);
+                
+                // Safety Assessments
+                Route::get('/assessments', [HospitalSafetyIndexController::class, 'assessments']);
+                Route::post('/assessments', [HospitalSafetyIndexController::class, 'storeAssessment']);
+                
+                // Tanks
+                Route::get('/tanks', [HospitalSafetyIndexController::class, 'tanks']);
+                Route::post('/tanks', [HospitalSafetyIndexController::class, 'storeTank']);
+                
+                // Vendors
+                Route::get('/vendors', [HospitalSafetyIndexController::class, 'vendors']);
+                Route::post('/vendors', [HospitalSafetyIndexController::class, 'storeVendor']);
+                
+                // Resilience Configs
+                Route::get('/resilience-configs', [HospitalSafetyIndexController::class, 'resilienceConfigs']);
+                Route::post('/resilience-configs', [HospitalSafetyIndexController::class, 'storeResilienceConfig']);
+            });
+
+            // Resilience config single-resource routes (outside hospital prefix)
+            Route::patch('/resilience-configs/{config}', [HospitalSafetyIndexController::class, 'updateResilienceConfig']);
+            Route::delete('/resilience-configs/{config}', [HospitalSafetyIndexController::class, 'deleteResilienceConfig']);
+            
+            // Individual resource routes
+            Route::get('/assessments/{assessment}', [HospitalSafetyIndexController::class, 'showAssessment']);
+            Route::patch('/tanks/{tank}/level', [HospitalSafetyIndexController::class, 'updateTankLevel']);
+            Route::post('/tanks/{tank}/refill', [HospitalSafetyIndexController::class, 'refillTank']);
+            Route::get('/tanks/{tank}/history', [HospitalSafetyIndexController::class, 'tankHistory']);
+            Route::patch('/vendors/{vendor}', [HospitalSafetyIndexController::class, 'updateVendor']);
+            Route::post('/vendors/{vendor}/trigger', [HospitalSafetyIndexController::class, 'triggerVendor']);
+        });
+    });
+
+    // Shared read-only situational awareness (patients need visibility too)
+    Route::middleware(['role:admin,responder,logistics,patient'])->group(function () {
+        Route::get('/incidents', [IncidentApiController::class, 'index']);
+        Route::post('/incidents', [IncidentApiController::class, 'store'])->middleware('throttle:10,1');
+        Route::get('/incidents/{incident}', [IncidentApiController::class, 'show']);
+        Route::get('/incidents/{incident}/history', [IncidentApiController::class, 'history']);
+        // Patients get only their own incident's thread (enforced in the controller).
+        Route::get('/incidents/{incident}/conversation', [IncidentApiController::class, 'conversation']);
+        Route::get('/road-blockades', [RoadBlockadeController::class, 'index']);
+    });
+
+    // Gemini context generation (backend proxy) - authenticated only
+    Route::post('/gemini/context', [GeminiController::class, 'generate']);
+    
+    // Responder (and Logistics) routes
+    Route::middleware(['role:admin,responder,logistics'])->group(function () {
+        // Pathfinding routes
+        Route::apiResource('patient-care-reports', PatientCareReportController::class)
+            ->only(['index', 'show', 'store']);
+        Route::post('patient-care-reports/{patientCareReport}/soft-copy', [PatientCareReportController::class, 'generateSoftCopy']);
+        Route::get('patient-care-reports/{patientCareReport}/soft-copy', [PatientCareReportController::class, 'downloadSoftCopy']);
+
+        Route::get('/incidents/{incident}/hospital-recommendations', [IncidentApiController::class, 'hospitalRecommendations']);
+        Route::post('/incidents/{incident}/assign', [IncidentApiController::class, 'assign']);
+        Route::post('/incidents/{incident}/status', [IncidentApiController::class, 'updateStatus']);
+        Route::post('/incidents/{incident}/telemetry/socket-receipt', [IncidentTelemetryController::class, 'storeSocketReceipt']);
+        Route::post('/incidents/assign-nearest', [IncidentApiController::class, 'assignNearest']);
+        
+        // AI Smart Routing endpoints
+        Route::get('/incidents/{incident}/smart-responder-recommendations', [IncidentApiController::class, 'smartResponderRecommendations']);
+        Route::post('/incidents/{incident}/smart-auto-assign', [IncidentApiController::class, 'smartAutoAssign']);
+        
+        Route::apiResource('road-blockades', RoadBlockadeController::class)->except(['index']);
+        Route::post('/road-blockades/route', [RoadBlockadeController::class, 'getRouteBlockades']);
+        Route::patch('/road-blockades/{id}/remove', [RoadBlockadeController::class, 'removeBlockade']);
+    });
+    
+    // Patient routes
+    Route::middleware(['role:admin,patient'])->group(function () {
+        Route::get('/lab-results', [LabResultController::class, 'index']);
+        Route::get('/my-patient-care-reports', [PatientCareReportController::class, 'myReports']);
+        Route::get('/appointments', [AppointmentController::class, 'index']);
+        Route::delete('/appointments/{id}', [AppointmentController::class, 'destroy']);
+        
+        // Patient rescue tracking - view responder location
+        Route::get('/rescue/active', [ResponderTrackingController::class, 'getMyActiveRescue']);
+        Route::get('/incidents/{incident}/responder-location', [ResponderTrackingController::class, 'getResponderLocation']);
+    });
+
+    // Responder location tracking - update location during active response
+    Route::middleware(['role:admin,responder'])->group(function () {
+        Route::post('/incidents/{incident}/responder-location', [ResponderTrackingController::class, 'updateLocation']);
+    });
+
+    // Chat routes (all authenticated users)
+    Route::prefix('chat')->group(function () {
+        Route::get('/conversations', [ChatController::class, 'getConversations']);
+        Route::patch('/conversations/{conversation}/archive', [ChatController::class, 'archiveConversation'])->whereNumber('conversation');
+        Route::get('/messages/{userId}', [ChatController::class, 'getMessages']);
+        Route::post('/messages', [ChatController::class, 'sendMessage']);
+        Route::delete('/messages/{messageId}', [ChatController::class, 'deleteMessage']);
+    });
+
+    // NLP Analysis routes (AI-powered message analysis)
+    Route::prefix('nlp')->group(function () {
+        Route::post('/analyze-message', [NLPController::class, 'analyzeMessage']);
+        Route::post('/urgency-check', [NLPController::class, 'urgencyCheck']);
+        Route::post('/analyze-conversation', [NLPController::class, 'analyzeConversation']);
+        Route::post('/bulk-urgency', [NLPController::class, 'bulkUrgencyAnalysis']);
+    });
+
+    // NLP Analysis for incidents (admin/responder only)
+    Route::middleware(['role:admin,responder'])->group(function () {
+        Route::get('/nlp/incident/{incident}/analysis', [NLPController::class, 'analyzeIncidentMessages']);
+    });
+});
+
+// Health check
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
+
+
+// Test routes (public)
+Route::get('/test/hospitals', function () {
+    return response()->json(\App\Models\Hospital::all());
+});
+
+Route::get('/test/resources', function () {
+    return response()->json(\App\Models\Resource::with('hospital')->get());
+});
+
+// ======
+// Alisto Sensor Data & Health Simulator Routes
+// ======
+
+// Public sensor endpoints (RPi pushes data here; dashboard reads it)
+Route::middleware([])->prefix('sensor')->group(function () {
+    Route::get('/vitals/latest',  [SensorDataController::class, 'latest']);
+    Route::get('/vitals/history', [SensorDataController::class, 'history']);
+    Route::get('/vitals/summary', [SensorDataController::class, 'summary']);
+    Route::get('/status',         [SensorDataController::class, 'deviceStatus']);
+    Route::post('/vitals',        [SensorDataController::class, 'store']);
+});
+
+// Simulator endpoints (protected — admin/responder only)
+Route::middleware(['auth:sanctum'])->prefix('simulator')->group(function () {
+    Route::get('/scenarios',  [HealthSimulatorController::class, 'scenarios']);
+    Route::post('/start',     [HealthSimulatorController::class, 'start']);
+    Route::post('/stream',    [HealthSimulatorController::class, 'stream']);
+    Route::delete('/cleanup', [HealthSimulatorController::class, 'cleanup']);
+});

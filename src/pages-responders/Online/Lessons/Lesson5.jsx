@@ -81,7 +81,7 @@ export default function Lesson5() {
           {/* Breadcrumbs */}
           <div className="lesson-breadcrumbs">
             <Link to="/">Home</Link> <span>/</span>
-            <Link to="/modules"> Modules</Link> <span>/</span>
+            <Link to="/responder/modules"> Modules</Link> <span>/</span>
             <Link to="/responder/modules/1"> Barangay First 1000 Days Facilitator's Guide eTraining</Link> <span>/</span>
             <span> {currentLesson?.title}</span>
           </div>

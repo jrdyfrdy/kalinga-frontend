@@ -14,15 +14,17 @@ import { useAuth } from "../../context/AuthContext";
 import { useIncidents } from "../../context/IncidentContext";
 import { useReverseGeocode } from "../../hooks/useReverseGeocode";
 import { useResponderDevMenu } from "../../context/ResponderDevMenuContext";
+import { useNotifications } from "../../hooks/useNotifications";
 
-export default function ResponderTopbar({
-  notifications = [
-    "New incident reported in your area",
-    "Triage training module available",
-    "Emergency response team deployed",
-  ],
-}) {
+export default function ResponderTopbar() {
   const { user, logout } = useAuth();
+  // Real notifications for the signed-in responder (was three hardcoded strings).
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications({ limit: 10 });
   const { incidents } = useIncidents();
   const capitalizeFirstLetter = (str) => {
     if (!str) return str;
@@ -162,38 +164,42 @@ export default function ResponderTopbar({
               }}
             >
               <Bell />
-              {notifications.length > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute top-1 right-1 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {notifications.length}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </button>
 
             {isNotifOpen && (
               <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                {/* Header with "See all" */}
+                {/* Header */}
                 <div className="flex justify-between items-center px-4 py-2 border-b border-gray-200">
                   <span className="font-semibold text-sm text-gray-700">
                     Notifications
                   </span>
                   <button
-                    onClick={() => {
-                      navigate("/responder/dashboard");
-                      setIsNotifOpen(false);
-                    }}
-                    className="text-xs text-blue-600 hover:underline"
+                    onClick={() => markAllAsRead()}
+                    disabled={unreadCount === 0}
+                    className="text-xs text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"
                   >
-                    See all
+                    Mark all read
                   </button>
                 </div>
                 <ul className="text-left max-h-60 overflow-y-auto">
                   {notifications.length > 0 ? (
-                    notifications.map((notif, idx) => (
+                    notifications.map((notif) => (
                       <li
-                        key={idx}
-                        className="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                        key={notif.id}
+                        onClick={() => !notif.read_at && markAsRead(notif.id)}
+                        className={`px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer ${
+                          notif.read_at ? "text-gray-500" : "text-gray-900 font-medium"
+                        }`}
                       >
-                        {notif}
+                        <div>{notif.title}</div>
+                        {notif.description && (
+                          <div className="text-xs text-gray-500 line-clamp-2">{notif.description}</div>
+                        )}
                       </li>
                     ))
                   ) : (

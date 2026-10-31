@@ -16,11 +16,21 @@ Broadcast::channel('incidents', function ($user) {
         return false;
     }
 
-    $allowedRoles = ['admin', 'responder', 'logistics', 'patient'];
+    $allowedRoles = ['admin', 'responder', 'logistics', 'patient', 'hospital_admin', 'dispatcher'];
 
     return in_array($user->role, $allowedRoles, true)
         ? ['id' => $user->id, 'name' => $user->name, 'role' => $user->role]
         : false;
+});
+
+// Shared road blockade feed (useBlockades hook joins presence-blockades).
+Broadcast::channel('blockades', function ($user) {
+    return $user ? ['id' => $user->id, 'name' => $user->name, 'role' => $user->role] : false;
+});
+
+// In-app notifications for a single user (useNotifications hook).
+Broadcast::channel('notifications.user.{userId}', function ($user, $userId) {
+    return (int) $user->id === (int) $userId;
 });
 
 Broadcast::channel('chat.user.{userId}', function ($user, $userId) {

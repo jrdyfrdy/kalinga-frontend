@@ -32,7 +32,7 @@ const getCertifications = async (req, res, next) => {
 
 /**
  * GET /api/training/:userId
- * Fetch training progress for a specific user (admin/doh_officer or self).
+ * Fetch training progress for a specific user (admin/hospital_admin/dispatcher or self).
  */
 const getProgressByUserId = async (req, res, next) => {
   try {
@@ -40,7 +40,7 @@ const getProgressByUserId = async (req, res, next) => {
     if (!targetId) return response.error(res, 'Invalid userId', 400);
 
     const role = req.dbUser.role;
-    if (String(req.dbUser.id) !== String(targetId) && !['admin', 'doh_officer'].includes(role)) {
+    if (String(req.dbUser.id) !== String(targetId) && !['admin', 'hospital_admin', 'dispatcher'].includes(role)) {
       return response.error(res, 'Forbidden', 403);
     }
 

@@ -466,6 +466,14 @@ const EditUserModal = ({
   );
 };
 
+// Summary of what each role can do, mirroring the route middleware groups.
+const ROLE_MATRIX = [
+  { role: "admin", access: "Everything: user & verification management, broadcasts, connectivity, all logistics and incident tools" },
+  { role: "logistics", access: "Supply requests, allocations, assets & maintenance, forecasts, hospital safety index, incidents (read)" },
+  { role: "responder", access: "Incidents (respond, status, route logs), patient care reports, road blockades, chat" },
+  { role: "patient", access: "SOS, own incidents & rescue tracking, appointments, lab results, evacuation centers, chat" },
+];
+
 export const UserRoleManagement = () => {
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
@@ -480,6 +488,7 @@ export const UserRoleManagement = () => {
   const [userToEdit, setUserToEdit] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [hospitals, setHospitals] = useState([]);
+  const [showRoleMatrix, setShowRoleMatrix] = useState(false);
 
   const fetchHospitals = useCallback(async () => {
     try {
@@ -570,6 +579,43 @@ export const UserRoleManagement = () => {
 
   return (
     <div className="space-y-8">
+      {showRoleMatrix && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowRoleMatrix(false)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-3xl border border-border/60 bg-background p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Role matrix</h3>
+              <button onClick={() => setShowRoleMatrix(false)} className="text-sm text-foreground/60 hover:text-foreground">
+                Close
+              </button>
+            </div>
+            <p className="mb-4 text-sm text-foreground/60">
+              Access enforced by the API for each role (see backend/routes/api.php).
+            </p>
+            <table className="w-full text-left text-sm">
+              <thead className="text-xs uppercase text-foreground/60">
+                <tr>
+                  <th className="py-2">Role</th>
+                  <th className="py-2">Can access</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {ROLE_MATRIX.map((row) => (
+                  <tr key={row.role}>
+                    <td className="py-2 pr-4 font-semibold capitalize">{row.role}</td>
+                    <td className="py-2 text-foreground/80">{row.access}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
       <SectionHeader
         title="User & Role Management"
         description="Control privileged access and coordinate multi-agency collaboration. Provision accounts, assign granular roles, and track presence across the command chain."
@@ -589,7 +635,7 @@ export const UserRoleManagement = () => {
             </button>
             <button
               className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
-              onClick={() => alert("Role Matrix configuration is coming soon.")}
+              onClick={() => setShowRoleMatrix(true)}
             >
               <Shield className="h-4 w-4" />
               Role matrix
@@ -710,13 +756,6 @@ export const UserRoleManagement = () => {
               <option value="logistics">Logistics</option>
             </select>
           </div>
-          <button
-            className="hidden h-11 rounded-full border border-border/60 px-4 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary md:inline-flex md:items-center md:gap-2"
-            onClick={() => alert("Bulk actions are not supported yet.")}
-          >
-            <UserCog className="h-4 w-4" />
-            Bulk actions
-          </button>
         </div>
 
         {/* Error State */}
@@ -791,6 +830,24 @@ export const UserRoleManagement = () => {
                           >
                             {user.role}
                           </span>
+                          {user.role === "logistics" && (
+                            <select
+                              aria-label={`Hospital for ${user.name}`}
+                              value={user.hospitals?.[0]?.id ?? ""}
+                              disabled={actionLoading === user.id}
+                              onChange={(e) =>
+                                handleHospitalAssignment(user, e.target.value ? Number(e.target.value) : null)
+                              }
+                              className="mt-2 block w-44 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs outline-none focus:border-primary/40"
+                            >
+                              <option value="">No hospital</option>
+                              {hospitals.map((h) => (
+                                <option key={h.id} value={h.id}>
+                                  {h.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <span

@@ -14,6 +14,9 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useIncidents } from "../context/IncidentContext";
+import { useAuth } from "../context/AuthContext";
+import { updateIncidentStatus } from "../services/incidents";
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -366,43 +369,83 @@ const statusColors = {
 };
 
 // Generate random alerts based on hospitals
-const generateAlerts = (province) => {
-  const hospitals = hospitalsByProvince[province] || [];
-  const alertTypes = [
-    { type: "Medical Emergency", icon: "🏥", severity: "Critical" },
-    { type: "Traffic Accident", icon: "🚗", severity: "Ongoing" },
-    { type: "Fire Emergency", icon: "🔥", severity: "Ongoing" },
-    { type: "Natural Disaster", icon: "🌊", severity: "Critical" },
-    { type: "Missing Person", icon: "🔍", severity: "Investigating" },
-    { type: "Cardiac Arrest", icon: "💓", severity: "Critical" },
-    { type: "Building Collapse", icon: "🏚️", severity: "Ongoing" },
-    { type: "Rescue Operation", icon: "🚁", severity: "Responded" },
-  ];
+const TYPE_ICONS = [
+  [/fire/i, "🔥"],
+  [/flood|typhoon|earthquake|landslide|disaster/i, "🌊"],
+  [/accident|vehicle|traffic|crash/i, "🚗"],
+  [/cardiac|heart/i, "💓"],
+  [/collapse/i, "🏚️"],
+  [/rescue/i, "🚁"],
+  [/missing/i, "🔍"],
+];
 
-  const sectors = ["A", "B", "C", "D"];
-  const zones = ["Residential", "Commercial", "Industrial", "School", "Public"];
+const STATUS_BUCKET = {
+  reported: "Critical",
+  needs_support: "Critical",
+  acknowledged: "Ongoing",
+  en_route: "Ongoing",
+  on_scene: "Ongoing",
+  transporting: "Ongoing",
+  hospital_transfer: "Ongoing",
+  resolved: "Responded",
+};
 
-  return hospitals.slice(0, 4).map((hospital, i) => {
-    const alertType = alertTypes[i % alertTypes.length];
-    const hour = 8 + i * 2;
-    const minute = Math.floor(Math.random() * 60);
-    return {
-      id: `ALERT-${String(i + 1).padStart(2, "0")}`,
-      hospital: hospital.name,
-      type: alertType.type,
-      icon: alertType.icon,
-      status: alertType.severity,
-      time: `${hour}:${String(minute).padStart(2, "0")}`,
-      location: `Sector ${sectors[i % 4]}${i + 1} - ${zones[i % 5]} Zone`,
-      description: `${alertType.type} reported near ${
-        hospital.name.split(" ")[0]
-      }. Emergency response team dispatched.`,
-      responders: Math.floor(Math.random() * 8) + 2,
-    };
-  });
+const parseLatLng = (incident) => {
+  const lat = Number(incident.latitude);
+  const lng = Number(incident.longitude);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return [lat, lng];
+  const [a, b] = String(incident.latlng || "").split(",").map(Number);
+  return Number.isFinite(a) && Number.isFinite(b) ? [a, b] : null;
+};
+
+const distanceKm = ([lat1, lng1], [lat2, lng2]) => {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+/** Map live incidents (IncidentContext) near the province onto alert cards. */
+const buildAlerts = (incidents, province, hospitals) => {
+  const center = provinceCenters[province];
+  return (Array.isArray(incidents) ? incidents : [])
+    .filter((incident) => incident.status !== "cancelled")
+    .map((incident) => {
+      const coords = parseLatLng(incident);
+      if (!coords || (center && distanceKm(coords, center) > 80)) return null;
+      const nearest = hospitals.reduce(
+        (best, h) => {
+          const d = distanceKm(coords, h.position);
+          return d < best.d ? { h, d } : best;
+        },
+        { h: null, d: Infinity },
+      ).h;
+      const created = incident.reported_at || incident.created_at;
+      const icon = TYPE_ICONS.find(([re]) => re.test(incident.type || ""))?.[1] || "🏥";
+      return {
+        id: incident.id,
+        incident,
+        coords,
+        hospital: nearest?.name || "—",
+        type: incident.type || "Emergency",
+        icon,
+        status: STATUS_BUCKET[incident.status] || "Investigating",
+        time: created ? new Date(created).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—",
+        location: incident.location || coords.map((c) => c.toFixed(4)).join(", "),
+        description: incident.description || "",
+        responders: Array.isArray(incident.assignments)
+          ? incident.assignments.length
+          : Number(incident.responders_assigned || 0),
+      };
+    })
+    .filter(Boolean);
 };
 
 const EmergencySOS = () => {
+  const { incidents } = useIncidents();
+  const { user } = useAuth();
+  const [requestingSupport, setRequestingSupport] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState("Metro Manila");
   const [userLocation, setUserLocation] = useState(null);
   const [selectedHospital, setSelectedHospital] = useState(null);
@@ -414,10 +457,11 @@ const EmergencySOS = () => {
     return hospitalsByProvince[selectedProvince] || [];
   }, [selectedProvince]);
 
-  // Generate alerts for selected province
-  const alerts = useMemo(() => {
-    return generateAlerts(selectedProvince);
-  }, [selectedProvince]);
+  // Live incidents near the selected province (was randomly generated)
+  const alerts = useMemo(
+    () => buildAlerts(incidents, selectedProvince, hospitals),
+    [incidents, selectedProvince, hospitals],
+  );
 
   // Filtered alerts
   const filteredAlerts = useMemo(() => {
@@ -566,18 +610,11 @@ const EmergencySOS = () => {
                 ))}
 
                 {/* Alert Circle Markers */}
-                {alerts.slice(0, 3).map((alert, i) => {
-                  const hospital = hospitals.find(
-                    (h) => h.name === alert.hospital
-                  );
-                  if (!hospital) return null;
+                {alerts.map((alert) => {
                   return (
                     <CircleMarker
-                      key={`alert-${i}`}
-                      center={[
-                        hospital.position[0] + 0.01,
-                        hospital.position[1] + 0.01,
-                      ]}
+                      key={`alert-${alert.id}`}
+                      center={alert.coords}
                       radius={15}
                       pathOptions={{
                         color: statusColors[alert.status]?.border || "#dc2626",
@@ -756,9 +793,40 @@ const EmergencySOS = () => {
                   </div>
                 </div>
                 <div className="modal-actions">
-                  <button className="action-btn primary">
-                    Dispatch More Units
-                  </button>
+                  {(() => {
+                    const incident = showAlertDetails.incident;
+                    const assigned = incident?.assignments?.some(
+                      (a) => String(a.responder_id ?? a.responder?.id) === String(user?.id),
+                    );
+                    return (
+                      <button
+                        className="action-btn primary"
+                        disabled={!assigned || requestingSupport}
+                        title={assigned ? "Request additional responders" : "Only responders assigned to this incident can request more units"}
+                        onClick={async () => {
+                          setRequestingSupport(true);
+                          try {
+                            const current = Math.max(
+                              incident.responders_required ?? 1,
+                              incident.assignments?.length ?? 0,
+                            );
+                            await updateIncidentStatus(incident.id, {
+                              status: "needs_support",
+                              responders_required: current + 1,
+                              notes: "Additional units requested from Emergency SOS console.",
+                            });
+                            setShowAlertDetails(null);
+                          } catch (err) {
+                            alert(err?.response?.data?.message || "Failed to request more units.");
+                          } finally {
+                            setRequestingSupport(false);
+                          }
+                        }}
+                      >
+                        {requestingSupport ? "Requesting…" : "Dispatch More Units"}
+                      </button>
+                    );
+                  })()}
                   <button
                     className="action-btn secondary"
                     onClick={() => setShowAlertDetails(null)}
@@ -834,10 +902,22 @@ const EmergencySOS = () => {
                   </div>
                 </div>
                 <div className="modal-actions">
-                  <button className="action-btn primary">
-                    Request Transfer
-                  </button>
-                  <button className="action-btn secondary">View Details</button>
+                  <a
+                    className="action-btn primary"
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${selectedHospital.position[0]},${selectedHospital.position[1]}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Get Directions
+                  </a>
+                  <a
+                    className="action-btn secondary"
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedHospital.name)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View Details
+                  </a>
                   <button
                     className="action-btn tertiary"
                     onClick={() => setSelectedHospital(null)}

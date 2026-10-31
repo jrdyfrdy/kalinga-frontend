@@ -12,7 +12,6 @@ import {
   LogOut,
   AlertCircle,
 } from "lucide-react";
-import logo from "../assets/kalinga-logo-white.PNG";
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);

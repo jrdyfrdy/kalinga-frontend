@@ -77,15 +77,17 @@ const getById = async (id) => {
 
 const create = async (payload) => {
   const { rows } = await pool.query(
-    `INSERT INTO resources (name, category, quantity, unit, status, hospital_id, expiry_date)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO resources (name, category, quantity, unit, status, location, hospital_id, expiry_date, created_at, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
      RETURNING *`,
     [
       payload.name,
       payload.category,
-      payload.quantity,
-      payload.unit || null,
+      payload.quantity ?? 0,
+      // unit and location are NOT NULL in the shared (Laravel) schema
+      payload.unit || 'unit',
       payload.status || 'High',
+      payload.location || 'Main Storage',
       payload.hospital_id || null,
       payload.expiry_date || null,
     ]
@@ -96,7 +98,7 @@ const create = async (payload) => {
 const update = async (id, payload) => {
   const fields = [];
   const params = [];
-  const allowed = ['name', 'category', 'quantity', 'unit', 'status', 'hospital_id', 'expiry_date'];
+  const allowed = ['name', 'category', 'quantity', 'unit', 'status', 'location', 'hospital_id', 'expiry_date'];
 
   allowed.forEach((k) => {
     if (payload[k] !== undefined) {

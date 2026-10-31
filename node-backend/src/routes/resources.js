@@ -15,10 +15,10 @@ router.get('/summary', optionalAuth, resourcesController.getSummary);
 router.get('/:id', optionalAuth, resourcesController.getById);
 
 // POST   /api/resources
-router.post('/', authenticate, requireRole(['admin', 'doh_officer']), resourcesController.create);
+router.post('/', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher']), resourcesController.create);
 
 // PUT    /api/resources/:id
-router.put('/:id', authenticate, requireRole(['admin', 'doh_officer']), resourcesController.update);
+router.put('/:id', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher']), resourcesController.update);
 
 // DELETE /api/resources/:id
 router.delete('/:id', authenticate, requireRole(['admin']), resourcesController.remove);

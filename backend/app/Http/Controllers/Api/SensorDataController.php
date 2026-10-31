@@ -91,6 +91,13 @@ class SensorDataController extends Controller
 
     public function store(Request $request)
     {
+        // When a device key is configured, only the EDGE scanner (which sends
+        // X-Edge-Key) may push readings.
+        $expectedKey = config('services.edge.key');
+        if ($expectedKey && !hash_equals((string) $expectedKey, (string) $request->header('X-Edge-Key'))) {
+            return response()->json(['message' => 'Invalid edge device key.'], 401);
+        }
+
         $validated = $request->validate([
             'user_uuid'          => ['required', 'string'],
             'heart_rate'         => ['required', 'numeric', 'min:20', 'max:250'],

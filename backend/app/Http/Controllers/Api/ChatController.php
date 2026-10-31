@@ -6,6 +6,9 @@ use App\Events\IncidentUpdated;
 use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
+use App\Models\MessageAttachment;
 use App\Models\Incident;
 use App\Models\IncidentStatusUpdate;
 use App\Models\Message;
@@ -59,6 +62,7 @@ class ChatController extends Controller
             ->with([
                 'sender:id,name,role',
                 'receiver:id,name,role',
+                'attachments',
             ])
             ->whereIn('conversation_id', $conversationIds)
             ->where(function ($query) {
@@ -122,6 +126,7 @@ class ChatController extends Controller
                             'isRead' => true,
                             'isSystemMessage' => false,
                             'incidentId' => $message->incident_id,
+                            'attachments' => $this->attachmentPayload($message),
                         ];
                     })
                     ->values();
@@ -166,6 +171,7 @@ class ChatController extends Controller
         $query = Message::with([
             'sender:id,name,role',
             'receiver:id,name,role',
+            'attachments',
         ])
             ->whereNull('group_id');
 
@@ -234,6 +240,7 @@ class ChatController extends Controller
                     'isSystemMessage' => false,
                     'isOwn' => $message->sender_id === $user->id,
                     'incidentId' => $message->incident_id,
+                    'attachments' => $this->attachmentPayload($message),
                 ];
             });
 
@@ -248,7 +255,9 @@ class ChatController extends Controller
 
         $validated = $request->validate([
             'receiver_id' => ['required', 'integer', 'exists:users,id'],
-            'message' => ['required_without:group_id', 'nullable', 'string'],
+            'message' => ['required_without_all:group_id,attachment', 'nullable', 'string'],
+            // Images and documents up to 10 MB, stored privately.
+            'attachment' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,pdf,doc,docx'],
             'group_id' => ['nullable', 'integer', 'exists:groups,id'],
             'emergency_payload' => ['nullable', 'array'],
             'incident_id' => ['nullable', 'integer', 'exists:incidents,id'],
@@ -303,7 +312,7 @@ class ChatController extends Controller
         }
 
         $message = Message::create([
-            'message' => $validated['message'],
+            'message' => $validated['message'] ?? null,
             'sender_id' => $user->id,
             'receiver_id' => $groupId ? null : $receiverId,
             'group_id' => $groupId,
@@ -321,7 +330,19 @@ class ChatController extends Controller
                 ->update(['last_message_id' => $message->id]);
         }
 
-        $message->load(['sender:id,name,role,profile_image', 'receiver:id,name,role,profile_image']);
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $path = $file->store('chat-attachments/' . $message->id, 'local');
+            MessageAttachment::create([
+                'message_id' => $message->id,
+                'name'       => mb_substr($file->getClientOriginalName(), 0, 255),
+                'path'       => $path,
+                'mime'       => $file->getMimeType() ?? 'application/octet-stream',
+                'size'       => (int) $file->getSize(),
+            ]);
+        }
+
+        $message->load(['sender:id,name,role,profile_image', 'receiver:id,name,role,profile_image', 'attachments']);
 
         if (!$incident && $conversationId) {
             $incident = Incident::query()
@@ -404,6 +425,7 @@ class ChatController extends Controller
             'timestamp' => $timestamp,
             'isRead' => false,
             'isSystemMessage' => false,
+            'attachments' => $this->attachmentPayload($message),
             'nlp' => $nlpAnalysis ? [
                 'urgency_level' => $nlpAnalysis['level'] ?? 'low',
                 'urgency_score' => $nlpAnalysis['score'] ?? 0,
@@ -423,7 +445,7 @@ class ChatController extends Controller
             'category' => $this->mapCategory($participant['role'] ?? null),
             'unreadCount' => 0,
             'isArchived' => (bool) ($conversationModel?->is_archived ?? false),
-            'lastMessage' => $message->message,
+            'lastMessage' => $message->message ?: ($message->attachments->first()?->name ? '📎 ' . $message->attachments->first()->name : ''),
             'lastMessageTime' => $timestamp,
             'messages' => [$messagePayload],
         ];
@@ -927,5 +949,63 @@ class ChatController extends Controller
             'logistics' => 'Logistics',
             default => 'General',
         };
+    }
+
+    /**
+     * PATCH /api/chat/conversations/{conversation}/archive { archived: bool }
+     * Participants can archive (hide) or restore a direct conversation.
+     */
+    public function archiveConversation(Request $request, $conversationId)
+    {
+        $validated = $request->validate(['archived' => 'sometimes|boolean']);
+        $user = $request->user();
+
+        $conversation = Conversation::where('id', $conversationId)
+            ->where(function ($q) use ($user) {
+                $q->where('user_id1', $user->id)->orWhere('user_id2', $user->id);
+            })
+            ->firstOrFail();
+
+        $archived = $validated['archived'] ?? true;
+        $conversation->is_archived = $archived;
+        $conversation->archived_at = $archived ? now() : null;
+        $conversation->save();
+
+        return response()->json([
+            'conversationId' => $conversation->id,
+            'isArchived'     => (bool) $conversation->is_archived,
+        ]);
+    }
+
+    /** Signed, time-limited download links for a message's attachments. */
+    private function attachmentPayload(Message $message): array
+    {
+        if (!$message->relationLoaded('attachments')) {
+            $message->load('attachments');
+        }
+
+        return $message->attachments->map(fn (MessageAttachment $a) => [
+            'id'   => $a->id,
+            'name' => $a->name,
+            'mime' => $a->mime,
+            'size' => $a->size,
+            'isImage' => str_starts_with((string) $a->mime, 'image/'),
+            'url'  => URL::temporarySignedRoute('chat.attachment', now()->addHours(12), ['attachment' => $a->id]),
+        ])->values()->all();
+    }
+
+    /** GET /api/chat/attachments/{attachment} (signed URL, no bearer token needed for <img>). */
+    public function downloadAttachment(Request $request, MessageAttachment $attachment)
+    {
+        if (!$request->hasValidSignature()) {
+            abort(403, 'Invalid or expired attachment link.');
+        }
+        if (!Storage::disk('local')->exists($attachment->path)) {
+            abort(404);
+        }
+
+        return Storage::disk('local')->response($attachment->path, $attachment->name, [
+            'Content-Type' => $attachment->mime,
+        ]);
     }
 }

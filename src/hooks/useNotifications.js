@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getEchoInstance, reconnectEcho } from "../services/echo";
+import { getEchoInstance, reconnectEcho, subscribeChannel } from "../services/echo";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 
@@ -136,20 +136,19 @@ export const useNotifications = ({ limit = 20, enabled = true } = {}) => {
       return;
     }
 
-    const echo = getEchoInstance?.();
-    if (!echo) {
+    if (!getEchoInstance?.()) {
       return;
     }
 
     reconnectEcho();
 
-    const channelName = `notifications.user.${user.id}`;
-    let channel;
-
+    // private-notifications.user.{id} ← App\Events\NotificationCreated
+    let unsubscribe = null;
     try {
-      channel = echo.private(channelName);
-      channel.listen(".NotificationReceived", handleRealtimeNotification);
-      subscriptionRef.current = channel;
+      unsubscribe = subscribeChannel(`notifications.user.${user.id}`, "private", {
+        ".NotificationReceived": handleRealtimeNotification,
+      });
+      subscriptionRef.current = unsubscribe;
     } catch (subscriptionError) {
       console.error(
         "Failed to subscribe to notifications channel",
@@ -158,19 +157,8 @@ export const useNotifications = ({ limit = 20, enabled = true } = {}) => {
     }
 
     return () => {
-      if (subscriptionRef.current) {
-        try {
-          subscriptionRef.current.stopListening(".NotificationReceived");
-        } catch (e) {
-          // Ignore
-        }
-        try {
-          echo.leave(channelName);
-        } catch (e) {
-          // Ignore
-        }
-        subscriptionRef.current = null;
-      }
+      unsubscribe?.();
+      subscriptionRef.current = null;
     };
   }, [
     enabled,

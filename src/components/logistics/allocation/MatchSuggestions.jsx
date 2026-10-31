@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import allocationService from '@/services/allocationService';
 import { useSessionAllocationsStore } from "@/stores/sessionAllocationsStore";
+import { canonicalHandlingClass } from "../../../utils/handlingClass";
 
 
 
@@ -120,18 +121,12 @@ const MatchSuggestions = ({
     setError(null);
 
     try {
-      const handlingMap = {
-        'Cold Chain': 'Cold Chain',
-        'HighValue': 'High-Value',
-        'Narcotics': 'Narcotics',
-        'General': 'General'
-      };
-
       const payload = {
         request_id: request.id,
         source_hospital_id: selected.hospital_id,
         quantity: request.quantity,
-        handling_class: handlingMap[request.handling_class] || request.handling_class || 'General'
+        // The API accepts any spelling (ColdChain / Cold Chain / cold_chain).
+        handling_class: canonicalHandlingClass(request.handling_class)
       };
 
       const response = await allocationService.createAllocation(payload);

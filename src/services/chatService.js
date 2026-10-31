@@ -115,7 +115,22 @@ const chatService = {
    * Send message - invalidates relevant caches
    */
   async sendMessage(payload) {
-    const response = await api.post("/chat/messages", payload);
+    // A File attachment is sent as multipart form data.
+    let body = payload;
+    if (payload?.attachment instanceof Blob) {
+      body = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === "") return;
+        if (key === "attachment") body.append(key, value, value.name || "attachment");
+        else if (typeof value === "object") body.append(key, JSON.stringify(value));
+        else body.append(key, value);
+      });
+    }
+    const response = await api.post(
+      "/chat/messages",
+      body,
+      body instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined,
+    );
     const result = response.data?.data ?? response.data;
 
     // Invalidate conversations cache to reflect new message
@@ -204,6 +219,16 @@ const chatService = {
    * @param {Array<{id: any, text: string}>} messages - Messages to analyze
    * @returns {Promise<Array>} Sorted array with urgency scores
    */
+  /**
+   * Archive or restore a direct conversation.
+   * @param {number} conversationId
+   * @param {boolean} archived
+   */
+  async archiveConversation(conversationId, archived = true) {
+    const response = await api.patch(`/chat/conversations/${conversationId}/archive`, { archived });
+    return response.data;
+  },
+
   async bulkUrgencyAnalysis(messages) {
     const response = await api.post("/nlp/bulk-urgency", { messages });
     return response.data?.data;

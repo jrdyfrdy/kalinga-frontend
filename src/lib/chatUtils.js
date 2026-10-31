@@ -147,6 +147,7 @@ export const normalizeMessage = (
           : "delivered"
         : undefined),
     sendError: message.sendError ?? null,
+    attachments: Array.isArray(message.attachments) ? message.attachments : [],
   };
 };
 

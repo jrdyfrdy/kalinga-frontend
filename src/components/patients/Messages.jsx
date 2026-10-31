@@ -27,6 +27,7 @@ import {
 import EchoClient, {
   reconnectEcho,
   getEchoInstance,
+  subscribeChannel,
 } from "../../services/echo";
 import chatService from "../../services/chatService";
 import { useAuth } from "../../context/AuthContext";
@@ -415,7 +416,34 @@ const HOSPITAL_CONTACTS = [
 /**
  * Component 1. Conversation List Item (Messenger-style)
  */
-const ConversationListItem = ({ conversation, onSelect, isSelected }) => {
+// Renders files attached to a chat message (signed download URLs from the API).
+const MessageAttachments = ({ attachments }) => {
+  if (!Array.isArray(attachments) || attachments.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-col gap-1">
+      {attachments.map((file) =>
+        file.isImage && file.url ? (
+          <a key={file.id} href={file.url} target="_blank" rel="noreferrer">
+            <img src={file.url} alt={file.name} className="max-h-48 rounded-lg" />
+          </a>
+        ) : (
+          <a
+            key={file.id}
+            href={file.url || undefined}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-sm underline break-all"
+          >
+            <Paperclip size={14} /> {file.name}
+            {!file.url && " (uploading…)"}
+          </a>
+        ),
+      )}
+    </div>
+  );
+};
+
+const ConversationListItem = ({ conversation, onSelect, isSelected, onArchive }) => {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState({
     x: 0,
@@ -453,16 +481,8 @@ const ConversationListItem = ({ conversation, onSelect, isSelected }) => {
 
   const handleArchive = (e) => {
     e.stopPropagation();
-    console.log("Archive conversation:", conversation.id);
     setShowContextMenu(false);
-    // TODO: Implement archive functionality
-  };
-
-  const handleMarkUnread = (e) => {
-    e.stopPropagation();
-    console.log("Mark as unread:", conversation.id);
-    setShowContextMenu(false);
-    // TODO: Implement mark as unread functionality
+    onArchive?.(conversation);
   };
 
   useEffect(() => {
@@ -569,12 +589,6 @@ const ConversationListItem = ({ conversation, onSelect, isSelected }) => {
           }}
         >
           <button
-            onClick={handleMarkUnread}
-            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-          >
-            Mark as Unread
-          </button>
-          <button
             onClick={handleArchive}
             className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
           >
@@ -591,6 +605,8 @@ const ConversationListItem = ({ conversation, onSelect, isSelected }) => {
  */
 const ChatThread = ({ conversation, currentUserId, onBack, onSendMessage }) => {
   const [newMessage, setNewMessage] = useState("");
+  const [attachment, setAttachment] = useState(null);
+  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const isEmergency = conversation.category === "Emergency";
@@ -603,12 +619,16 @@ const ChatThread = ({ conversation, currentUserId, onBack, onSendMessage }) => {
 
   const handleSend = (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || isArchived) return;
+    if ((!newMessage.trim() && !attachment) || isArchived) return;
 
     const textToSend = newMessage.trim();
+    const fileToSend = attachment;
     setNewMessage("");
+    setAttachment(null);
 
-    Promise.resolve(onSendMessage(conversation, textToSend)).catch((error) => {
+    Promise.resolve(
+      onSendMessage(conversation, textToSend, { attachment: fileToSend }),
+    ).catch((error) => {
       console.error("Failed to send message:", error);
     });
   };
@@ -694,10 +714,6 @@ const ChatThread = ({ conversation, currentUserId, onBack, onSendMessage }) => {
             </p>
           </div>
         </div>
-
-        <button className="p-2 hover:bg-white/50 rounded-full transition text-gray-600">
-          <MoreVertical size={20} />
-        </button>
       </div>
 
       {/* Messages Area */}
@@ -763,9 +779,12 @@ const ChatThread = ({ conversation, currentUserId, onBack, onSendMessage }) => {
                     overflowWrap: "break-word",
                   }}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words text-left">
-                    {msg.text}
-                  </p>
+                  {msg.text && (
+                    <p className="text-sm whitespace-pre-wrap break-words text-left">
+                      {msg.text}
+                    </p>
+                  )}
+                  <MessageAttachments attachments={msg.attachments} />
                 </div>
                 <div
                   className={`flex items-center gap-1 mt-1 px-2 ${
@@ -822,9 +841,24 @@ const ChatThread = ({ conversation, currentUserId, onBack, onSendMessage }) => {
           </div>
         ) : (
           <form onSubmit={handleSend} className="flex items-center gap-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) setAttachment(file);
+                e.target.value = "";
+              }}
+            />
             <button
               type="button"
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              title={attachment ? `Attached: ${attachment.name}` : "Attach a photo or document"}
+              className={`p-2 rounded-full transition shrink-0 ${
+                attachment ? "text-primary bg-green-50" : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              }`}
             >
               <Paperclip size={20} />
             </button>
@@ -847,17 +881,11 @@ const ChatThread = ({ conversation, currentUserId, onBack, onSendMessage }) => {
                 className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-primary focus:border-primary resize-none max-h-32 transition"
                 rows="1"
               />
-              <button
-                type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition"
-              >
-                <Smile size={20} />
-              </button>
             </div>
 
             <button
               type="submit"
-              disabled={!newMessage.trim()}
+              disabled={!newMessage.trim() && !attachment}
               className={`p-3 rounded-full transition shadow-md shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
                 isEmergency
                   ? "bg-red-600 hover:bg-red-700 text-white"
@@ -867,6 +895,15 @@ const ChatThread = ({ conversation, currentUserId, onBack, onSendMessage }) => {
               <Send size={20} />
             </button>
           </form>
+        )}
+
+        {attachment && !isArchived && (
+          <div className="mt-2 flex items-center justify-between rounded-lg bg-gray-100 px-3 py-1 text-xs text-gray-700">
+            <span className="truncate">📎 {attachment.name}</span>
+            <button type="button" onClick={() => setAttachment(null)} className="ml-2 font-bold">
+              ×
+            </button>
+          </div>
         )}
 
         {isEmergency && !isArchived && (
@@ -1887,29 +1924,17 @@ export default function MessagesContact() {
     reconnectEcho();
 
     const channelName = `chat.user.${user.id}`;
-    let channel;
 
+    // Shared with Response Mode / other chat views: remove only this
+    // handler instead of leaving the channel for everyone.
     try {
-      channel = echoInstance.private(channelName);
-      channel.listen(".message.sent", handleRealtimeMessage);
+      return subscribeChannel(channelName, "private", {
+        ".message.sent": handleRealtimeMessage,
+      });
     } catch (subscriptionError) {
       console.error("Failed to subscribe to chat channel", subscriptionError);
       return () => {};
     }
-
-    return () => {
-      try {
-        channel?.stopListening(".message.sent");
-      } catch (stopError) {
-        console.warn("Failed to stop listening to chat channel", stopError);
-      }
-
-      try {
-        echoInstance.leave(channelName);
-      } catch (leaveError) {
-        console.warn("Failed to leave chat channel", leaveError);
-      }
-    };
   }, [user, handleRealtimeMessage]);
 
   const visibleOnlineNames = useMemo(() => {
@@ -1982,8 +2007,10 @@ export default function MessagesContact() {
     async (conversation, messageText, options = {}) => {
       if (!conversation || !user) return;
 
-      const trimmed = messageText.trim();
-      if (!trimmed) return;
+      const trimmed = (messageText || "").trim();
+      const attachment = options.attachment || null;
+      if (!trimmed && !attachment) return;
+      const previewText = trimmed || (attachment ? `📎 ${attachment.name}` : "");
 
       const receiverId = conversation.participant?.id;
       if (!receiverId) {
@@ -2000,6 +2027,9 @@ export default function MessagesContact() {
         id: tempId,
         clientId: tempId,
         text: trimmed,
+        attachments: attachment
+          ? [{ id: tempId, name: attachment.name, mime: attachment.type, isImage: attachment.type?.startsWith("image/"), url: null }]
+          : [],
         senderId: user.id,
         receiverId,
         sender: user.name,
@@ -2025,7 +2055,7 @@ export default function MessagesContact() {
           return {
             ...conv,
             messages,
-            lastMessage: trimmed,
+            lastMessage: previewText,
             lastMessageTime: timestamp,
             unreadCount: 0,
           };
@@ -2054,7 +2084,7 @@ export default function MessagesContact() {
                   )
                 : [normalizedParticipant],
             messages: [optimisticMessage],
-            lastMessage: trimmed,
+            lastMessage: previewText,
             lastMessageTime: timestamp,
             unreadCount: 0,
           };
@@ -2068,7 +2098,8 @@ export default function MessagesContact() {
       try {
         const requestPayload = {
           receiver_id: receiverId,
-          message: trimmed,
+          message: trimmed || null,
+          ...(attachment ? { attachment } : {}),
         };
 
         if (options.emergencyPayload) {
@@ -2770,6 +2801,27 @@ export default function MessagesContact() {
     setSelectedConversationId(null);
   };
 
+
+  // Archive (hide) a conversation: PATCH /chat/conversations/{id}/archive
+  const handleArchiveConversation = useCallback(async (conversation) => {
+    const conversationId = conversation?.conversationId;
+    if (!conversationId) {
+      alert("This conversation has not been saved yet, so it cannot be archived.");
+      return;
+    }
+    try {
+      await chatService.archiveConversation(conversationId, true);
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.conversationId === conversationId ? { ...c, isArchived: true } : c,
+        ),
+      );
+    } catch (error) {
+      console.error("Failed to archive conversation", error);
+      alert(error?.response?.data?.message || "Failed to archive the conversation.");
+    }
+  }, []);
+
   const handleSelectConversation = (conversation) => {
     // Prevent page scroll when selecting conversation
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -3034,6 +3086,7 @@ export default function MessagesContact() {
                         key={conv.id}
                         conversation={conv}
                         onSelect={handleSelectConversation}
+                        onArchive={handleArchiveConversation}
                         isSelected={
                           selectedConversation &&
                           selectedConversation.id === conv.id

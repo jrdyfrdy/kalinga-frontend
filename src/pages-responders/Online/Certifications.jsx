@@ -1,89 +1,87 @@
 // src/pages/Online/Certifications.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
+import nodeApi from "../../services/nodeApi";
 import Layout from "../../layouts/Layout";
 import Footer from "../../components/responder/Footer";
 import "../../styles/personnel-style.css";
 import {
   FaDownload,
-  FaPlus,
   FaCheckCircle,
   FaTimesCircle,
   FaClock,
 } from "react-icons/fa";
 
+const formatDate = (value) => {
+  if (!value) return "—";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+};
+
+// Earned certificates (Node GET /training/certifications) and completed
+// courses (GET /training/progress) for the signed-in responder.
 const Certifications = () => {
+  const [certifications, setCertifications] = useState([]);
+  const [completed, setCompleted] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.allSettled([
+      nodeApi.get("/training/certifications"),
+      nodeApi.get("/training/progress"),
+    ]).then(([certRes, progressRes]) => {
+      if (cancelled) return;
+      if (certRes.status === "fulfilled") setCertifications(certRes.value?.data?.data || []);
+      if (progressRes.status === "fulfilled") {
+        setCompleted((progressRes.value?.data?.data || []).filter((r) => r.status === "completed" || r.completed_at));
+      }
+      if (certRes.status === "rejected" && progressRes.status === "rejected") {
+        setError("Unable to load your training records right now.");
+      }
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const certByCourse = Object.fromEntries(certifications.map((c) => [c.course_id, c]));
+  const now = Date.now();
+
   return (
     <Layout>
       <div className="content">
         <h1 className="page-title">Certifications</h1>
+        {error && <p className="subtitle">{error}</p>}
 
-        {/* Medical Licenses */}
         <div className="section">
-          <h3>Medical Licenses</h3>
-          <div className="card-list">
-            <div className="gray-card">
-              <p className="title">Registered Nurse (RN) License</p>
-              <p className="subtitle">License No. / Expiration</p>
-              <span className="status active">
-                <FaCheckCircle /> Active
-              </span>
+          <h3>Earned Certifications</h3>
+          {loading ? (
+            <p className="subtitle">Loading…</p>
+          ) : certifications.length === 0 ? (
+            <p className="subtitle">No certifications yet. Complete a training module to earn one.</p>
+          ) : (
+            <div className="card-list">
+              {certifications.map((cert) => {
+                const expired = cert.expires_at && new Date(cert.expires_at).getTime() < now;
+                return (
+                  <div className="gray-card" key={cert.id}>
+                    <p className="title">{cert.course_title}</p>
+                    <p className="subtitle">
+                      Issued {formatDate(cert.issued_at)}
+                      {cert.expires_at ? ` · Expires ${formatDate(cert.expires_at)}` : ""}
+                    </p>
+                    <span className={`status ${expired ? "expired" : "active"}`}>
+                      {expired ? <FaTimesCircle /> : <FaCheckCircle />} {expired ? "Expired" : "Active"}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <div className="gray-card">
-              <p className="title">Dentist License</p>
-              <p className="subtitle">License No. / Expiration</p>
-              <span className="status active">
-                <FaCheckCircle /> Active
-              </span>
-            </div>
-            <div className="gray-card">
-              <p className="title">Medical Technologist License</p>
-              <p className="subtitle">License No./ Expiration</p>
-              <span className="status active">
-                <FaCheckCircle /> Active
-              </span>
-            </div>
-            <div className="gray-card">
-              <p className="title">Pharmacist License</p>
-              <p className="subtitle">License No. / Expiration</p>
-              <span className="status active">
-                <FaCheckCircle /> Active
-              </span>
-            </div>
-            <div className="gray-card">
-              <p className="title">
-                Physical and Occupational Therapist License
-              </p>
-              <p className="subtitle">License No. / Expiration</p>
-              <span className="status active">
-                <FaCheckCircle /> Active
-              </span>
-            </div>
-          </div>
-          <button className="btn-outline small">
-            <FaPlus /> Add License
-          </button>
+          )}
         </div>
 
-        {/* Advanced Certifications */}
-        <div className="section">
-          <h3>Advanced Certifications</h3>
-          <div className="card-list">
-            <div className="gray-card">
-              <p className="title">Pediatric Advanced Life Support (PALS)</p>
-              <span className="status active">
-                <FaCheckCircle /> Active
-              </span>
-            </div>
-            <div className="gray-card">
-              <p className="title">Advanced Cardiac Life Support (ACLS)</p>
-              <span className="status expired">
-                <FaTimesCircle /> Expired
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Completed Courses */}
         <div className="section">
           <h3>Completed Courses</h3>
           <table className="cert-table">
@@ -95,43 +93,33 @@ const Certifications = () => {
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>Hazardous Materials Awareness Training</td>
-                <td>-</td>
-                <td>
-                  <button className="btn-download">
-                    <FaDownload /> Download
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td>Emergency Shelter Management & Logistics</td>
-                <td>-</td>
-                <td>
-                  <button className="btn-download">
-                    <FaDownload /> Download
-                  </button>
-                </td>
-              </tr>
-              <tr>
-                <td>Basic First Aid and CPR Certification</td>
-                <td>-</td>
-                <td>
-                  <button className="btn-download">
-                    <FaDownload /> Download
-                  </button>
-                </td>
-              </tr>
+              {!loading && completed.length === 0 && (
+                <tr>
+                  <td colSpan={3}>No completed courses yet.</td>
+                </tr>
+              )}
+              {completed.map((record) => {
+                const cert = certByCourse[record.course_id];
+                return (
+                  <tr key={record.id}>
+                    <td>{record.course_title}</td>
+                    <td>{formatDate(record.completed_at)}</td>
+                    <td>
+                      {cert?.certificate_url ? (
+                        <a className="btn-download" href={cert.certificate_url} target="_blank" rel="noreferrer">
+                          <FaDownload /> Download
+                        </a>
+                      ) : (
+                        <span className="subtitle">
+                          <FaClock /> Not issued
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-        </div>
-
-        {/* Other Certifications */}
-        <div className="section">
-          <h3>Other Certifications</h3>
-          <div className="gray-card clickable">
-            <FaPlus /> <span>Add Certification</span>
-          </div>
         </div>
       </div>
       <Footer />

@@ -1,8 +1,10 @@
 // src/components/logistics/registry/MaintenanceSchedule.jsx 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Plus, Calendar, Clock, X, Save } from "lucide-react";
+import assetService from "@/services/assetService";
+import { maintenanceCalendarService } from "@/services/maintenanceCalendarService";
 
-const MaintenanceSchedule = ({ onScheduleUpdate }) => {
+const MaintenanceSchedule = ({ maintenanceData, onRefresh, onQuickAction, onScheduleUpdate }) => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     assetId: "",
@@ -14,33 +16,68 @@ const MaintenanceSchedule = ({ onScheduleUpdate }) => {
     notes: ""
   });
   const [loading, setLoading] = useState(false);
+  const [assets, setAssets] = useState([]);
+  const [busyId, setBusyId] = useState(null);
 
-  const upcomingMaintenance = [
-    {
-      id: 1,
-      assetId: "AST-001",
-      type: "Ambulance",
-      scheduledDate: "2024-02-15",
-      description: "Routine service and inspection",
-      priority: "high"
-    },
-    {
-      id: 2,
-      assetId: "VHL-002", 
-      type: "Fire Truck",
-      scheduledDate: "2024-02-20",
-      description: "Engine maintenance",
-      priority: "medium"
+  // Open (not completed) items from the real maintenance API, soonest first.
+  const upcomingMaintenance = useMemo(
+    () =>
+      [...(maintenanceData?.overdue || []), ...(maintenanceData?.upcoming || [])]
+        .filter((item) => item.status !== "completed")
+        .sort((a, b) => String(a.scheduledDate).localeCompare(String(b.scheduledDate))),
+    [maintenanceData]
+  );
+
+  const { next7Days, thisMonth } = useMemo(() => {
+    const now = new Date();
+    const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    let week = 0;
+    let month = 0;
+    upcomingMaintenance.forEach((item) => {
+      const d = new Date(item.scheduledDate);
+      if (Number.isNaN(d.getTime())) return;
+      if (d <= in7) week += 1;
+      if (d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()) month += 1;
+    });
+    return { next7Days: week, thisMonth: month };
+  }, [upcomingMaintenance]);
+
+  useEffect(() => {
+    if (!showForm) return;
+    assetService
+      .getAssets()
+      .then((data) => setAssets(Array.isArray(data) ? data : data?.data || []))
+      .catch((error) => console.error("Error fetching assets:", error));
+  }, [showForm]);
+
+  const refresh = async () => {
+    await onRefresh?.();
+    onScheduleUpdate?.();
+  };
+
+  const handleComplete = async (item) => {
+    setBusyId(item.id);
+    try {
+      await onQuickAction?.("complete", item.id, { notes: "" });
+    } finally {
+      setBusyId(null);
     }
-  ];
+  };
 
-  // Mock assets data
-  const mockAssets = [
-    { id: "AST-001", type: "Ambulance", status: "Active" },
-    { id: "VHL-002", type: "Fire Truck", status: "Active" },
-    { id: "EQP-003", type: "Generator", status: "Standby" },
-    { id: "VHL-004", type: "Rescue Boat", status: "Active" }
-  ];
+  const handleReschedule = async (item) => {
+    const newDate = window.prompt("New date (YYYY-MM-DD):", item.scheduledDate || "");
+    if (!newDate) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+      alert("Please enter the date as YYYY-MM-DD.");
+      return;
+    }
+    setBusyId(item.id);
+    try {
+      await onQuickAction?.("reschedule", item.id, { newDate });
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -76,8 +113,13 @@ const MaintenanceSchedule = ({ onScheduleUpdate }) => {
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const hoursNote = formData.estimatedHours && formData.estimatedHours !== "custom"
+        ? `Estimated ${formData.estimatedHours} hour(s).`
+        : "";
+      await maintenanceCalendarService.scheduleMaintenance({
+        ...formData,
+        notes: [hoursNote, formData.notes].filter(Boolean).join(" "),
+      });
       
       // Reset form
       setFormData({
@@ -91,9 +133,10 @@ const MaintenanceSchedule = ({ onScheduleUpdate }) => {
       });
       
       setShowForm(false);
-      onScheduleUpdate(); // Notify parent
+      await refresh();
     } catch (error) {
       console.error('Error scheduling maintenance:', error);
+      alert(error?.response?.data?.message || "Failed to schedule maintenance. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -152,7 +195,7 @@ const MaintenanceSchedule = ({ onScheduleUpdate }) => {
                       <Clock className="h-4 w-4 text-blue-500 flex-shrink-0" />
                       <span className="font-semibold text-gray-900 text-sm sm:text-base">{item.assetId}</span>
                     </div>
-                    <span className="text-sm text-gray-600 hidden sm:inline">({item.type})</span>
+                    <span className="text-sm text-gray-600 hidden sm:inline">({item.assetType || item.assetName})</span>
                     <span className={`px-2 py-1 text-xs rounded-full border ${getPriorityColor(item.priority)} w-fit`}>
                       {item.priority} priority
                     </span>
@@ -160,14 +203,27 @@ const MaintenanceSchedule = ({ onScheduleUpdate }) => {
                   <p className="text-gray-600 text-sm mb-2">{item.description}</p>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-gray-500">
                     <span className="flex items-center gap-1">📅 {formatDate(item.scheduledDate)}</span>
-                    <span className="flex items-center gap-1">⏰ 2 hours estimated</span>
+                    {item.isOverdue && (
+                      <span className="flex items-center gap-1 text-red-600 font-semibold">Overdue</span>
+                    )}
+                    {item.technician && (
+                      <span className="flex items-center gap-1">👤 {item.technician}</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end sm:justify-start">
-                  <button className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition whitespace-nowrap">
+                  <button
+                    onClick={() => handleComplete(item)}
+                    disabled={busyId === item.id}
+                    className="px-3 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition whitespace-nowrap disabled:opacity-50"
+                  >
                     Complete
                   </button>
-                  <button className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition whitespace-nowrap">
+                  <button
+                    onClick={() => handleReschedule(item)}
+                    disabled={busyId === item.id}
+                    className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition whitespace-nowrap disabled:opacity-50"
+                  >
                     Reschedule
                   </button>
                 </div>
@@ -181,11 +237,11 @@ const MaintenanceSchedule = ({ onScheduleUpdate }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
           <div className="font-semibold text-blue-900 text-sm">Next 7 Days</div>
-          <div className="text-blue-700 text-sm">2 maintenance tasks scheduled</div>
+          <div className="text-blue-700 text-sm">{next7Days} maintenance task{next7Days === 1 ? "" : "s"} scheduled</div>
         </div>
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
           <div className="font-semibold text-yellow-900 text-sm">This Month</div>
-          <div className="text-yellow-700 text-sm">5 maintenance tasks total</div>
+          <div className="text-yellow-700 text-sm">{thisMonth} maintenance task{thisMonth === 1 ? "" : "s"} total</div>
         </div>
       </div>
 
@@ -241,9 +297,9 @@ const MaintenanceSchedule = ({ onScheduleUpdate }) => {
                         required
                       >
                         <option value="">Choose an asset...</option>
-                        {mockAssets.map(asset => (
+                        {assets.map(asset => (
                           <option key={asset.id} value={asset.id}>
-                            {asset.id} - {asset.type} ({asset.status})
+                            {asset.id} - {asset.name || asset.type} ({asset.status})
                           </option>
                         ))}
                       </select>
@@ -281,7 +337,6 @@ const MaintenanceSchedule = ({ onScheduleUpdate }) => {
                         <option value="low">Low</option>
                         <option value="medium">Medium</option>
                         <option value="high">High</option>
-                        <option value="critical">Critical</option>
                       </select>
                     </div>
 

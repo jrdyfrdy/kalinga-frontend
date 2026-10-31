@@ -2,48 +2,147 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\NotificationCreated;
 use App\Http\Controllers\Controller;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
-use App\Models\Notification; 
-use Illuminate\Support\Facades\Validator; 
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class NotificationController extends Controller
 {
     /**
-     * Display a listing of the resource for the authenticated user.
+     * GET /api/notifications — the authenticated user's notifications.
+     * (User uses Laravel's Notifiable trait, whose notifications() relation
+     * targets a different, polymorphic schema, so query the table directly.)
      */
     public function index(Request $request)
     {
-        $user = $request->user();
-        $notifications = $user->notifications()->latest()->get();
+        $notifications = Notification::where('user_id', $request->user()->id)
+            ->latest()
+            ->limit(min(max((int) $request->input('limit', 100), 1), 500))
+            ->get();
+
         return response()->json($notifications);
     }
 
     /**
-     * Store a new notification in the database.
-     * (This is the new function you are adding)
+     * POST /api/notifications (admin)
+     * Accepts either a direct notification { user_id, title, description }
+     * or a broadcast from the admin console { title, message, type, role? }.
      */
     public function store(Request $request)
     {
-        // Validate the incoming data
-        $validator = Validator::make($request->all(), [
-            'user_id'     => 'required|integer|exists:users,id', // Make sure user exists
+        $validated = $request->validate([
+            'user_id'     => 'nullable|integer|exists:users,id',
+            'role'        => ['nullable', Rule::in(['patient', 'responder', 'logistics', 'admin', 'hospital_admin', 'dispatcher', 'procurement', 'all'])],
             'title'       => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'required_without:message|nullable|string|max:5000',
+            'message'     => 'required_without:description|nullable|string|max:5000',
+            'type'        => 'nullable|string|in:info,warning,emergency,update,alert',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+        $body = $validated['description'] ?? $validated['message'];
+        $type = $validated['type'] ?? 'info';
+
+        if (!empty($validated['user_id'])) {
+            $recipients = collect([(int) $validated['user_id']]);
+        } else {
+            $recipients = User::query()
+                ->where('is_active', true)
+                ->when(($validated['role'] ?? 'all') !== 'all', fn ($q) => $q->where('role', $validated['role']))
+                ->pluck('id');
         }
 
-        // Create the notification
-        $notification = Notification::create([
-            'user_id'     => $request->user_id,
-            'title'       => $request->title,
-            'description' => $request->description,
+        $created = $recipients->map(function ($userId) use ($validated, $body, $type) {
+            $notification = Notification::create([
+                'user_id'     => $userId,
+                'title'       => $validated['title'],
+                'description' => $body,
+                'type'        => $type,
+            ]);
+            $this->pushRealtime($notification);
+            return $notification;
+        });
+
+        if (!empty($validated['user_id'])) {
+            return response()->json($created->first(), 201);
+        }
+
+        return response()->json([
+            'message'    => 'Broadcast sent',
+            'recipients' => $created->count(),
+            'title'      => $validated['title'],
+            'type'       => $type,
+        ], 201);
+    }
+
+    /**
+     * POST /api/logistics/hospitals/{hospital}/notify { title?, message }
+     * Notify every user assigned to a hospital (coordination panel "Notify").
+     */
+    public function notifyHospital(Request $request, $hospitalId)
+    {
+        $validated = $request->validate([
+            'title'   => 'nullable|string|max:255',
+            'message' => 'required|string|max:5000',
+            'type'    => 'nullable|string|in:info,warning,emergency,update,alert',
         ]);
 
-        // Send back a success response
-        return response()->json($notification, 201); // 201 = "Created"
+        $hospital = \App\Models\Hospital::findOrFail($hospitalId);
+        $userIds = \Illuminate\Support\Facades\DB::table('hospital_user')
+            ->where('hospital_id', $hospital->id)
+            ->pluck('user_id');
+
+        if ($userIds->isEmpty()) {
+            return response()->json([
+                'message' => 'No users are assigned to this hospital yet.',
+                'recipients' => 0,
+            ], 422);
+        }
+
+        foreach ($userIds as $userId) {
+            $notification = Notification::create([
+                'user_id'     => $userId,
+                'title'       => $validated['title'] ?? 'Logistics update',
+                'description' => $validated['message'],
+                'type'        => $validated['type'] ?? 'info',
+            ]);
+            $this->pushRealtime($notification);
+        }
+
+        return response()->json(['message' => 'Hospital notified', 'recipients' => $userIds->count()], 201);
+    }
+
+    /** PATCH /api/notifications/{id}/read */
+    public function markAsRead(Request $request, $id)
+    {
+        $notification = Notification::where('user_id', $request->user()->id)->findOrFail($id);
+        if (!$notification->read_at) {
+            $notification->update(['read_at' => now()]);
+        }
+
+        return response()->json($notification);
+    }
+
+    /** POST /api/notifications/mark-all-read */
+    public function markAllAsRead(Request $request)
+    {
+        $updated = Notification::where('user_id', $request->user()->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json(['updated' => $updated]);
+    }
+
+    private function pushRealtime(Notification $notification): void
+    {
+        try {
+            event(new NotificationCreated($notification));
+        } catch (\Throwable $e) {
+            // Realtime is best-effort; the notification is already stored.
+            Log::warning('NotificationCreated broadcast failed', ['error' => $e->getMessage()]);
+        }
     }
 }

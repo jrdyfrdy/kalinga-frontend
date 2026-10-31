@@ -59,8 +59,8 @@ const markAllAsRead = async (userId) => {
 
 const createNotification = async (payload) => {
   const { rows } = await pool.query(
-    `INSERT INTO notifications (user_id, title, description)
-     VALUES ($1, $2, $3)
+    `INSERT INTO notifications (user_id, title, description, created_at, updated_at)
+     VALUES ($1, $2, $3, NOW(), NOW())
      RETURNING *`,
     [payload.user_id, payload.title, payload.description || payload.message || '']
   );

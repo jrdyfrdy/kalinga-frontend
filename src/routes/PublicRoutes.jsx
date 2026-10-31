@@ -20,13 +20,13 @@ const ForgotPassword = lazy(() =>
   }))
 );
 const PrivacyPolicy = lazy(() =>
-  import("../pages-quicklinks/Policy")
+  import("../pages-quicklinks/Policy")
 );
 const TermsAndConditions = lazy(() =>
-  import("../pages-quicklinks/TermsAndConditions")
+  import("../pages-quicklinks/TermsAndConditions")
 );
 const Faqs = lazy(() =>
-  import("../pages-quicklinks/FAQs")
+  import("../pages-quicklinks/FAQs")
 );
 
 export const PublicRoutes = () => (

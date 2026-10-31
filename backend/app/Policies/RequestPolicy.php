@@ -18,7 +18,7 @@ public function update(User $user, Request $request): bool
     ]);
 
         // Allow any user belonging to the same hospital
-if ($user->hospitals()->pluck('id')->contains($request->hospital_id)) {
+if ($user->hospitals()->pluck('hospitals.id')->contains($request->hospital_id)) {
     return true;
 }
 
@@ -30,14 +30,14 @@ if (in_array(strtolower($user->role), ['admin','logistics','hospital_admin'])) {
 
 
     // Patients can update their own requests
-    if ($user->role === 'patient' && $request->created_by === $user->id) {
+    if ($user->role === 'patient' && (int) $request->created_by === (int) $user->id) {
         return true;
     }
 
     
 
     // Dispatchers can update requests they created
-    if ($user->role === 'dispatcher' && $request->created_by === $user->id) {
+    if ($user->role === 'dispatcher' && (int) $request->created_by === (int) $user->id) {
         return true;
     }
 

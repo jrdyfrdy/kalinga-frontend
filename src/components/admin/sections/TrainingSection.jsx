@@ -15,7 +15,6 @@ import {
 import { SectionHeader } from "../SectionHeader";
 import {
   listCourses,
-  getCourse,
   createCourse,
   updateCourse,
   deleteCourse,

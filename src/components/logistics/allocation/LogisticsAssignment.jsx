@@ -1256,8 +1256,9 @@ export default function LogisticsAssignment({ allocation, onSuccess }) {
       if (!allocation?.id || allocation?.request) return;
       try {
         setIsLoadingDetails(true);
+        // getAllocation already returns response.data (the allocation).
         const res = await logisticsService.getAllocation(allocation.id);
-        setDetails(res.data);
+        setDetails(res?.data ?? res);
       } catch (err) {
         console.error("Failed to load allocation details", err);
       } finally {

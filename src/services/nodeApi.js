@@ -1,11 +1,11 @@
 /**
- * Axios client for the Node.js / Express + Supabase backend (port 5005).
+ * Axios client for the Node.js / Express + Supabase backend (default port 5000).
  * This is separate from api.js which targets the Laravel backend.
  */
 import axios from "axios";
+import { resolveNodeApiBaseUrl } from "../config/runtime";
 
-const NODE_API_URL =
-  import.meta.env.VITE_NODE_API_URL || "http://localhost:5005";
+const NODE_API_URL = resolveNodeApiBaseUrl();
 
 const nodeApi = axios.create({
   baseURL: `${NODE_API_URL}/api`,

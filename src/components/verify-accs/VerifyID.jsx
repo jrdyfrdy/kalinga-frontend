@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { getDefaultRouteForRole } from "../../utils/roleRouting";
 
 export default function VerifyID() {
   const [selectedID, setSelectedID] = useState("");
@@ -10,8 +11,7 @@ export default function VerifyID() {
   // Guard: If user is already verified, redirect to dashboard
   useEffect(() => {
     if (user && user.verification_status === "verified") {
-      console.log("User already verified, redirecting to dashboard");
-      navigate("/dashboard", { replace: true });
+      navigate(getDefaultRouteForRole(user.role, user), { replace: true });
     }
   }, [user, navigate]);
 

@@ -1,7 +1,8 @@
 // src/components/logistics/registry/overview/AssignAssetModal.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Truck, Users, Search, CheckCircle, MapPin, Battery } from "lucide-react";
 import assetService from "@/services/assetService";
+import api from "@/services/api";
 
 export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -9,24 +10,57 @@ export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) 
   const [selectedResponder, setSelectedResponder] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Mock data - replace with actual API calls
-  const allocations = [
-    { id: 'alloc-001', name: 'Flood Response - Region A', status: 'planning', location: 'Central Depot' },
-    { id: 'alloc-002', name: 'Earthquake Relief - City B', status: 'active', location: 'Field HQ' },
-    { id: 'alloc-003', name: 'Medical Supply Run', status: 'planning', location: 'Medical Center' },
-    { id: 'alloc-004', name: 'Search & Rescue Operation', status: 'active', location: 'Mountain Base' },
-  ];
-  
-  const responders = [
-    { id: 'resp-001', name: 'John Smith', role: 'Driver', status: 'available' },
-    { id: 'resp-002', name: 'Maria Garcia', role: 'Paramedic', status: 'available' },
-    { id: 'resp-003', name: 'David Chen', role: 'Logistics Officer', status: 'on-duty' },
-    { id: 'resp-004', name: 'Sarah Johnson', role: 'Team Lead', status: 'available' },
-  ];
+  const [allocations, setAllocations] = useState([]);
+  const [responders, setResponders] = useState([]);
+  const [listError, setListError] = useState(null);
+
+  // Only confirmed allocations can receive a vehicle (AllocationController::assign).
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    setListError(null);
+    Promise.all([
+      api.get("/allocations", { params: { status: "confirmed" } }),
+      api.get("/responders/available"),
+    ])
+      .then(([allocRes, respRes]) => {
+        if (cancelled) return;
+        const allocRows = Array.isArray(allocRes.data) ? allocRes.data : allocRes.data?.data || [];
+        setAllocations(
+          allocRows.map((a) => ({
+            id: a.id,
+            name: `${a.resource_type || a.request?.resource_name || "Allocation"} → ${a.destination_hospital?.name || a.destinationHospital?.name || "Destination"}`,
+            location: a.source_hospital?.name || a.sourceHospital?.name || "—",
+            status: a.status,
+            handling_class: a.handling_class,
+          }))
+        );
+        const respRows = Array.isArray(respRes.data) ? respRes.data : respRes.data?.data || [];
+        setResponders(
+          respRows.map((r) => ({
+            id: r.id,
+            name: r.full_name,
+            role: (r.handling_capabilities || []).join(", ") || "Responder",
+            status: String(r.status || "").toLowerCase(),
+          }))
+        );
+      })
+      .catch((error) => {
+        console.error("Failed to load allocations/responders", error);
+        if (!cancelled) setListError("Could not load allocations or responders.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   const handleAssign = async () => {
     if (!selectedAllocation) {
       alert('Please select an allocation');
+      return;
+    }
+    if (!selectedResponder) {
+      alert('Please select a responder to drive this asset');
       return;
     }
 
@@ -41,7 +75,7 @@ export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) 
       onClose();
     } catch (error) {
       console.error('Error assigning asset:', error);
-      alert('Failed to assign asset. Please try again.');
+      alert(error?.response?.data?.error || error?.response?.data?.message || 'Failed to assign asset. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -54,7 +88,7 @@ export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) 
 
   const filteredAllocations = allocations.filter(alloc =>
     alloc.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    alloc.id.toLowerCase().includes(searchQuery.toLowerCase())
+    String(alloc.id).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -100,6 +134,7 @@ export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) 
             {/* Allocation List */}
             <div className="space-y-3 mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Allocation</h3>
+              {listError && <p className="text-sm text-red-600">{listError}</p>}
               {filteredAllocations.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No allocations found</p>
@@ -150,7 +185,10 @@ export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) 
 
             {/* Responder Selection (Optional) */}
             <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Responder (Optional)</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Assign Responder</h3>
+              {responders.length === 0 && (
+                <p className="text-sm text-gray-500">No online, available responders right now.</p>
+              )}
               <div className="grid grid-cols-1 gap-3">
                 {responders.map(responder => (
                   <div

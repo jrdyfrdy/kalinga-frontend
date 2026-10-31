@@ -3,7 +3,7 @@
  *
  * Usage:
  *   router.get('/admin', authenticate, requireRole('admin'), handler)
- *   router.get('/staff', authenticate, requireRole(['admin', 'doh_officer']), handler)
+ *   router.get('/staff', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher']), handler)
  */
 const requireRole = (roles) => (req, res, next) => {
   const allowed = Array.isArray(roles) ? roles : [roles];
@@ -23,15 +23,15 @@ const requireRole = (roles) => (req, res, next) => {
 };
 
 /**
- * Allows access only to the resource owner OR an admin/doh_officer.
+ * Allows access only to the resource owner OR an admin/hospital_admin/dispatcher.
  * Expects `req.params.id` to be the target user id.
  */
 const requireOwnerOrAdmin = (req, res, next) => {
   const { dbUser } = req;
   const targetId = req.params.id || req.params.userId;
 
-  const isAdmin = ['admin', 'doh_officer'].includes(dbUser?.role);
-  const isOwner = dbUser?.id === targetId;
+  const isAdmin = ['admin', 'hospital_admin', 'dispatcher'].includes(dbUser?.role);
+  const isOwner = dbUser?.id !== undefined && String(dbUser.id) === String(targetId);
 
   if (!isAdmin && !isOwner) {
     return res.status(403).json({

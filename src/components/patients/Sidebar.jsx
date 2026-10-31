@@ -90,6 +90,11 @@ export default function PatientSidebar({
       icon: <Navigation size={25} />,
     },
     {
+      label: "Evacuation Centers",
+      path: "/patient/evacuation-center",
+      icon: <MapPin size={25} />,
+    },
+    {
       label: "Notifications",
       path: "/patient/notifications",
       icon: <Bell size={25} />,

@@ -19,7 +19,7 @@ import RescueDetailPanel, {
   formatDistance,
 } from "../components/patients/rescue/RescueDetailPanel";
 import { useAuth } from "../context/AuthContext";
-import { getEchoInstance, reconnectEcho } from "../services/echo";
+import { getEchoInstance, reconnectEcho, subscribeChannel } from "../services/echo";
 import { KALINGA_CONFIG } from "../constants/mapConfig";
 import api from "../services/api";
 
@@ -280,9 +280,10 @@ export const RescueTracker = () => {
 
     const channelName = `incident.${rescueData.incident.id}.tracking`;
 
+    let unsubscribe = null;
     try {
-      const channel = echo.private(channelName);
-      channel.listen(".ResponderLocationUpdated", (payload) => {
+      unsubscribe = subscribeChannel(channelName, "private", {
+        ".ResponderLocationUpdated": (payload) => {
         if (payload?.responder?.location) {
           const loc = payload.responder.location;
           setResponderLocation({
@@ -310,23 +311,17 @@ export const RescueTracker = () => {
             );
           }
         }
+        },
       });
 
-      channelRef.current = channel;
+      channelRef.current = unsubscribe;
     } catch (err) {
       console.error("Failed to subscribe to tracking channel:", err);
     }
 
     return () => {
-      if (channelRef.current) {
-        try {
-          channelRef.current.stopListening(".ResponderLocationUpdated");
-          echo.leave(channelName);
-        } catch (e) {
-          // Ignore
-        }
-        channelRef.current = null;
-      }
+      unsubscribe?.();
+      channelRef.current = null;
     };
   }, [rescueData?.incident?.id, user?.id]);
 

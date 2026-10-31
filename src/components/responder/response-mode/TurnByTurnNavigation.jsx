@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   AlertTriangle,
   ArrowUp,
@@ -117,9 +122,10 @@ const getInstructionText = (step) => {
     case "continue":
       return `Continue on ${roadName}`;
     case "roundabout":
-    case "rotary":
+    case "rotary": {
       const exit = maneuver.exit || 1;
       return `Take the ${getOrdinal(exit)} exit at the roundabout`;
+    }
     case "exit roundabout":
     case "exit rotary":
       return `Exit the roundabout onto ${roadName}`;

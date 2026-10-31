@@ -4,11 +4,10 @@ import nodeApi from "../../services/nodeApi";
 import "../../styles/personnel-style.css";
 
 const COLORS = ["#1E2A78", "#C0392B", "#145A32", "#F1C40F"];
-const TYPE_LABELS = {
-  water: "Water",
-  food: "Food",
-  medicine: "Medicines",
-  clothes: "Clothes",
+// /resources/summary returns { category, quantity, hospital_name } rows.
+const labelFor = (category) => {
+  const value = String(category || "").trim();
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : "Uncategorized";
 };
 
 const ResourcesCard = () => {
@@ -24,25 +23,23 @@ const ResourcesCard = () => {
 
         // Aggregate totals per resource type across all centers
         const totals = {};
-        rows.forEach(({ type, quantity }) => {
-          totals[type] = (totals[type] || 0) + Number(quantity);
+        rows.forEach(({ category, quantity }) => {
+          const label = labelFor(category);
+          totals[label] = (totals[label] || 0) + Number(quantity || 0);
         });
         setAllCentersData(
-          Object.entries(totals).map(([type, value]) => ({
-            name: TYPE_LABELS[type] || "Unknown",
-            value,
-          })),
+          Object.entries(totals).map(([name, value]) => ({ name, value })),
         );
 
         // Group by center name for per-center pie charts
         const byCenter = {};
-        rows.forEach(({ type, quantity, center }) => {
-          const name = center?.name?.trim() || "Unknown Center";
+        rows.forEach(({ category, quantity, hospital_name }) => {
+          const name = hospital_name?.trim() || "Unassigned";
           if (!byCenter[name]) byCenter[name] = [];
-          byCenter[name].push({
-            name: TYPE_LABELS[type] || "Unknown",
-            value: Number(quantity),
-          });
+          const label = labelFor(category);
+          const existing = byCenter[name].find((d) => d.name === label);
+          if (existing) existing.value += Number(quantity || 0);
+          else byCenter[name].push({ name: label, value: Number(quantity || 0) });
         });
 
         let formattedCenters = Object.entries(byCenter).map(([name, data]) => ({

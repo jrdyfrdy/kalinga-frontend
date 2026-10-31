@@ -94,7 +94,9 @@ const maintenanceService = {
     if (status === 'completed') {
       return await maintenanceService.completeMaintenance(maintenanceId, notes);
     }
-    throw new Error(`Status "${status}" not implemented yet`);
+    // scheduled | in_progress | cancelled
+    const response = await api.patch(`/maintenance/${maintenanceId}/status`, { status, notes });
+    return response.data;
   },
 };
 

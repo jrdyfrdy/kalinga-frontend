@@ -5,6 +5,7 @@ import nodeApi from "../services/nodeApi";
 import "../styles/incident-logs.css";
 
 const POLL_INTERVAL_MS = 15000; // 15-second polling for live updates
+const POLL_OVERLAP_MS = 5000;
 
 const STATUS_ICONS = {
   reported: "🔵",
@@ -61,20 +62,27 @@ const IncidentLogs = () => {
   // Polling for live updates via Node API
   useEffect(() => {
     const poll = async () => {
+      // Ask for everything created OR updated since the last poll (status
+      // changes were missed when filtering on created_at), with a small
+      // overlap to tolerate client/server clock skew.
+      const startedAt = new Date();
+      const since = lastPollRef.current
+        ? new Date(new Date(lastPollRef.current).getTime() - POLL_OVERLAP_MS).toISOString()
+        : null;
       try {
         const { data } = await nodeApi.get("/incidents", {
           params: {
             limit: 50,
-            sort_by: "created_at",
+            sort_by: "updated_at",
             order: "desc",
-            ...(lastPollRef.current ? { date_from: lastPollRef.current } : {}),
+            ...(since ? { updated_after: since } : {}),
           },
         });
         const fresh = data.data || [];
         if (fresh.length > 0) {
           mergeIncidents(fresh);
         }
-        lastPollRef.current = new Date().toISOString();
+        lastPollRef.current = startedAt.toISOString();
       } catch {
         // silent — will retry next interval
       }

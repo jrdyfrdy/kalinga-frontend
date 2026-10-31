@@ -18,7 +18,7 @@ router.get('/stats', optionalAuth, respondersController.getStats);
 router.get('/:id', optionalAuth, respondersController.getById);
 
 // POST /api/responders          — admin only
-router.post('/', authenticate, requireRole(['admin', 'doh_officer']), respondersController.create);
+router.post('/', authenticate, requireRole(['admin', 'hospital_admin', 'dispatcher']), respondersController.create);
 
 // PUT  /api/responders/:id/status — update duty status by user_id
 router.put('/:id/status', authenticate, respondersController.updateStatus);

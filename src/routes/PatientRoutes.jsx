@@ -69,6 +69,11 @@ const Profile = lazy(() =>
     default: module.Profile,
   }))
 );
+const EvacuationCenter = lazy(() =>
+  import("../pages-patients/EvacuationCenter").then((module) => ({
+    default: module.EvacuationCenter,
+  }))
+);
 const RescueTracker = lazy(() =>
   import("../pages-patients/RescueTracker").then((module) => ({
     default: module.RescueTracker,
@@ -141,6 +146,14 @@ export const PatientRoutes = () => (
       element={
         <ProtectedRoute allowedRoles={patientRoles}>
           <OtherVehicles />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path={ROUTES.PATIENT.EVACUATION_CENTER}
+      element={
+        <ProtectedRoute allowedRoles={patientRoles}>
+          <EvacuationCenter />
         </ProtectedRoute>
       }
     />

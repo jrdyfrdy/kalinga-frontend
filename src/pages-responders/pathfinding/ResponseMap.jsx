@@ -263,6 +263,312 @@ const selectBestRouteVariant = (routes, normalizedBlockades) => {
   };
 };
 
+// ─── Dynamic detour helpers (used by fetchRoute when every OSRM alternative
+// conflicts with a blockade). These were previously nested, unreachably,
+// after `return null` inside deriveRouteAlert, so calling
+// tryResolveRouteWithDynamicDetours threw a ReferenceError.
+const normalizeBearing = (bearing) => {
+  const normalized = bearing % 360;
+  return normalized < 0 ? normalized + 360 : normalized;
+};
+
+const bearingBetweenPoints = (start, end) => {
+  if (!start || !end) {
+    return 0;
+  }
+
+  if (
+    Math.abs(start.lat - end.lat) < 1e-6 &&
+    Math.abs(start.lng - end.lng) < 1e-6
+  ) {
+    return 0;
+  }
+
+  const φ1 = start.lat * DEGREE_IN_RADIANS;
+  const φ2 = end.lat * DEGREE_IN_RADIANS;
+  const Δλ = (end.lng - start.lng) * DEGREE_IN_RADIANS;
+
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x =
+    Math.cos(φ1) * Math.sin(φ2) -
+    Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+
+  const θ = Math.atan2(y, x);
+  return normalizeBearing(θ / DEGREE_IN_RADIANS);
+};
+
+const offsetPointByBearing = (origin, distanceMeters, bearingDegrees) => {
+  const φ1 = origin.lat * DEGREE_IN_RADIANS;
+  const λ1 = origin.lng * DEGREE_IN_RADIANS;
+  const θ = bearingDegrees * DEGREE_IN_RADIANS;
+  const δ = distanceMeters / EARTH_RADIUS_METERS;
+
+  const sinφ1 = Math.sin(φ1);
+  const cosφ1 = Math.cos(φ1);
+  const sinδ = Math.sin(δ);
+  const cosδ = Math.cos(δ);
+
+  const sinφ2 = sinφ1 * cosδ + cosφ1 * sinδ * Math.cos(θ);
+  const φ2 = Math.asin(sinφ2);
+
+  const λ2Raw =
+    λ1 + Math.atan2(Math.sin(θ) * sinδ * cosφ1, cosδ - sinφ1 * sinφ2);
+
+  const λ2 = ((λ2Raw + Math.PI) % (2 * Math.PI)) - Math.PI;
+
+  return {
+    lat: φ2 / DEGREE_IN_RADIANS,
+    lng: λ2 / DEGREE_IN_RADIANS,
+  };
+};
+
+const generateDetourWaypoints = (start, end, blockade) => {
+  if (!start || !end || !blockade) {
+    return [];
+  }
+
+  const baseBearing = bearingBetweenPoints(start, end);
+  const perpendicularBearings = [
+    normalizeBearing(baseBearing + 90),
+    normalizeBearing(baseBearing - 90),
+    normalizeBearing(baseBearing + 135),
+    normalizeBearing(baseBearing - 135),
+  ];
+
+  const candidatePoints = [];
+
+  perpendicularBearings.forEach((bearing) => {
+    DETOUR_OFFSETS_METERS.forEach((offset) => {
+      const offsetPoint = offsetPointByBearing(blockade, offset, bearing);
+      candidatePoints.push({
+        lat: offsetPoint.lat,
+        lng: offsetPoint.lng,
+        bearing,
+        offset,
+      });
+    });
+  });
+
+  // Add forward/backward offsets to encourage bypassing by overshooting blockade
+  DETOUR_OFFSETS_METERS.forEach((offset) => {
+    const forward = offsetPointByBearing(blockade, offset, baseBearing);
+    const backward = offsetPointByBearing(
+      blockade,
+      offset,
+      normalizeBearing(baseBearing + 180),
+    );
+    candidatePoints.push({
+      lat: forward.lat,
+      lng: forward.lng,
+      bearing: baseBearing,
+      offset,
+    });
+    candidatePoints.push({
+      lat: backward.lat,
+      lng: backward.lng,
+      bearing: normalizeBearing(baseBearing + 180),
+      offset,
+    });
+  });
+
+  const seen = new Set();
+  const unique = [];
+
+  candidatePoints.forEach((candidate) => {
+    const key = `${candidate.lat.toFixed(5)}_${candidate.lng.toFixed(5)}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(candidate);
+    }
+  });
+
+  return unique.slice(0, DETOUR_MAX_CANDIDATES);
+};
+
+const snapWaypointToRoad = async (osrmServer, waypoint) => {
+  try {
+    const response = await fetch(
+      `${osrmServer}/nearest/v1/driving/${waypoint.lng},${waypoint.lat}?number=1`,
+    );
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    if (!data?.waypoints?.length) {
+      return null;
+    }
+
+    const nearest = data.waypoints[0];
+    return {
+      lat: nearest.location[1],
+      lng: nearest.location[0],
+      distance: nearest.distance ?? 0,
+      meta: waypoint,
+    };
+  } catch (error) {
+    console.warn("Failed snapping waypoint to road", error);
+    return null;
+  }
+};
+
+const requestOsrmRoute = async (osrmServer, coordinates, paramsString) => {
+  if (!Array.isArray(coordinates) || coordinates.length < 2) {
+    return null;
+  }
+
+  const coordinatePath = coordinates
+    .map((coord) => `${coord.lng},${coord.lat}`)
+    .join(";");
+
+  const url = `${osrmServer}/route/v1/driving/${coordinatePath}?${paramsString}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return null;
+    }
+    const data = await response.json();
+    if (!data?.routes?.length) {
+      return null;
+    }
+    return data.routes;
+  } catch (error) {
+    console.warn("OSRM route request failed", error);
+    return null;
+  }
+};
+
+const tryResolveRouteWithDynamicDetours = async ({
+  osrmServer,
+  baseParamOptions,
+  start,
+  end,
+  normalizedBlockades,
+  currentSelection,
+}) => {
+  if (!currentSelection?.selected?.conflicts?.length || !start || !end) {
+    return null;
+  }
+
+  const primaryConflict = currentSelection.selected.conflicts[0];
+  const normalizedConflict = normalizeBlockadePosition(
+    primaryConflict?.blockade,
+  );
+
+  if (!normalizedConflict) {
+    return null;
+  }
+
+  const candidates = generateDetourWaypoints(
+    start,
+    end,
+    normalizedConflict,
+  );
+
+  if (!candidates.length) {
+    return null;
+  }
+
+  const originalDistance =
+    currentSelection.selected?.route?.distance ??
+    currentSelection.original?.route?.distance ??
+    null;
+
+  let bestImproved = null;
+
+  for (const candidate of candidates) {
+    const snapped = await snapWaypointToRoad(osrmServer, candidate);
+    if (!snapped) {
+      continue;
+    }
+
+    if (snapped.distance > DETOUR_SNAP_DISTANCE_METERS) {
+      continue;
+    }
+
+    const detourParams = {
+      ...baseParamOptions,
+      alternatives: "1",
+    };
+
+    const paramString = new URLSearchParams(detourParams).toString();
+    const routes = await requestOsrmRoute(
+      osrmServer,
+      [start, snapped, end],
+      paramString,
+    );
+
+    if (!routes || !routes.length) {
+      continue;
+    }
+
+    const evaluationEntry = evaluateRoutesAgainstBlockades(
+      [routes[0]],
+      normalizedBlockades,
+    )[0];
+
+    if (!evaluationEntry) {
+      continue;
+    }
+
+    if (
+      originalDistance &&
+      evaluationEntry.route?.distance &&
+      evaluationEntry.route.distance >
+        originalDistance * DETOUR_MAX_DISTANCE_MULTIPLIER
+    ) {
+      continue;
+    }
+
+    if (evaluationEntry.conflicts.length === 0) {
+      return {
+        selected: evaluationEntry,
+        original: currentSelection.original,
+        rerouted: true,
+        blockadesPresent: true,
+        alternativesAvailable: currentSelection.alternativesAvailable,
+        detourMeta: {
+          label: normalizedConflict.label,
+          waypoint: snapped,
+          strategy: "dynamic",
+        },
+      };
+    }
+
+    if (
+      !bestImproved ||
+      evaluationEntry.closestDistance >
+        bestImproved.evaluation.closestDistance
+    ) {
+      bestImproved = {
+        evaluation: evaluationEntry,
+        snapped,
+      };
+    }
+  }
+
+  if (
+    bestImproved &&
+    bestImproved.evaluation.closestDistance >
+      (currentSelection.selected?.closestDistance ?? 0) + 10
+  ) {
+    return {
+      selected: bestImproved.evaluation,
+      original: currentSelection.original,
+      rerouted: true,
+      blockadesPresent: true,
+      alternativesAvailable: currentSelection.alternativesAvailable,
+      detourMeta: {
+        label: normalizedConflict.label,
+        waypoint: bestImproved.snapped,
+        strategy: "dynamic-improved",
+      },
+    };
+  }
+
+  return null;
+};
+
 const deriveRouteAlert = (selection) => {
   if (!selection || !selection.blockadesPresent) {
     return null;
@@ -278,307 +584,6 @@ const deriveRouteAlert = (selection) => {
     selectedConflicts.length === 0
   ) {
     return null;
-    const normalizeBearing = (bearing) => {
-      const normalized = bearing % 360;
-      return normalized < 0 ? normalized + 360 : normalized;
-    };
-
-    const bearingBetweenPoints = (start, end) => {
-      if (!start || !end) {
-        return 0;
-      }
-
-      if (
-        Math.abs(start.lat - end.lat) < 1e-6 &&
-        Math.abs(start.lng - end.lng) < 1e-6
-      ) {
-        return 0;
-      }
-
-      const φ1 = start.lat * DEGREE_IN_RADIANS;
-      const φ2 = end.lat * DEGREE_IN_RADIANS;
-      const Δλ = (end.lng - start.lng) * DEGREE_IN_RADIANS;
-
-      const y = Math.sin(Δλ) * Math.cos(φ2);
-      const x =
-        Math.cos(φ1) * Math.sin(φ2) -
-        Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
-
-      const θ = Math.atan2(y, x);
-      return normalizeBearing(θ / DEGREE_IN_RADIANS);
-    };
-
-    const offsetPointByBearing = (origin, distanceMeters, bearingDegrees) => {
-      const φ1 = origin.lat * DEGREE_IN_RADIANS;
-      const λ1 = origin.lng * DEGREE_IN_RADIANS;
-      const θ = bearingDegrees * DEGREE_IN_RADIANS;
-      const δ = distanceMeters / EARTH_RADIUS_METERS;
-
-      const sinφ1 = Math.sin(φ1);
-      const cosφ1 = Math.cos(φ1);
-      const sinδ = Math.sin(δ);
-      const cosδ = Math.cos(δ);
-
-      const sinφ2 = sinφ1 * cosδ + cosφ1 * sinδ * Math.cos(θ);
-      const φ2 = Math.asin(sinφ2);
-
-      const λ2Raw =
-        λ1 + Math.atan2(Math.sin(θ) * sinδ * cosφ1, cosδ - sinφ1 * sinφ2);
-
-      const λ2 = ((λ2Raw + Math.PI) % (2 * Math.PI)) - Math.PI;
-
-      return {
-        lat: φ2 / DEGREE_IN_RADIANS,
-        lng: λ2 / DEGREE_IN_RADIANS,
-      };
-    };
-
-    const generateDetourWaypoints = (start, end, blockade) => {
-      if (!start || !end || !blockade) {
-        return [];
-      }
-
-      const baseBearing = bearingBetweenPoints(start, end);
-      const perpendicularBearings = [
-        normalizeBearing(baseBearing + 90),
-        normalizeBearing(baseBearing - 90),
-        normalizeBearing(baseBearing + 135),
-        normalizeBearing(baseBearing - 135),
-      ];
-
-      const candidatePoints = [];
-
-      perpendicularBearings.forEach((bearing) => {
-        DETOUR_OFFSETS_METERS.forEach((offset) => {
-          const offsetPoint = offsetPointByBearing(blockade, offset, bearing);
-          candidatePoints.push({
-            lat: offsetPoint.lat,
-            lng: offsetPoint.lng,
-            bearing,
-            offset,
-          });
-        });
-      });
-
-      // Add forward/backward offsets to encourage bypassing by overshooting blockade
-      DETOUR_OFFSETS_METERS.forEach((offset) => {
-        const forward = offsetPointByBearing(blockade, offset, baseBearing);
-        const backward = offsetPointByBearing(
-          blockade,
-          offset,
-          normalizeBearing(baseBearing + 180),
-        );
-        candidatePoints.push({
-          lat: forward.lat,
-          lng: forward.lng,
-          bearing: baseBearing,
-          offset,
-        });
-        candidatePoints.push({
-          lat: backward.lat,
-          lng: backward.lng,
-          bearing: normalizeBearing(baseBearing + 180),
-          offset,
-        });
-      });
-
-      const seen = new Set();
-      const unique = [];
-
-      candidatePoints.forEach((candidate) => {
-        const key = `${candidate.lat.toFixed(5)}_${candidate.lng.toFixed(5)}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          unique.push(candidate);
-        }
-      });
-
-      return unique.slice(0, DETOUR_MAX_CANDIDATES);
-    };
-
-    const snapWaypointToRoad = async (osrmServer, waypoint) => {
-      try {
-        const response = await fetch(
-          `${osrmServer}/nearest/v1/driving/${waypoint.lng},${waypoint.lat}?number=1`,
-        );
-        if (!response.ok) {
-          return null;
-        }
-        const data = await response.json();
-        if (!data?.waypoints?.length) {
-          return null;
-        }
-
-        const nearest = data.waypoints[0];
-        return {
-          lat: nearest.location[1],
-          lng: nearest.location[0],
-          distance: nearest.distance ?? 0,
-          meta: waypoint,
-        };
-      } catch (error) {
-        console.warn("Failed snapping waypoint to road", error);
-        return null;
-      }
-    };
-
-    const requestOsrmRoute = async (osrmServer, coordinates, paramsString) => {
-      if (!Array.isArray(coordinates) || coordinates.length < 2) {
-        return null;
-      }
-
-      const coordinatePath = coordinates
-        .map((coord) => `${coord.lng},${coord.lat}`)
-        .join(";");
-
-      const url = `${osrmServer}/route/v1/driving/${coordinatePath}?${paramsString}`;
-
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          return null;
-        }
-        const data = await response.json();
-        if (!data?.routes?.length) {
-          return null;
-        }
-        return data.routes;
-      } catch (error) {
-        console.warn("OSRM route request failed", error);
-        return null;
-      }
-    };
-
-    const tryResolveRouteWithDynamicDetours = async ({
-      osrmServer,
-      baseParamOptions,
-      start,
-      end,
-      normalizedBlockades,
-      currentSelection,
-    }) => {
-      if (!currentSelection?.selected?.conflicts?.length || !start || !end) {
-        return null;
-      }
-
-      const primaryConflict = currentSelection.selected.conflicts[0];
-      const normalizedConflict = normalizeBlockadePosition(
-        primaryConflict?.blockade,
-      );
-
-      if (!normalizedConflict) {
-        return null;
-      }
-
-      const candidates = generateDetourWaypoints(
-        start,
-        end,
-        normalizedConflict,
-      );
-
-      if (!candidates.length) {
-        return null;
-      }
-
-      const originalDistance =
-        currentSelection.selected?.route?.distance ??
-        currentSelection.original?.route?.distance ??
-        null;
-
-      let bestImproved = null;
-
-      for (const candidate of candidates) {
-        const snapped = await snapWaypointToRoad(osrmServer, candidate);
-        if (!snapped) {
-          continue;
-        }
-
-        if (snapped.distance > DETOUR_SNAP_DISTANCE_METERS) {
-          continue;
-        }
-
-        const detourParams = {
-          ...baseParamOptions,
-          alternatives: "1",
-        };
-
-        const paramString = new URLSearchParams(detourParams).toString();
-        const routes = await requestOsrmRoute(
-          osrmServer,
-          [start, snapped, end],
-          paramString,
-        );
-
-        if (!routes || !routes.length) {
-          continue;
-        }
-
-        const evaluationEntry = evaluateRoutesAgainstBlockades(
-          [routes[0]],
-          normalizedBlockades,
-        )[0];
-
-        if (!evaluationEntry) {
-          continue;
-        }
-
-        if (
-          originalDistance &&
-          evaluationEntry.route?.distance &&
-          evaluationEntry.route.distance >
-            originalDistance * DETOUR_MAX_DISTANCE_MULTIPLIER
-        ) {
-          continue;
-        }
-
-        if (evaluationEntry.conflicts.length === 0) {
-          return {
-            selected: evaluationEntry,
-            original: currentSelection.original,
-            rerouted: true,
-            blockadesPresent: true,
-            alternativesAvailable: currentSelection.alternativesAvailable,
-            detourMeta: {
-              label: normalizedConflict.label,
-              waypoint: snapped,
-              strategy: "dynamic",
-            },
-          };
-        }
-
-        if (
-          !bestImproved ||
-          evaluationEntry.closestDistance >
-            bestImproved.evaluation.closestDistance
-        ) {
-          bestImproved = {
-            evaluation: evaluationEntry,
-            snapped,
-          };
-        }
-      }
-
-      if (
-        bestImproved &&
-        bestImproved.evaluation.closestDistance >
-          (currentSelection.selected?.closestDistance ?? 0) + 10
-      ) {
-        return {
-          selected: bestImproved.evaluation,
-          original: currentSelection.original,
-          rerouted: true,
-          blockadesPresent: true,
-          alternativesAvailable: currentSelection.alternativesAvailable,
-          detourMeta: {
-            label: normalizedConflict.label,
-            waypoint: bestImproved.snapped,
-            strategy: "dynamic-improved",
-          },
-        };
-      }
-
-      return null;
-    };
   }
 
   const conflictSource =
@@ -1612,11 +1617,13 @@ export default function ResponseMap({ embedded = false, className = "" }) {
           }`;
           icon = "🚀";
           break;
-        case "turn":
-          const direction = maneuver.modifier;
-          instruction = `Turn ${direction} onto ${step.name || "the road"}`;
+        case "turn": {
+          // OSRM omits `modifier` for some maneuvers.
+          const direction = maneuver.modifier || "";
+          instruction = `Turn ${direction} onto ${step.name || "the road"}`.replace(/\s+/g, " ");
           icon = direction.includes("left") ? "⬅️" : "➡️";
           break;
+        }
         case "merge":
           instruction = `Merge ${maneuver.modifier || ""} onto ${
             step.name || "the road"

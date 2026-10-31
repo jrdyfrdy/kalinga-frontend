@@ -52,6 +52,10 @@ export default function AddAssetModal({ isOpen, onClose, onSuccess }) {
       communication: false,
       medical_supplies: false,
       emergency_power: false,
+      // Handling classes used when matching vehicles to supply allocations
+      cold_chain: false,
+      high_value: false,
+      narcotics: false,
       general: true
     }
   });

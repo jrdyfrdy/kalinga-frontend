@@ -321,10 +321,13 @@ const ReleaseRequestsTab = ({ hospitalId, facility }) => {
                   <Eye className="w-4 h-4" />
                   View Full Details
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:text-purple-800 font-semibold">
+                <a
+                  href={`mailto:?subject=${encodeURIComponent(`Release request #${request.id}`)}`}
+                  className="flex items-center gap-2 px-4 py-2 text-purple-600 hover:text-purple-800 font-semibold"
+                >
                   <MessageSquare className="w-4 h-4" />
                   Contact Dispatcher
-                </button>
+                </a>
               </div>
             </div>
           </div>

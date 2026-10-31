@@ -51,6 +51,11 @@ const TrainingSection = lazy(() =>
     default: m.TrainingSection,
   })),
 );
+const ConnectivityMonitoring = lazy(() =>
+  import("@/components/admin/sections/ConnectivityMonitoring").then((m) => ({
+    default: m.ConnectivityMonitoring,
+  })),
+);
 const BroadcastControl = lazy(() =>
   import("@/components/admin/sections/BroadcastControl").then((m) => ({
     default: m.BroadcastControl,
@@ -196,6 +201,14 @@ const adminSections = [
     icon: Megaphone,
     component: BroadcastControl,
     optional: true,
+    apiStatus: "live",
+  },
+  {
+    id: "connectivity",
+    title: "Connectivity",
+    description: "Live health of the API, database, realtime and supporting services.",
+    icon: Server,
+    component: ConnectivityMonitoring,
     apiStatus: "live",
   },
 ];

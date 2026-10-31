@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NotificationLog;
 use Illuminate\Http\Request;
 
-class LogisticNotificationController extends Controller
+class LogisticsNotificationController extends Controller
 {
     // Store a new notification
     public function store(Request $request)

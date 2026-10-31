@@ -70,12 +70,20 @@ const getById = async (id) => {
   return rows[0];
 };
 
-const create = async (payload) => {
+const create = async (payload, createdBy) => {
   const { rows } = await pool.query(
-    `INSERT INTO responders (responder_code, user_id, full_name, status)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO responders (responder_code, user_id, full_name, contact_number, handling_capabilities, status, created_by)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)
      RETURNING *`,
-    [payload.responder_code, payload.user_id, payload.full_name, payload.status || 'Available']
+    [
+      payload.responder_code || `RSP-${String(payload.user_id).padStart(3, '0')}`,
+      payload.user_id,
+      payload.full_name,
+      payload.contact_number || 'N/A',
+      JSON.stringify(payload.handling_capabilities || []),
+      payload.status || 'Available',
+      createdBy,
+    ]
   );
   return rows[0];
 };
@@ -114,10 +122,11 @@ const updateStatusByUserId = async (userId, status) => {
 
   const { rows } = await pool.query(
     `INSERT INTO responders (user_id, full_name, contact_number, responder_code, handling_capabilities, status, created_by)
-     VALUES ($1::bigint, $2, COALESCE($3, 'N/A'), 'RSP-' || LPAD($1::text, 3, '0'), '[]'::jsonb, $4, $1::bigint)
+     VALUES ($1::bigint, $2, COALESCE($3, 'N/A'), 'RSP-' || LPAD($5::text, 3, '0'), '[]'::jsonb, $4, $1::bigint)
      ON CONFLICT (user_id) DO UPDATE SET status = EXCLUDED.status, updated_at = NOW()
      RETURNING *`,
-    [userId, user.name, user.phone, status]
+    // $5 repeats the id as text: Postgres rejects one parameter cast to two types.
+    [userId, user.name, user.phone, status, String(userId)]
   );
   return rows[0];
 };

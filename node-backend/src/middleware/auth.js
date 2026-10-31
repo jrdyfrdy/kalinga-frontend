@@ -19,9 +19,14 @@ const validateSanctumToken = async (rawToken) => {
 
   const hash = crypto.createHash('sha256').update(plaintext).digest('hex');
 
+  if (!/^\d+$/.test(tokenId)) return null;
+
+  // Mirror Sanctum: only User tokens, and honour expires_at.
   const { rows } = await pool.query(
     `SELECT tokenable_id FROM personal_access_tokens
      WHERE id = $1 AND token = $2
+       AND tokenable_type = 'App\\Models\\User'
+       AND (expires_at IS NULL OR expires_at > NOW())
      LIMIT 1`,
     [tokenId, hash]
   );
@@ -73,13 +78,16 @@ const authenticate = async (req, res, next) => {
 
     // Load user from DB to ensure account still exists
     const { rows } = await pool.query(
-      'SELECT id, email, role, name, phone FROM users WHERE id = $1 LIMIT 1',
+      'SELECT id, email, role, name, phone, is_active FROM users WHERE id = $1 LIMIT 1',
       [decoded.sub]
     );
 
     const user = rows[0];
     if (!user) {
       return res.status(401).json({ success: false, message: 'User not found.' });
+    }
+    if (user.is_active === false) {
+      return res.status(403).json({ success: false, message: 'Your account has been deactivated.' });
     }
 
     req.user = decoded;
@@ -122,4 +130,19 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-export { authenticate, optionalAuth };
+/**
+ * Resolve a raw bearer token to a DB user (or null). Used by socket.io auth.
+ */
+const resolveUserFromToken = async (token) => {
+  if (!token) return null;
+  const decoded = await resolveToken(token);
+  if (!decoded?.sub) return null;
+  const { rows } = await pool.query(
+    'SELECT id, email, role, name, is_active FROM users WHERE id = $1 LIMIT 1',
+    [decoded.sub]
+  );
+  const user = rows[0];
+  return user && user.is_active !== false ? user : null;
+};
+
+export { authenticate, optionalAuth, resolveUserFromToken };

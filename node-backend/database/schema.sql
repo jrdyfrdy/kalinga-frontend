@@ -1,3 +1,10 @@
+-- ============================================================================
+-- OBSOLETE — kept for reference only. Do NOT run against the shared database.
+-- The Node backend uses the Laravel-managed schema (backend/database/migrations:
+-- bigint ids, users.name, ...). Node-only tables live in seed.sql and
+-- database/migrations/*.sql. This file uses UUID keys / full_name / recipient_id
+-- and does not match what the services query.
+-- ============================================================================
 -- ============================================================
 -- Kalinga Cloud Development — Supabase PostgreSQL Schema
 -- Run this in the Supabase SQL Editor (project: psblyvwfbgmwyrtzoyhz)

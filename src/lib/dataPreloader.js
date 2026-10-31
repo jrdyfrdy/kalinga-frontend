@@ -92,7 +92,7 @@ export const preloadForRoute = (route) => {
   }
 
   // Admin routes
-  if (route.includes("/admin/dashboard")) {
+  if (route === "/admin" || route.startsWith("/admin/")) {
     preloadIncidents({ include_resolved: true });
     hospitalService.preload();
   }

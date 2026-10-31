@@ -101,4 +101,5 @@ const getUserDevices = async (req, res, next) => {
   }
 };
 
+export { parseDeviceName, normalizeIp };
 export default { recordDevice, getUserDevices };

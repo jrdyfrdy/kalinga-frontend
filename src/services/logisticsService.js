@@ -1,5 +1,6 @@
 // src/services/logisticsService.js
-import api from './api'; 
+import api from './api';
+import { handlingCapability } from '../utils/handlingClass';
 
 const logisticsService = {
   // Get full allocation with hospital names (Phase 3)
@@ -10,9 +11,9 @@ const logisticsService = {
 
   // Get available vehicles
   getAvailableVehicles: async (handlingClass) => {
-    const normalized = handlingClass === "ColdChain" ? "cold_chain" :
-                       handlingClass === "Narcotics" ? "narcotics" :
-                       handlingClass === "HighValue" ? "high_value" : "general";
+    // Accepts "ColdChain", "Cold Chain", "cold_chain", ... (allocations use
+    // a different spelling than requests).
+    const normalized = handlingCapability(handlingClass);
 
     const response = await api.get('/assets/available', {
       params: { handling_class: normalized }
@@ -22,9 +23,9 @@ const logisticsService = {
 
   // Get available responders 
   getAvailableResponders: async (handlingClass) => {
-    const normalized = handlingClass === "ColdChain" ? "cold_chain" :
-                       handlingClass === "Narcotics" ? "narcotics" :
-                       handlingClass === "HighValue" ? "high_value" : "general";
+    // Accepts "ColdChain", "Cold Chain", "cold_chain", ... (allocations use
+    // a different spelling than requests).
+    const normalized = handlingCapability(handlingClass);
 
     const response = await api.get('/responders/available', {
       params: { handling_class: normalized }

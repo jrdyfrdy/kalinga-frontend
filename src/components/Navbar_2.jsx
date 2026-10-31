@@ -33,7 +33,7 @@ export const NavbarB = () => {
   // Sets the base path based on the user's role
   const getDashboardUrl = () => {
     const role = user?.role;
-    if (role === "admin") return "/admin/dashboard";
+    if (role === "admin") return "/admin";
     if (role === "logistics") return "/logistics/dashboard";
     if (role === "responder") return "/responder/dashboard";
     if (role === "patient") return "/patient/dashboard";
@@ -52,6 +52,10 @@ export const NavbarB = () => {
 
   const dashboardUrl = getDashboardUrl();
   const baseRolePath = getRoleBasePath();
+  // Admin has a single routed page (/admin) with in-page sections; there are
+  // no /admin/notifications|profile|settings routes.
+  const rolePagePath = (page) =>
+    user?.role === "admin" ? "/admin" : `${baseRolePath}/${page}`;
 
   const handleLogout = async () => {
     await logout();
@@ -128,7 +132,7 @@ export const NavbarB = () => {
                   </span>
                   {/* MODIFIED: uses dynamic baseRolePath */}
                   <button
-                    onClick={() => navigate(`${baseRolePath}/notifications`)}
+                    onClick={() => navigate(rolePagePath("notifications"))}
                     className="text-xs text-blue-600 hover:underline"
                   >
                     See all
@@ -201,7 +205,7 @@ export const NavbarB = () => {
                   <li>
                     {/* MODIFIED: uses dynamic baseRolePath */}
                     <button
-                      onClick={() => navigate(`${baseRolePath}/profile`)}
+                      onClick={() => navigate(rolePagePath("profile"))}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
                       Profile
@@ -210,7 +214,7 @@ export const NavbarB = () => {
                   <li>
                     {/* MODIFIED: uses dynamic baseRolePath */}
                     <button
-                      onClick={() => navigate(`${baseRolePath}/settings`)}
+                      onClick={() => navigate(rolePagePath("settings"))}
                       className="w-full text-left px-4 py-2 hover:bg-gray-100"
                     >
                       Settings

@@ -82,7 +82,7 @@ function parseNarrativeSections(narrative) {
 
     if (currentSection === "hospitals") {
       const match = line.match(
-        /^\s*[•\-]\s*(.+?):\s*(\d+)\s*(?:at-risk|high\/critical|risk)\s*items?/i,
+        /^\s*[•-]\s*(.+?):\s*(\d+)\s*(?:at-risk|high\/critical|risk)\s*items?/i,
       );
       if (match) {
         result.hospitals.push({

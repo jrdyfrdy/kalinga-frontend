@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, isSupported as analyticsSupported } from "firebase/analytics";
 import { getStorage } from "firebase/storage";
 import { getFirestore } from "firebase/firestore";
 
@@ -16,9 +16,25 @@ if (import.meta.env.VITE_FIREBASE_DATABASE_URL) {
   firebaseConfig.databaseURL = import.meta.env.VITE_FIREBASE_DATABASE_URL;
 }
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const storage = getStorage(app);
-const db = getFirestore(app);
+// Training content (courses, progress, uploads) lives in Firebase. Without
+// configuration, initialising at import time threw (getAnalytics: missing
+// projectId) and crashed every page that imports the training service.
+export const isFirebaseConfigured = Boolean(
+  firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId,
+);
+
+const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
+const storage = app ? getStorage(app) : null;
+const db = app ? getFirestore(app) : null;
+
+// Analytics is optional and unsupported in some browsers/contexts.
+let analytics = null;
+if (app && firebaseConfig.measurementId) {
+  analyticsSupported()
+    .then((ok) => {
+      if (ok) analytics = getAnalytics(app);
+    })
+    .catch(() => {});
+}
 
 export { app, analytics, storage, db };

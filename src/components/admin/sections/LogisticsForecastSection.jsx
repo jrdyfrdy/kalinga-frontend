@@ -22,11 +22,7 @@ import {
   formatDisplayQuantity,
   formatWithUnit,
 } from "../../../utils/formatQuantity";
-import {
-  getDemoSummary,
-  generateDemoRiskData,
-  generateDemoDemandData,
-} from "../../logistics/demoForecastData";
+import { getDemoSummary } from "../../logistics/demoForecastData";
 
 // ── Data helpers ─────────────────────────────────────────────
 

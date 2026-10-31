@@ -5,6 +5,7 @@ import { EmergencyPopup } from "/src/components/emergency-sos/PopUp";
 import { useAuth } from "../../context/AuthContext";
 import { submitEmergencyReport } from "../../services/emergencyService";
 import { getCurrentLocation } from "../../utils/location";
+import { ROUTES } from "../../config/routes";
 
 export const EmergencyReport = () => {
   const [showPopup, setShowPopup] = useState(false);
@@ -49,12 +50,11 @@ export const EmergencyReport = () => {
     }
 
     try {
+      // The API identifies the reporter from the session token.
       await submitEmergencyReport({
-        user,
         location: locationInfo,
         locationError,
         triggeredAt,
-        initiated_at_ms: Date.now(),
       });
 
       setStatus({
@@ -106,13 +106,22 @@ export const EmergencyReport = () => {
       <div className={`mt-6 px-4 py-3 rounded-md border text-sm ${tone}`}>
         <p className="m-0">{status.message}</p>
         {status.type === "success" && (
-          <button
-            type="button"
-            className="mt-3 inline-flex items-center text-xs font-semibold underline hover:no-underline"
-            onClick={handleOpenChat}
-          >
-            Open emergency chat
-          </button>
+          <div className="mt-3 flex flex-wrap gap-4">
+            <button
+              type="button"
+              className="inline-flex items-center text-xs font-semibold underline hover:no-underline"
+              onClick={handleOpenChat}
+            >
+              Open emergency chat
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center text-xs font-semibold underline hover:no-underline"
+              onClick={() => navigate(ROUTES.PATIENT.VEHICLE)}
+            >
+              Request a specific vehicle
+            </button>
+          </div>
         )}
       </div>
     );

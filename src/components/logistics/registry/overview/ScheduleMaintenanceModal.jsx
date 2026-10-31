@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { X, Calendar, Wrench, AlertCircle } from "lucide-react";
 import assetService from "@/services/assetService";
+import maintenanceService from "@/services/maintenanceService";
 
 export default function ScheduleMaintenanceModal({ isOpen, onClose, asset, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -28,29 +29,21 @@ export default function ScheduleMaintenanceModal({ isOpen, onClose, asset, onSuc
         // Use the service method for quick scheduling
         await assetService.scheduleRoutineMaintenance(asset.id);
       } else {
-        // Custom schedule - would need proper API endpoint
         const today = new Date();
         const scheduledDate = formData.scheduled_date 
           ? new Date(formData.scheduled_date)
           : new Date(today.setDate(today.getDate() + 7));
         
-        const response = await fetch('/api/maintenance', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            asset_id: asset.id,
-            asset_code: asset.asset_code,
-            scheduled_date: scheduledDate.toISOString().split('T')[0],
-            description: formData.description || 'Routine Preventive Maintenance',
-            priority: formData.priority,
-            technician: formData.technician,
-            estimated_cost: formData.estimated_cost ? parseFloat(formData.estimated_cost) : null
-          })
+        // Authenticated call to the Laravel API (a relative fetch hit the
+        // frontend server without a token).
+        await maintenanceService.scheduleMaintenance({
+          asset_id: asset.id,
+          scheduled_date: scheduledDate.toISOString().split('T')[0],
+          description: formData.description || 'Routine Preventive Maintenance',
+          priority: formData.priority,
+          technician: formData.technician || null,
+          cost: formData.estimated_cost ? parseFloat(formData.estimated_cost) : null,
         });
-        
-        if (!response.ok) throw new Error('Failed to schedule maintenance');
       }
       
       onSuccess();
