@@ -31,7 +31,13 @@ VALUES
   ('Nurse Roel Macaraeg',   'roel.macaraeg@kalinga.com',  '$2y$12$placeholder_hash_5', 'responder',  '+63-917-100-0005', true, 'verified', NOW(), NOW()),
   ('EMT Dante Villanueva',  'dante.villanueva@kalinga.com','$2y$12$placeholder_hash_6', 'responder', '+63-917-100-0006', true, 'verified', NOW(), NOW()),
   ('EMT Sofia Mendoza',     'sofia.mendoza@kalinga.com',  '$2y$12$placeholder_hash_7', 'responder',  '+63-917-100-0007', true, 'verified', NOW(), NOW()),
-  ('EMT Bernard Ocampo',    'bernard.ocampo@kalinga.com', '$2y$12$placeholder_hash_8', 'responder',  '+63-917-100-0008', true, 'verified', NOW(), NOW())
+  ('EMT Bernard Ocampo',    'bernard.ocampo@kalinga.com', '$2y$12$placeholder_hash_8', 'responder',  '+63-917-100-0008', true, 'verified', NOW(), NOW()),
+  -- Responders the sections below look up by email. They already exist in the
+  -- cloud DB; created here so the seed also runs on a fresh local database.
+  ('Responder Verified',    'responder_verified@kalinga.com','$2y$12$placeholder_hash_9', 'responder', '+63-917-100-0009', true, 'verified', NOW(), NOW()),
+  ('Jane Doe',              'jane.doe@kalinga.com',       '$2y$12$placeholder_hash_10','responder',  '+63-917-100-0010', true, 'verified', NOW(), NOW()),
+  ('John Smith',            'john.smith@kalinga.com',     '$2y$12$placeholder_hash_11','responder',  '+63-917-100-0011', true, 'verified', NOW(), NOW()),
+  ('Maria Clara',           'maria.clara@kalinga.com',    '$2y$12$placeholder_hash_12','responder',  '+63-917-100-0012', true, 'verified', NOW(), NOW())
 ON CONFLICT (email) DO NOTHING;
 
 -- ─── 3. ADDITIONAL RESPONDERS (using newly inserted user IDs) ─
@@ -137,7 +143,7 @@ CREATE TABLE IF NOT EXISTS hospital_reports (
 
 INSERT INTO hospital_reports (title, hospital_name, message, action, severity, occupancy, type, status, reporter_id, created_at, updated_at)
 SELECT
-  title, hospital_name, message, action, severity, occupancy, type, 'active', u.id, created_at, created_at
+  src.title, src.hospital_name, src.message, src.action, src.severity, src.occupancy, src.type, 'active', u.id, src.created_at, src.created_at
 FROM (VALUES
   ('Capacity Alert: ED Near Full',            'Philippine General Hospital',        'Emergency Department nearing full capacity (94% occupied)',          'Prepare for patient redirection to JRRMMC or OMMC',           'high',     94, 'capacity', NOW() - INTERVAL '10 minutes'),
   ('ICU Critical Occupancy',                  'East Avenue Medical Center',         'ICU occupancy reached critical threshold (92%)',                     'Coordinate overflow arrangements with nearby Level 3 hospitals', 'critical', 92, 'capacity', NOW() - INTERVAL '25 minutes'),

@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             ResponderSeeder::class,
             ResourceResilienceConfigSeeder::class,
             ForecastSeeder::class,
+            EvacuationCenterSeeder::class,
         ]);
     }
 }
