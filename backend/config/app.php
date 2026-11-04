@@ -54,6 +54,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Public URL of the React app (used in emailed links).
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:4000'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

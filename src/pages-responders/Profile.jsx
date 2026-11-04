@@ -399,7 +399,7 @@ const Profile = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="h-full bg-[#F8FBF8] p-8 overflow-y-auto">
+        <div className="h-full bg-background p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-lg shadow-md p-6 text-gray-600">Loading profile...</div>
           </div>
@@ -411,7 +411,7 @@ const Profile = () => {
   if (error) {
     return (
       <Layout>
-        <div className="h-full bg-[#F8FBF8] p-8 overflow-y-auto">
+        <div className="h-full bg-background p-8 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-lg shadow-md p-6 text-red-700">{error}</div>
           </div>
@@ -422,7 +422,7 @@ const Profile = () => {
 
   return (
     <Layout>
-      <div className="h-full bg-[#F8FBF8] p-8 overflow-y-auto">
+      <div className="h-full bg-background p-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto flex flex-col gap-10">
           <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className={`lg:col-span-2 ${isEditing ? "" : "mt-16"}`}>

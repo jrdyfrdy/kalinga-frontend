@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import AuthLayout from "@/layouts/AuthLayout";
+import { Button, Field, Input } from "@/components/ui";
 import { useAuth } from "../../context/AuthContext";
 import {
   navigateToRoleBasedRoute,
@@ -118,181 +120,95 @@ export default function CreateAcc() {
     }
   };
 
+  const passwordWeak = password.length > 0 && !isPasswordStrong(password);
+  const PasswordToggle = ({ shown, onToggle }) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+      aria-label={shown ? "Hide password" : "Show password"}
+    >
+      {shown ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+    </button>
+  );
+
   return (
-    <div className="bg-gradient-to-b from-green-900 via-green-600 to-yellow-400 min-h-screen flex flex-col items-center pt-35 px-4 pb-20">
-      <div className="w-full max-w-md bg-card shadow-lg rounded-2xl p-6 sm:p-8 flex flex-col">
-        <h2 className="text-xl sm:text-2xl font-bold mb-6 text-center">
-          Create a new account
-        </h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name */}
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium mb-1 text-left"
-            >
-              Username
-            </label>
-            <input
-              type="text"
-              id="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-3 rounded-md border border-input bg-background focus:ring-2 focus:ring-primary"
-              placeholder="Juan Dela Cruz"
+    <AuthLayout
+      title="Create your account"
+      description="Sign up as a patient. You'll verify your identity in the next step."
+      footer={
+        <>
+          Already have an account?{" "}
+          <Link to="/login" className="font-semibold text-primary hover:underline">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Field label="Full name" required>
+          <Input id="name" value={formData.name} onChange={handleInputChange} autoComplete="name" placeholder="Juan Dela Cruz" />
+        </Field>
+        <Field label="Email" required>
+          <Input id="email" type="email" value={formData.email} onChange={handleInputChange} autoComplete="email" placeholder="juan.delacruz@example.com" />
+        </Field>
+        <Field label="Phone number" hint="Optional. Responders may call this number during an emergency.">
+          <Input id="phone" type="tel" value={formData.phone} onChange={handleInputChange} autoComplete="tel" placeholder="09171234567" />
+        </Field>
+        <Field
+          label="Password"
+          hint="At least 8 characters, with letters and numbers."
+          error={passwordWeak ? "Use at least 8 characters with both letters and numbers." : undefined}
+          required
+        >
+          <div className="relative">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
+              aria-invalid={passwordWeak || undefined}
+              className="pr-10"
             />
+            <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(!showPassword)} />
           </div>
-
-          {/* Email */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium mb-1 text-left"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              required
-              className="w-full px-4 py-3 rounded-md border border-input bg-background focus:ring-2 focus:ring-primary"
-              placeholder="juan.delacruz@example.com"
+        </Field>
+        <Field label="Confirm password" error={error || undefined} required>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={handleConfirmPasswordChange}
+              autoComplete="new-password"
+              aria-invalid={!!error || undefined}
+              className="pr-10"
             />
+            <PasswordToggle shown={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} />
           </div>
-
-          {/* Phone (Optional) */}
-          <div>
-            <label
-              htmlFor="phone"
-              className="block text-sm font-medium mb-1 text-left"
-            >
-              Phone Number{" "}
-              <span className="text-gray-500 text-xs">(Optional)</span>
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 rounded-md border border-input bg-background focus:ring-2 focus:ring-primary"
-              placeholder="09171234567"
-            />
-          </div>
-
-          {/* Password */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium mb-1 text-left"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className={`w-full px-4 py-3 rounded-md border ${
-                  password && !isPasswordStrong(password)
-                    ? "border-red-500"
-                    : "border-input"
-                } bg-background focus:ring-2 focus:ring-primary`}
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Must be <span className="font-semibold">8+ characters</span> long
-              and contain both
-              <span className="font-semibold"> letters</span> and{" "}
-              <span className="font-semibold">numbers</span>.
-            </p>
-            {password && !isPasswordStrong(password) && (
-              <p className="text-red-500 text-xs mt-1">
-                Password does not meet the requirements
-              </p>
-            )}
-          </div>
-
-          {/* Retype Password */}
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium mb-1 text-left"
-            >
-              Retype Password
-            </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={handleConfirmPasswordChange}
-                required
-                className={`w-full px-4 py-3 rounded-md border ${
-                  error ? "border-red-500" : "border-input"
-                } bg-background focus:ring-2 focus:ring-primary`}
-                placeholder="••••••••"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-500"
-              >
-                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Error */}
-          {error && <p className="text-red-500 text-xs">{error}</p>}
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={
-              isSubmitting ||
-              !password ||
-              !confirmPassword ||
-              !!error ||
-              !isPasswordStrong(password)
-            }
-            className={`w-full button flex items-center justify-center gap-2 ${
-              isSubmitting ||
-              !password ||
-              !confirmPassword ||
-              !!error ||
-              !isPasswordStrong(password)
-                ? "opacity-50 cursor-not-allowed"
-                : ""
-            }`}
-          >
-            {isSubmitting ? "Creating..." : "Create Account"}
-          </button>
-
-          <p className="text-sm text-center mt-4">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-primary hover:underline font-medium"
-            >
-              Log in
-            </Link>
-          </p>
-        </form>
-      </div>
-    </div>
+        </Field>
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full"
+          loading={isSubmitting}
+          disabled={!password || !confirmPassword || !!error || !isPasswordStrong(password)}
+        >
+          {isSubmitting ? "Creating account…" : "Create account"}
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          By creating an account you agree to the{" "}
+          <Link to="/terms-and-conditions" className="underline hover:text-foreground">
+            terms
+          </Link>{" "}
+          and{" "}
+          <Link to="/privacy-policy" className="underline hover:text-foreground">
+            privacy policy
+          </Link>
+          .
+        </p>
+      </form>
+    </AuthLayout>
   );
 }

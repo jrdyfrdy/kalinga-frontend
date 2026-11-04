@@ -14,7 +14,7 @@ const TABS = {
 };
 
 const COLORS = {
-  primary: "bg-primary hover:bg-[#143d31]", 
+  primary: "bg-primary hover:bg-brand-900", 
   primaryText: "text-primary",
   secondary: "bg-gray-100 hover:bg-gray-200 text-primary",
   danger: "bg-red-500 hover:bg-red-600",

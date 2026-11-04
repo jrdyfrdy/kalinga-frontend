@@ -176,8 +176,8 @@ export default function FillInfo() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-green-900 via-green-600 to-yellow-400 min-h-screen flex justify-center items-start pt-35 px-4 pb-10">
-      <div className="w-full max-w-2xl bg-white shadow-lg rounded-2xl p-6 sm:p-8">
+    <div className="bg-background min-h-[calc(100dvh-4rem)] flex justify-center items-start px-4 py-12">
+      <div className="w-full max-w-2xl rounded-xl border border-border bg-surface shadow-sm p-6 sm:p-8">
         {/* Header */}
         <h2 className="text-2xl font-bold mb-2 text-center">
           Verify your account
@@ -454,7 +454,7 @@ export default function FillInfo() {
       {/* Confirmation Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md">
+          <div className="rounded-xl border border-border bg-surface shadow-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Leave this page?</h3>
             <p className="text-sm text-gray-600 mb-6">
               If you go back, the information you entered will be lost.

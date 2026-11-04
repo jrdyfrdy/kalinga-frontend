@@ -1,81 +1,80 @@
 import { Link } from "react-router-dom";
+import { ArrowRight, MapPin, ShieldCheck, Siren } from "lucide-react";
 import { ROUTES } from "../../config/routes";
 import { useAuth } from "../../context/AuthContext";
 import { getDefaultRouteForRole } from "../../utils/roleRouting";
+import { Button } from "@/components/ui";
+
+const HIGHLIGHTS = [
+  { icon: Siren, label: "One-tap SOS" },
+  { icon: MapPin, label: "Live responder tracking" },
+  { icon: ShieldCheck, label: "Verified responders" },
+];
 
 export const HeroSection = () => {
   const { isAuthenticated, user, loading } = useAuth();
   const dashboardRoute = getDefaultRouteForRole(user?.role, user);
 
   return (
-    <section
-      id="hero"
-      className="relative min-h-screen flex items-center justify-center md:justify-start px-6 md:px-16 overflow-hidden"
-    >
-      {/* Video Background */}
+    <section id="hero" className="relative isolate flex min-h-[calc(100dvh-4rem)] items-center overflow-hidden">
       <video
         autoPlay
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover"
+        aria-hidden="true"
+        className="absolute inset-0 -z-20 size-full object-cover motion-reduce:hidden"
       >
         <source src="/videos/hero-bg.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
       </video>
+      <div className="absolute inset-0 -z-10 bg-gradient-to-r from-brand-950/95 via-brand-950/75 to-brand-950/30" aria-hidden="true" />
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40"></div>
+      <div className="container py-20">
+        <div className="max-w-2xl space-y-6 text-white">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur">
+            <span className="size-1.5 rounded-full bg-accent" aria-hidden="true" /> Teknolohiya para sa kaligtasan
+          </span>
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+            Mabilis at maaasahang emergency response para sa <span className="text-accent">bawat Pilipino</span>.
+          </h1>
+          <p className="max-w-xl text-lg text-white/80">
+            Humingi ng tulong sa isang pindot, subaybayan ang paparating na responder, at makipag-ugnayan sa
+            pinakamalapit na ospital, lahat sa iisang app.
+          </p>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-2xl text-center md:text-left">
-        <h1 className="text-3xl md:text-6xl font-bold tracking-tight mb-6 opacity-0 animate-fade-in text-white">
-          Mabilis at maaasahang emergency response system para sa bawat
-          Pilipino.
-        </h1>
+          <div className="flex flex-wrap gap-3 pt-2">
+            {loading ? (
+              <Button size="lg" variant="secondary" disabled>
+                Checking session…
+              </Button>
+            ) : isAuthenticated ? (
+              <Button asChild size="lg" variant="accent">
+                <Link to={dashboardRoute}>
+                  Go to dashboard <ArrowRight aria-hidden="true" />
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild size="lg" variant="accent">
+                  <Link to={ROUTES.CREATE_ACCOUNT}>
+                    Create an account <ArrowRight aria-hidden="true" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="border-white/40 bg-white/10 text-white hover:bg-white/20">
+                  <Link to={ROUTES.LOGIN}>Sign in</Link>
+                </Button>
+              </>
+            )}
+          </div>
 
-        <p className="text-base md:text-xl text-gray-200 mb-8 max-w-lg mx-auto md:mx-0 opacity-0 animate-fade-in-delay-3">
-          Teknolohiya para sa kaligtasan.
-        </p>
-
-        <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 opacity-0 animate-fade-in-delay-4">
-          {loading ? (
-            <button
-              type="button"
-              disabled
-              className="px-8 py-3 rounded-lg bg-white/70 text-primary font-bold cursor-not-allowed"
-            >
-              Checking Session...
-            </button>
-          ) : isAuthenticated ? (
-            <Link
-              to={dashboardRoute}
-              className="px-8 py-3 rounded-lg bg-white text-primary font-bold
-                         hover:bg-white/90 hover:shadow-[0_0_10px_rgba(255,223,100,0.45)]
-                         transition-all duration-300"
-            >
-              Go to Dashboard
-            </Link>
-          ) : (
-            <>
-              <Link
-                to={ROUTES.LOGIN}
-                className="px-8 py-3 rounded-lg bg-white text-primary font-bold
-                           hover:bg-white/90 hover:shadow-[0_0_10px_rgba(255,223,100,0.45)]
-                           transition-all duration-300"
-              >
-                Log In
-              </Link>
-              <Link
-                to={ROUTES.CREATE_ACCOUNT}
-                className="px-8 py-3 rounded-lg border border-white/80 bg-white/10 text-white font-bold
-                           hover:bg-white/20 hover:border-white
-                           transition-all duration-300"
-              >
-                Sign Up
-              </Link>
-            </>
-          )}
+          <ul className="flex flex-wrap gap-x-6 gap-y-2 pt-4 text-sm text-white/80">
+            {HIGHLIGHTS.map(({ icon: Icon, label }) => (
+              <li key={label} className="flex items-center gap-2">
+                <Icon className="size-4 text-accent" aria-hidden="true" />
+                {label}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>

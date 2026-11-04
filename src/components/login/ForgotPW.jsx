@@ -1,81 +1,69 @@
 import { useState } from "react";
-import { Mail } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
+import { ArrowLeft, MailCheck } from "lucide-react";
+import authService from "@/services/authService";
+import AuthLayout from "@/layouts/AuthLayout";
+import { Button, Callout, Field, Input } from "@/components/ui";
 
 export const ForgotPW = () => {
   const [email, setEmail] = useState("");
-  const { toast } = useToast();
+  const [state, setState] = useState({ status: "idle", message: "" });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (!email) {
-      toast({
-        title: "Error",
-        description: "Please enter your email address.",
-        variant: "destructive",
-        className:
-          "flex flex-col items-center text-center justify-center w-full",
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setState({ status: "loading", message: "" });
+    try {
+      const data = await authService.forgotPassword(email);
+      setState({ status: "sent", message: data?.message });
+    } catch (err) {
+      setState({
+        status: "error",
+        message: err?.response?.data?.message || "We couldn't send the link. Check your connection and try again.",
       });
-      return;
     }
-
-    toast({
-      title: "Reset Link Sent",
-      description: `A reset link has been sent to ${email}.`,
-      className:
-          "flex flex-col items-center text-center justify-center w-full",
-    });
-
-    setEmail("");
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground px-4">
-      <div className="w-full max-w-md bg-card shadow-lg rounded-2xl p-8">
-        <h2 className="text-2xl font-bold mb-2 text-center">Forgot Password</h2>
-        <p className="text-sm text-muted-foreground mb-6 text-center">
-          Enter your email to receive a password reset link.
-        </p>
+  const backToSignIn = (
+    <Link to="/login" className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
+      <ArrowLeft className="size-4" aria-hidden="true" /> Back to sign in
+    </Link>
+  );
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-muted-foreground mb-2 text-left"
-            >
-              Email Address
-            </label>
-            <div className="flex items-center border rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-primary">
-              <Mail className="h-4 w-4 text-muted-foreground mr-2" />
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-transparent outline-none text-sm"
-                placeholder="Enter your email"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-primary text-primary-foreground py-2 rounded-lg font-semibold hover:opacity-90 transition"
-          >
-            Send Reset Link
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <a
-            href="/login"
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            Back to Login
-          </a>
+  if (state.status === "sent") {
+    return (
+      <AuthLayout footer={backToSignIn}>
+        <div className="space-y-4 text-center">
+          <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary-subtle text-primary">
+            <MailCheck className="size-7" aria-hidden="true" />
+          </span>
+          <h1 className="text-2xl font-bold tracking-tight">Check your email</h1>
+          <p className="text-sm text-muted-foreground">
+            {state.message || "If an account exists for that email, a reset link is on its way."} The link expires in
+            60 minutes.
+          </p>
+          <Button variant="outline" className="w-full" onClick={() => setState({ status: "idle", message: "" })}>
+            Use a different email
+          </Button>
         </div>
-      </div>
-    </div>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout
+      title="Reset your password"
+      description="Enter the email you registered with and we'll send you a reset link."
+      footer={backToSignIn}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {state.status === "error" && <Callout tone="critical">{state.message}</Callout>}
+        <Field label="Email" required>
+          <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
+        </Field>
+        <Button type="submit" size="lg" className="w-full" loading={state.status === "loading"}>
+          Send reset link
+        </Button>
+      </form>
+    </AuthLayout>
   );
 };

@@ -2,15 +2,15 @@
    GLOBAL VARIABLES
 ========================================================================== */
 :root {
-  --clr-primary: #0b472d;
-  --clr-primary-light: #114d32;
-  --clr-accent: #16a34a;
+  --clr-primary: var(--color-brand-900);
+  --clr-primary-light: var(--color-brand-900);
+  --clr-accent: var(--color-brand-700);
 
   --clr-text: #374151;
   --clr-text-light: #4b5563;
   --clr-muted: #9aa3a0;
 
-  --clr-border: #e5e7eb;
+  --clr-border: var(--border);
   --clr-bg-light: #f3f4f6;
   --clr-bg-white: #ffffff;
 
@@ -116,9 +116,9 @@
    VIDEO SECTION - CLEAN
 ========================================================================== */
 .video-wrapper {
-  background: #000;
+  background: var(--color-neutral-950);
   border-radius: var(--radius-lg);
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   overflow: hidden;
   box-shadow: var(--shadow-md);
   margin-bottom: 24px;
@@ -240,7 +240,7 @@
 
 .btn-disabled {
   background: var(--clr-border);
-  color: #6b7280;
+  color: var(--muted-foreground);
   border: none;
   cursor: not-allowed;
 }

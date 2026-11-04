@@ -19,6 +19,7 @@ const ForgotPassword = lazy(() =>
     default: module.ForgotPassword,
   }))
 );
+const ResetPassword = lazy(() => import("../pages-account/ResetPassword"));
 const PrivacyPolicy = lazy(() =>
   import("../pages-quicklinks/Policy")
 );
@@ -34,6 +35,7 @@ export const PublicRoutes = () => (
     <Route index element={<Home />} />
     <Route path={ROUTES.LOGIN} element={<LogIn />} />
     <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+    <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
     <Route path={ROUTES.CREATE_ACCOUNT} element={<CreateAccount />} />
     <Route path={ROUTES.PRIVACY_POLICY} element={<PrivacyPolicy />} /> 
     <Route path={ROUTES.TERMS_AND_CONDITIONS} element={<TermsAndConditions />} />

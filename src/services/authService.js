@@ -92,6 +92,14 @@ export const authService = {
   },
 
   /**
+   * Complete a password reset from the emailed link
+   */
+  async resetPassword({ token, email, password, password_confirmation }) {
+    const response = await api.post("/reset-password", { token, email, password, password_confirmation });
+    return response.data;
+  },
+
+  /**
    * Get user from localStorage
    */
   getUser() {

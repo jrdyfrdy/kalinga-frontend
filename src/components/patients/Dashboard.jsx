@@ -274,7 +274,7 @@ const DARK = {
   header: "bg-primary",
   textLight: "text-primary",
   textMuted: "text-primary",
-  accent: "bg-[#1f883d] hover:bg-[#238636] text-white",
+  accent: "bg-brand-600 hover:bg-brand-600 text-white",
   inputBorder: "border-primary",
 };
 
@@ -681,7 +681,7 @@ export default function PatientDash() {
                             item.level === "medium" ||
                             item.level === "medium-priority" ||
                             item.level === "moderate"
-                              ? "bg-orange-50 text-[#C05621]"
+                              ? "bg-orange-50 text-warning-subtle-foreground"
                               : ""
                           }`}
                         >

@@ -438,7 +438,7 @@ export default function PatientProfile() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8FBF8] p-8 flex justify-center items-center">
+      <div className="min-h-screen bg-background p-8 flex justify-center items-center">
         <h2 className="text-2xl font-bold text-green-900">
           Loading Profile...
         </h2>
@@ -447,7 +447,7 @@ export default function PatientProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FBF8] p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-7xl mx-auto flex flex-col gap-10">
         <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className={`lg:col-span-2 ${isEditing ? "" : "mt-16"}`}>

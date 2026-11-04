@@ -1,64 +1,33 @@
-import { motion } from "framer-motion";
+const PILLARS = [
+  { value: "1 tap", label: "para humingi ng tulong" },
+  { value: "24/7", label: "na pagtugon ng mga responder" },
+  { value: "Real-time", label: "na lokasyon at ETA" },
+];
 
-export const MissionSection = () => {
-  return (
-    <section
-      id="mission"
-      className="py-20 px-6 md:py-28 md:px-8 relative bg-green-950 text-white"
-    >
-      <div className="container mx-auto max-w-5xl text-left">
-        <motion.h3
-          className="text-lg sm:text-xl md:text-3xl text-white mb-3 font-medium"
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-        >
-          Our
-        </motion.h3>
-
-        <motion.h1
-          className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-extrabold mb-6 md:mb-8 leading-tight"
-          initial={{ opacity: 0, y: 60 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          viewport={{ once: true }}
-        >
-          MISSION
-        </motion.h1>
-
-        <motion.p
-          className="text-base sm:text-lg md:text-xl text-justify leading-relaxed text-gray-200 max-w-3xl"
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          viewport={{ once: true }}
-        >
-          <span className="font-bold">
-            Sa{" "}
-            <span className="text-lg sm:text-xl md:text-2xl font-extrabold bg-gradient-to-r from-yellow-300 to-green-700 bg-clip-text text-transparent">
-              KALINGA
-            </span>
-            , handa tayo sa anumang sakuna. Isang tap lang ang kailangan — kami
-            na ang bahala sa mabilis at maasahang serbisyong medikal.
-          </span>
-        </motion.p>
-
-        <br />
-
-        <motion.p
-          className="text-base sm:text-lg md:text-xl text-justify leading-relaxed text-gray-200 max-w-3xl"
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          viewport={{ once: true }}
-        >
-          Mabilisang serbisyo, dekalidad na doktor, at agarang pagtugon sa
-          pangangailangan. Mula botika hanggang kagamitan, kalakip ang tamang
-          kaalamang medikal para sa bawat Pilipino, saan mang panig ng bansa,
-          anumang oras.
-        </motion.p>
+export const MissionSection = () => (
+  <section id="mission" className="scroll-mt-16 bg-brand-950 py-20 text-white sm:py-28">
+    <div className="container grid gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-center">
+      <div className="space-y-5">
+        <p className="text-sm font-semibold text-accent">Ang aming misyon</p>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Handa tayo sa anumang sakuna.</h2>
+        <p className="text-lg text-white/80">
+          Sa Kalinga, isang tap lang ang kailangan. Kami na ang bahala sa mabilis at maaasahang serbisyong medikal.
+        </p>
+        <p className="text-white/70">
+          Mabilisang serbisyo, dekalidad na doktor, at agarang pagtugon sa pangangailangan. Mula botika hanggang
+          kagamitan, kalakip ang tamang kaalamang medikal para sa bawat Pilipino, saan mang panig ng bansa, anumang
+          oras.
+        </p>
       </div>
-    </section>
-  );
-};
+      <dl className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+        {PILLARS.map(({ value, label }) => (
+          <div key={value} className="rounded-xl border border-white/10 bg-white/5 p-5">
+            <dt className="sr-only">{label}</dt>
+            <dd className="text-3xl font-bold text-accent">{value}</dd>
+            <dd className="mt-1 text-sm text-white/70">{label}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+);

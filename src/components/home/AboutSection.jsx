@@ -1,99 +1,52 @@
-import { Ambulance, PackageOpen, MapPinHouse, UsersRound } from "lucide-react";
-import { motion } from "framer-motion";
+import { Ambulance, MapPinHouse, PackageOpen, UsersRound } from "lucide-react";
 
-export const AboutSection = () => {
-  return (
-    <section id="about" className="py-24 px-4 relative bg-secondary/30">
-      <div className="container mx-auto max-w-5xl">
-        {/* Heading */}
-        <motion.h2
-          className="text-4xl md:text-4xl font-bold mb-5 text-center text-primary"
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
-        >
-          May{" "}
-          <span className="font-extrabold bg-gradient-to-r from-yellow-300 to-green-700 bg-clip-text text-transparent">
-            KALINGA
-          </span>{" "}
-          para sa bawat pangangailangan
-        </motion.h2>
+const FEATURES = [
+  {
+    icon: Ambulance,
+    title: "Mabilis na responde sa tamang oras",
+    text: "Maibibigay agad ang iyong mga pangangailangan, dahil ang iyong kaligtasan ang aming prioridad.",
+  },
+  {
+    icon: PackageOpen,
+    title: "Inuuna namin ang iyong pangangailangan",
+    text: "May first aid kit na handang ibigay, pati pagkain at inumin para sa iyong kalusugan.",
+  },
+  {
+    icon: MapPinHouse,
+    title: "Abot-kamay ang tulong nasaan ka man",
+    text: "Sa real-time tracking, madaling matutukoy ang iyong lokasyon anumang oras, kahit saan.",
+  },
+  {
+    icon: UsersRound,
+    title: "Makipag-ugnayan at ipaalam ang kalagayan",
+    text: "Iparating kung saan ka naroroon at kung ano ang iyong kailangan, direkta sa responder.",
+  },
+];
 
-        <motion.p
-          className="mb-10 text-center text-primary"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          viewport={{ once: true }}
-        >
-          Handang maghatid ng tulong at kaligtasan anumang oras at kahit saan ka
-          man naroroon!
-        </motion.p>
-
-        {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {[
-            {
-              icon: <Ambulance className="h-8 w-8 text-primary" />,
-              title: (
-                <>
-                  Mabilis na Responde sa{" "}
-                  <span className="text-highlight">tamang oras</span>
-                </>
-              ),
-              text: "Maibibigay agad ang iyong mga pangangailangan—dahil ang iyong kaligtasan ang aming prioridad.",
-            },
-            {
-              icon: <PackageOpen className="h-8 w-8 text-primary" />,
-              title: (
-                <>
-                  <span className="text-highlight">Inuuna</span> namin ang iyong{" "}
-                  <span className="text-highlight">pangangailangan</span>
-                </>
-              ),
-              text: "May first aid kit na handang ibigay at pagkain at inumin para sa iyong kalusugan.",
-            },
-            {
-              icon: <MapPinHouse className="h-8 w-8 text-primary" />,
-              title: (
-                <>
-                  Nasaan ka man ay{" "}
-                  <span className="text-highlight">abot-kamay ang tulong</span>
-                </>
-              ),
-              text: "Sa tulong ng real-time tracking, madaling matutukoy ang iyong lokasyon—anumang oras, kahit saan.",
-            },
-            {
-              icon: <UsersRound className="h-8 w-8 text-primary" />,
-              title: (
-                <>
-                  <span className="text-highlight">Makipag-ugnayan</span> at{" "}
-                  <span className="text-highlight">ipaalam</span> ang kalagayan
-                </>
-              ),
-              text: "Iparating kung saan ka naroroon at kung ano ang iyong kailangan.",
-            },
-          ].map((box, i) => (
-            <motion.div
-              key={i}
-              className="gradient-border p-6 card-hover"
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: i * 0.2 }}
-              viewport={{ once: true }}
-            >
-              <div className="flex flex-col items-center text-center">
-                <div className="p-3 rounded-full bg-primary/10 mb-4">
-                  {box.icon}
-                </div>
-                <h4 className="font-bold text-lg">{box.title}</h4>
-                <p className="text-muted-foreground">{box.text}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+export const AboutSection = () => (
+  <section id="about" className="scroll-mt-16 py-20 sm:py-28">
+    <div className="container">
+      <div className="mx-auto max-w-2xl text-center">
+        <p className="text-sm font-semibold text-primary">Tungkol sa Kalinga</p>
+        <h2 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">May Kalinga para sa bawat pangangailangan</h2>
+        <p className="mt-4 text-lg text-muted-foreground">
+          Handang maghatid ng tulong at kaligtasan anumang oras at kahit saan ka man naroroon.
+        </p>
       </div>
-    </section>
-  );
-};
+
+      <div className="mx-auto mt-14 grid max-w-5xl gap-6 sm:grid-cols-2">
+        {FEATURES.map(({ icon: Icon, title, text }) => (
+          <div key={title} className="flex gap-4 rounded-xl border border-border bg-surface p-6 shadow-xs">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary-subtle text-primary">
+              <Icon className="size-5" aria-hidden="true" />
+            </span>
+            <div className="space-y-1.5">
+              <h3 className="font-semibold">{title}</h3>
+              <p className="text-sm text-muted-foreground">{text}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);

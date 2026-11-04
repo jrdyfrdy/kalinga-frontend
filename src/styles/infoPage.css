@@ -7,12 +7,12 @@
 .info-title {
   font-size: 1.8rem;
   font-weight: bold;
-  color: #135b37;
+  color: var(--primary);
   margin-bottom: 1rem;
 }
 
 .info-content {
-  background: #f9f9f9;
+  background: var(--surface);
   border-radius: 8px;
   padding: 1.5rem;
   line-height: 1.6;
@@ -27,36 +27,36 @@
 .breadcrumbs {
   font-size: 0.95rem;
   margin-bottom: 1.5rem;
-  color: #004d40;
+  color: var(--primary);
 }
 
 .breadcrumbs a {
-  color: #004d40;
+  color: var(--primary);
   text-decoration: none;
 }
 
 .info-title {
   text-transform: capitalize;
   font-size: 2rem;
-  color: #004d40;
+  color: var(--primary);
   font-weight: 700;
   margin-bottom: 1rem;
 }
 
 /* Content box */
 .info-content {
-  background-color: #f9fafa;
-  border: 1px solid #e0e0e0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.5rem;
   line-height: 1.6;
   font-size: 1rem;
-  color: #333;
+  color: var(--foreground);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .info-content strong {
-  color: #004d40;
+  color: var(--primary);
 }
 
 /* Buttons section */
@@ -77,24 +77,24 @@
 }
 
 .btn-outline {
-  border: 2px solid #004d40;
+  border: 2px solid var(--color-brand-900);
   background: transparent;
-  color: #004d40;
+  color: var(--primary);
 }
 
 .btn-outline:hover {
-  background: #004d40;
+  background: var(--color-brand-900);
   color: #fff;
 }
 
 .btn-primary {
-  background-color: #004d40;
+  background-color: var(--color-brand-900);
   color: white;
   border: none;
 }
 
 .btn-primary:hover {
-  background-color: #00695c;
+  background-color: var(--color-brand-900);
 }
 
 /* Make the Next button align to the right, same style as Back to Course */
@@ -131,24 +131,24 @@
 /* Back button */
 .btn-outline {
   background-color: transparent;
-  border: 2px solid #0a593e; /* dark green border */
-  color: #0a593e;
+  border: 2px solid var(--color-brand-900); /* dark green border */
+  color: var(--primary);
 }
 
 .btn-outline:hover {
-  background-color: #0a593e;
+  background-color: var(--color-brand-900);
   color: white;
 }
 
 /* Next button */
 .btn-primary {
-  background-color: #0a593e;
+  background-color: var(--color-brand-900);
   color: white;
-  border: 2px solid #0a593e;
+  border: 2px solid var(--color-brand-900);
 }
 
 .btn-primary:hover {
-  background-color: #084c34;
+  background-color: var(--color-brand-900);
 }
 /* Buttons aligned side-by-side */
 .button-group {
@@ -166,11 +166,11 @@
   font-weight: 600;
   border: none;
   border-radius: 6px;
-  background-color: #0a593e;
+  background-color: var(--color-brand-900);
   color: white;
   transition: background 0.3s;
 }
 
 .btn-primary.short:hover {
-  background-color: #0a593e;
+  background-color: var(--color-brand-900);
 }

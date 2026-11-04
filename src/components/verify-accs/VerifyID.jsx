@@ -35,8 +35,8 @@ export default function VerifyID() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-green-900 via-green-600 to-yellow-400 min-h-screen flex flex-col items-center pt-35 px-4 pb-20">
-      <div className="w-full max-w-md bg-card shadow-lg rounded-2xl p-6 sm:p-8 flex flex-col">
+    <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center bg-background px-4 py-12">
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface shadow-sm p-6 sm:p-8 flex flex-col">
         {/* Header */}
         <h2 className="text-2xl font-bold mb-2 text-center">
           Verify your account

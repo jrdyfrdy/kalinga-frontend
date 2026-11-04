@@ -1,136 +1,71 @@
-import { useState, useEffect, useRef } from "react";
-import { Send } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import logo from "@/assets/kalinga-logo.png";
+import { useState } from "react";
+import { Mail, Phone, Send } from "lucide-react";
+import { Button, Card, Field, Input, Textarea } from "@/components/ui";
+import { notify } from "@/lib/notify";
 
+const SUPPORT_EMAIL = "kalinga.tup@gmail.com";
+
+/**
+ * Feedback form. There is no feedback API, so submitting opens the visitor's
+ * email app with the message pre-filled instead of pretending to send it.
+ */
 export const ContactSection = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef(null);
+  const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const update = (key) => (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            observer.disconnect(); // Run only once
-          }
-        });
-      },
-      { threshold: 0.2 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    setTimeout(() => {
-      setIsSubmitting(false);
-      toast({
-        title: "✅ Message Sent!",
-        description:
-          "We’ve received your message. Check your email for confirmation.",
-      });
-    }, 1500);
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const subject = encodeURIComponent(`Kalinga feedback from ${form.name}`);
+    const body = encodeURIComponent(`${form.message}\n\n— ${form.name} (${form.email})`);
+    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+    notify.info("Opening your email app", `Send the drafted message to ${SUPPORT_EMAIL}.`);
   };
 
   return (
-    <section
-      id="contact"
-      ref={sectionRef}
-      className={cn(
-        "py-20 px-6 md:py-28 md:px-8 relative bg-green-950 text-gray-200 transition-opacity duration-1000 ease-out",
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
-      )}
-    >
-      <div className="container mx-auto max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-        {/* LEFT COLUMN */}
-        <div className="flex flex-col items-center text-center space-y-4">
-          <img src={logo} alt="Logo" className="w-60 mb-4" />
-          <h3 className="text-2xl font-extrabold">We Value Your Feedback!</h3>
-          <h4 className="text-lg font-semibold mb-2">
-            Let us know how we can improve our services
-          </h4>
-          <p className="text-sm text-muted-foreground text-center leading-relaxed">
-            You'll receive an email confirming your submission after sending
-            your form. Our representative will contact you within{" "}
-            <span className="font-bold">24–72 hours</span>.
+    <section id="contact" className="scroll-mt-16 py-20 sm:py-28">
+      <div className="container grid gap-12 lg:grid-cols-2 lg:items-start">
+        <div className="space-y-5">
+          <p className="text-sm font-semibold text-primary">Makipag-ugnayan</p>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">We value your feedback</h2>
+          <p className="text-lg text-muted-foreground">
+            Tell us how we can improve. Our team replies within 24–72 hours.
           </p>
+          <ul className="space-y-3 pt-2 text-sm">
+            <li className="flex items-center gap-3">
+              <span className="flex size-9 items-center justify-center rounded-lg bg-primary-subtle text-primary">
+                <Mail className="size-4" aria-hidden="true" />
+              </span>
+              <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium hover:text-primary">
+                {SUPPORT_EMAIL}
+              </a>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="flex size-9 items-center justify-center rounded-lg bg-primary-subtle text-primary">
+                <Phone className="size-4" aria-hidden="true" />
+              </span>
+              <a href="tel:+639196013527" className="font-medium hover:text-primary">
+                (+63) 919 601 3527
+              </a>
+            </li>
+          </ul>
         </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="w-full max-w-lg flex flex-col justify-center">
+        <Card className="p-6 sm:p-8">
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium mb-2 text-left"
-              >
-                Your Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                required
-                className="w-full px-4 py-3 rounded-md border border-input focus:ring-2 focus:ring-primary text-sm placeholder-gray-400"
-                placeholder="Juan Dela Cruz"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium mb-2 text-left"
-              >
-                Your Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                required
-                className="w-full px-4 py-3 rounded-md border border-input focus:ring-2 focus:ring-primary text-sm placeholder-gray-400"
-                placeholder="juan.delacruz@gmail.com"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="message"
-                className="block text-sm font-medium mb-2 text-left"
-              >
-                Your Message
-              </label>
-              <textarea
-                id="message"
-                required
-                rows="5"
-                className="w-full px-4 py-3 rounded-md border border-input focus:ring-2 focus:ring-primary text-sm placeholder-gray-400"
-                placeholder="Hello, I'd like to share my feedback..."
-              />
-            </div>
-
-            <div className="flex justify-center md:justify-start">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={cn(
-                  "button bg-background text-green-950 flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium"
-                )}
-              >
-                {isSubmitting ? "Sending..." : "Send"}
-                <Send size={14} />
-              </button>
-            </div>
+            <Field label="Your name" required>
+              <Input value={form.name} onChange={update("name")} placeholder="Juan Dela Cruz" autoComplete="name" />
+            </Field>
+            <Field label="Your email" required>
+              <Input type="email" value={form.email} onChange={update("email")} placeholder="juan.delacruz@gmail.com" autoComplete="email" />
+            </Field>
+            <Field label="Message" required>
+              <Textarea rows={5} value={form.message} onChange={update("message")} placeholder="Hello, I'd like to share my feedback…" />
+            </Field>
+            <Button type="submit" size="lg" className="w-full sm:w-auto">
+              <Send aria-hidden="true" /> Send feedback
+            </Button>
           </form>
-        </div>
+        </Card>
       </div>
     </section>
   );

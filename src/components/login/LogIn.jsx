@@ -1,178 +1,101 @@
 import { useState } from "react";
-import logo from "../../assets/kalinga-logo.png";
-import { useToast } from "@/hooks/use-toast";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { navigateToRoleBasedRoute } from "../../utils/roleRouting";
+import AuthLayout from "@/layouts/AuthLayout";
+import { Button, Callout, Field, Input } from "@/components/ui";
+import { notify } from "@/lib/notify";
 
 export default function LogInPage() {
-  const { toast } = useToast();
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setIsSubmitting(true);
-
+    setError("");
     try {
-      // Call backend API through AuthContext
       const data = await login({ email, password });
-
-      // Show success toast
-      toast({
-        title: "Signed In",
-        description: `Welcome back, ${data.user.name || data.user.email}!`,
-        className:
-          "flex flex-col items-center text-center justify-center w-full",
-      });
-
-      // Redirect using centralized role-based routing
+      notify.success("Signed in", `Welcome back, ${data.user.name || data.user.email}.`);
       const from = location.state?.from?.pathname || null;
       navigateToRoleBasedRoute(data.user, navigate, { from });
-    } catch (error) {
-      console.error("Login error:", error);
-      // Show error toast
-      toast({
-        title: "Login Failed",
-        description:
-          error.response?.data?.message +
-            " Try using test credentials: patient_verified@kalinga.com | password123" ||
-          "Invalid email or password",
-        variant: "destructive",
-      });
+    } catch (err) {
+      const status = err?.response?.status;
+      setError(
+        status === 401 || status === 422
+          ? "That email and password don't match. Check them and try again."
+          : err?.response?.data?.message || "We couldn't sign you in. Check your connection and try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-        {/* Left Column */}
-        <div className="hidden md:flex flex-col items-center text-center px-4">
-          <Link to="/#hero">
-            <img
-              src={logo}
-              alt="Kalinga Logo"
-              className="w-28 sm:w-36 md:w-40 lg:w-48 h-auto mb-6 cursor-pointer"
-            />
+    <AuthLayout
+      title="Sign in to Kalinga"
+      description="Use the email and password you registered with."
+      footer={
+        <>
+          New to Kalinga?{" "}
+          <Link to="/create-acc" className="font-semibold text-primary hover:underline">
+            Create an account
           </Link>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold mb-2 bg-gradient-to-r from-lime-400 to-green-950 bg-clip-text text-transparent">
-            KALINGA
-          </h1>
-          <p className="text-base sm:text-lg md:text-lg text-muted-foreground max-w-md">
-            ALISTO sa bawat sakuna <br /> TATAG sa bawat pagbangon
-          </p>
-        </div>
-
-        {/* Right Column */}
-        <div className="w-full max-w-md mx-auto bg-card shadow-lg rounded-xl p-6 sm:p-8">
-          <h2 className="text-xl sm:text-2xl font-bold mb-6">Log In</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium mb-1 text-left"
-              >
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-input bg-background focus:ring-2 focus:ring-primary"
-                placeholder="juan.delacruz@example.com"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium mb-1 text-left"
-              >
-                Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-input bg-background focus:ring-2 focus:ring-primary"
-                placeholder="••••••••"
-              />
-            </div>
-
-            {/* Sign In Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full button flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    ></path>
-                  </svg>
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </button>
-          </form>
-
-          {/* Forgot Password */}
-          <div className="mt-3 text-center">
-            <a
-              href="/forgot-password"
-              className="text-sm text-primary hover:underline"
-            >
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate={false}>
+        {error && <Callout tone="critical">{error}</Callout>}
+        <Field label="Email" required>
+          <Input
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="juan.delacruz@example.com"
+            autoFocus
+          />
+        </Field>
+        <div className="grid gap-1.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="login-password" className="text-sm font-medium">
+              Password<span className="ml-0.5 text-critical" aria-hidden="true">*</span>
+            </label>
+            <Link to="/forgot-password" className="text-sm font-medium text-primary hover:underline">
               Forgot password?
-            </a>
+            </Link>
           </div>
-
-          {/* Separator */}
-          <div className="flex items-center gap-3 my-6">
-            <hr className="flex-grow border-border" />
-            <span className="text-muted-foreground text-sm">or</span>
-            <hr className="flex-grow border-border" />
+          <div className="relative">
+            <Input
+              id="login-password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute right-1 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+            </button>
           </div>
-
-          {/* Create Account */}
-          <Link
-            to="/create-acc"
-            className="w-full bg-secondary text-primary hover:bg-secondary/80 font-bold block text-center py-3 rounded-md"
-          >
-            Create an Account
-          </Link>
         </div>
-      </div>
-    </div>
+        <Button type="submit" size="lg" className="w-full" loading={isSubmitting}>
+          {isSubmitting ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

@@ -1165,7 +1165,7 @@ const CoordinationPanel = () => {
 
   return (
     <>
-      <div className="space-y-6 p-6 bg-gradient-to-br from-[#F8FBF8] to-[#F0F7F0] min-h-screen">
+      <div className="space-y-6 p-6 bg-gradient-to-br from-background to-primary-subtle min-h-screen">
         {/* Header with Gradient */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

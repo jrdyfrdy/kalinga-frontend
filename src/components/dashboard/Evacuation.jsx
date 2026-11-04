@@ -90,10 +90,10 @@ export default function EvacCenter() {
       </div>
       <div className="bg-none min-h-[60px] rounded-md">
         <div className="flex flex-row justify-between">
-          <h1 className="text-3xl font-bold text-[#1A4718]">Evacuation Center</h1>
+          <h1 className="text-3xl font-bold text-primary">Evacuation Center</h1>
           <div className="relative inline-block">
             <button
-              className="bg-[#f0d003] text-white border-none text-xs font-bold rounded-xl px-3 py-1.5 cursor-pointer mt-0 hover:bg-[#2c6b25]"
+              className="bg-accent text-white border-none text-xs font-bold rounded-xl px-3 py-1.5 cursor-pointer mt-0 hover:bg-brand-700"
               onClick={() => setCenterOpen(!centerOpen)}
             >
               {selectedLabel} ▼
@@ -104,7 +104,7 @@ export default function EvacCenter() {
                 {centers.map((c) => (
                   <li
                     key={c.id}
-                    className="text-[#1A4718] text-sm list-none py-2 px-3 cursor-pointer hover:bg-gray-200"
+                    className="text-primary text-sm list-none py-2 px-3 cursor-pointer hover:bg-gray-200"
                     onClick={() => {
                       setSelectedId(c.id);
                       setCenterOpen(false);
@@ -121,7 +121,7 @@ export default function EvacCenter() {
       </div>
 
 
-      <div className="bg-[#1A4718] min-h-[200px] rounded-xl px-4 py-3 text-white flex flex-col justify-start">
+      <div className="bg-primary min-h-[200px] rounded-xl px-4 py-3 text-white flex flex-col justify-start">
         <p className="text-lg font-bold mb-6">Shelter Population</p>
         <div className="flex flex-row items-center justify-around gap-4">
           <div className="flex flex-col items-center justify-center gap-2">
@@ -131,7 +131,7 @@ export default function EvacCenter() {
           <div className="flex flex-col items-center justify-center gap-2">
             <h3
               className={`text-5xl font-extrabold leading-none mb-1 ${
-                parseInt(center.available) > 0 ? "text-[#f0d003]  " : "text-white"
+                parseInt(center.available) > 0 ? "text-accent  " : "text-white"
               }`}
             >
               {center.available}
@@ -144,18 +144,18 @@ export default function EvacCenter() {
         <h3 className="font-bold text-lg ml-2 mt-1.5 mb-0 text-left">Resources and Supplies</h3>
         <p className="text-xs font-normal mt-0.5 ml-2 mb-0 text-left">See essentials ready at the center.</p>
         <div className="grid grid-cols-2 gap-2 bg-none mx-[5px] mt-1   flex-grow overflow-y-auto rounded-md">
-          <div className="font-bold text-sm text-white bg-[#1A4718] px-0.5 py-0.5 rounded-sm text-center mt-1.5">
+          <div className="font-bold text-sm text-white bg-primary px-0.5 py-0.5 rounded-sm text-center mt-1.5">
             Category
           </div>
-          <div className="font-bold text-sm text-white bg-[#1A4718] px-0.5 py-0.5 rounded-sm text-center mt-1.5">
+          <div className="font-bold text-sm text-white bg-primary px-0.5 py-0.5 rounded-sm text-center mt-1.5">
             Distribution
           </div>
           {Object.entries(center.resources).map(([category, info]) => (
             <React.Fragment key={category}>
-              <div className="p-0.5 border-b border-[#f0d003] text-xs text-center">
+              <div className="p-0.5 border-b border-accent text-xs text-center">
                 {category}
               </div>
-              <div className="p-0.5 border-b border-[#f0d003] text-xs text-center">
+              <div className="p-0.5 border-b border-accent text-xs text-center">
                 {info.distribution}
               </div>
             </React.Fragment>

@@ -6,7 +6,7 @@
 .tabs {
   display: flex;
   gap: 20px;
-  border-bottom: 2px solid #ddd;
+  border-bottom: 2px solid var(--border);
   margin-bottom: 20px;
 }
 
@@ -16,18 +16,18 @@
   padding: 10px 15px;
   font-weight: 600;
   cursor: pointer;
-  color: #444;
+  color: var(--foreground);
 }
 
 .tabs button.active {
-  border-bottom: 3px solid #006400;
-  color: #006400;
+  border-bottom: 3px solid var(--color-brand-900);
+  color: var(--primary);
 }
 
 h2 {
   margin: 25px 0 10px;
   font-size: 20px;
-  color: #004d26;
+  color: var(--primary);
 }
 
 .card-grid {
@@ -38,12 +38,12 @@ h2 {
 }
 
 .course-card {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px;
   width: 220px;
   text-align: center;
-  background: #fff;
+  background: var(--surface);
 }
 
 .course-card img {
@@ -56,7 +56,7 @@ h2 {
   padding: 8px 15px;
   border: 1px solid #444;
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   cursor: pointer;
   margin-bottom: 20px;
 }
@@ -68,7 +68,7 @@ h2 {
 }
 
 .categories button {
-  background: #004d26;
+  background: var(--color-brand-900);
   color: #fff;
   border: none;
   border-radius: 6px;
@@ -89,7 +89,7 @@ h2 {
 .section h3 {
   font-size: 16px;
   font-weight: 600;
-  background: #f1f1f1;
+  background: var(--surface-2);
   padding: 8px;
   border-radius: 6px;
   margin-bottom: 10px;
@@ -104,10 +104,10 @@ table {
 table th {
   text-align: left;
   padding: 10px;
-  color: #004d26;
+  color: var(--primary);
 }
 
 table td {
   padding: 8px 10px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border);
 }

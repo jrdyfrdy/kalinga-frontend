@@ -10,30 +10,30 @@
 .lesson-breadcrumbs {
   grid-column: 1 / span 2;
   font-size: 13px;
-  color: #4b5563;
+  color: var(--muted-foreground);
   margin-bottom: 8px;
 }
-.lesson-breadcrumbs a { color: #114d32; text-decoration: none; }
-.lesson-breadcrumbs span { margin: 0 6px; color: #9aa3a0; }
+.lesson-breadcrumbs a { color: var(--primary); text-decoration: none; }
+.lesson-breadcrumbs span { margin: 0 6px; color: var(--muted-foreground); }
 
 .lesson-header {
   grid-column: 1;
   margin-bottom: 10px;
 }
 .lesson-course-title {
-  color: #0b472d;
+  color: var(--primary);
   font-size: 20px;
   margin: 0;
 }
 .lesson-activity-title {
   margin: 6px 0 16px;
-  color: #184f36;
+  color: var(--primary);
   font-weight: 600;
 }
 
 .pdf-wrapper {
   grid-column: 1;
-  background: #fff;
+  background: var(--surface);
   border-radius: 8px;
   box-shadow: 0 6px 18px rgba(0,0,0,0.06);
   overflow: hidden;
@@ -68,8 +68,8 @@
   max-width: 520px;
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid #d0d7d2;
-  background: #fff;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
 
 /* Buttons (basic, match your existing .btn classes if you have them) */
@@ -78,18 +78,18 @@
   border-radius: 8px;
   cursor: pointer;
   border: 0;
-  background: #114d32;
+  background: var(--color-brand-900);
   color: #fff;
 }
 .btn.btn-light {
-  background: #f3f4f6;
-  color: #0b472d;
-  border: 1px solid #dbe7dd;
+  background: var(--surface-2);
+  color: var(--primary);
+  border: 1px solid var(--color-brand-200);
 }
 .btn.btn-outline {
   background: transparent;
-  color: #114d32;
-  border: 1px solid #114d32;
+  color: var(--primary);
+  border: 1px solid var(--color-brand-900);
 }
 
 /* Right sidebar - list of activities */
@@ -101,7 +101,7 @@
 }
 .lesson-activity-list h4 {
   margin: 0 0 10px;
-  color: #0b472d;
+  color: var(--primary);
 }
 .lesson-activity-list ul {
   list-style: none;
@@ -113,11 +113,11 @@
   border-left: 3px solid transparent;
 }
 .lesson-activity-list li.active {
-  border-left-color: #0b472d;
+  border-left-color: var(--color-brand-900);
   background: rgba(6, 74, 38, 0.03);
 }
 .lesson-activity-list a {
-  color: #143f2b;
+  color: var(--primary);
   text-decoration: none;
 }
 .lesson-center { padding: 48px; text-align:center; }

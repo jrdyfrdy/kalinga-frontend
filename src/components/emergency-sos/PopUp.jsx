@@ -52,7 +52,7 @@ export const EmergencyPopup = ({
       </p>
       <div className="flex flex-row justify-center gap-8">
         <button
-          className="bg-highlight text-white font-bold px-6 py-2 rounded-md hover:bg-[#8d8605] transition disabled:opacity-60"
+          className="bg-highlight text-white font-bold px-6 py-2 rounded-md hover:bg-gold-700 transition disabled:opacity-60"
           onClick={handleSend}
           disabled={isProcessing}
         >

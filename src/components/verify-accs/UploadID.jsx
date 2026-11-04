@@ -511,7 +511,7 @@ export default function UploadID() {
   };
 
   return (
-    <div className="bg-gradient-to-b from-green-900 via-green-600 to-yellow-400 min-h-screen flex flex-col items-center pt-35 px-4 pb-20">
+    <div className="flex min-h-[calc(100dvh-4rem)] flex-col items-center bg-background px-4 py-12">
       
       {/* HIDDEN CANVAS FOR PROCESSING */}
       <canvas ref={canvasRef} className="hidden"></canvas>

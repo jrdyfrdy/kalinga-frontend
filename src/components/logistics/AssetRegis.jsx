@@ -109,7 +109,7 @@ export default function AssetRegis() {
   const ActiveComponent = tabs.find((t) => t.id === activeTab)?.component;
 
   return (
-    <div className="min-h-screen bg-[#F8FBF8] p-4 sm:p-6">
+    <div className="min-h-screen bg-background p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex flex-wrap justify-between items-center gap-4 p-4 sm:p-6 bg-white rounded-xl shadow-lg border border-gray-200">

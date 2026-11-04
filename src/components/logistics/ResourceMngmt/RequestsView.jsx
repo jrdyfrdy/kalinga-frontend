@@ -1116,7 +1116,7 @@ const RequestsView = ({ facility, hospitalId }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F8FBF8] to-[#F0F7F0] p-6">
+    <div className="min-h-screen bg-gradient-to-br from-background to-primary-subtle p-6">
       {/* Header Section */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

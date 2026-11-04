@@ -1,19 +1,19 @@
 .triage-card {
-  --triage-low: #2e7d32;
-  --triage-medium: #fbc02d;
+  --triage-low: var(--color-brand-700);
+  --triage-medium: var(--color-gold-500);
   --triage-high: #ef6c00;
   --triage-very-high: #d84315;
   --triage-critical: #b71c1c;
 }
 
 .triage-card {
-  background: #ffffff;
+  background: var(--surface);
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.05),
     0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border);
   transition: all 0.2s ease;
 }
 
@@ -43,16 +43,16 @@
 }
 
 .triage-table thead {
-  background: #004d40;
+  background: var(--color-brand-900);
   color: white;
 }
 
 .triage-table .low {
-  background: #e8f5e9;
+  background: var(--color-brand-100);
   color: var(--triage-low);
 }
 .triage-table .medium {
-  background: #fff8e1;
+  background: var(--color-gold-100);
   color: #8a6a00;
 }
 .triage-table .high {
@@ -119,10 +119,10 @@
   }
 
   .triage-mobile-item {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border);
     border-radius: 10px;
     padding: 10px;
-    background: #f8fafc;
+    background: var(--surface);
   }
 
   .triage-mobile-item h4 {
@@ -148,14 +148,14 @@
   }
 
   .triage-mobile-metrics .metric.low {
-    background: #e8f5e9;
-    border-color: #c8e6c9;
+    background: var(--color-brand-100);
+    border-color: var(--color-brand-200);
     color: var(--triage-low);
   }
 
   .triage-mobile-metrics .metric.medium {
-    background: #fff8e1;
-    border-color: #f6e4ad;
+    background: var(--color-gold-100);
+    border-color: var(--color-gold-200);
     color: #8a6a00;
   }
 

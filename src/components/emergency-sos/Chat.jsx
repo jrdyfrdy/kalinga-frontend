@@ -45,7 +45,7 @@ export const ChatReport = ({ responder }) => {
         ) : (
           <>
             Your <strong>EMERGENCY</strong> report has been{" "}
-            <span className="text-[#f2c400] font-bold">successfully sent</span>{" "}
+            <span className="text-accent font-bold">successfully sent</span>{" "}
             to the admin/rescuer. They will contact you shortly. Stay calm and
             follow safety precautions.
           </>
@@ -59,7 +59,7 @@ export const ChatReport = ({ responder }) => {
         {[...messages].reverse().map((msg, idx) => (
           <div
             key={idx}
-            className="bg-[#f2c400] text-white px-3 sm:px-4 py-2 sm:py-3 rounded-2xl max-w-[80%] sm:max-w-[70%] self-end relative text-xs sm:text-sm md:text-base"
+            className="bg-accent text-white px-3 sm:px-4 py-2 sm:py-3 rounded-2xl max-w-[80%] sm:max-w-[70%] self-end relative text-xs sm:text-sm md:text-base"
           >
             {msg.text}
             <span className="block text-white mt-1 text-right text-[10px] sm:text-xs">
@@ -68,7 +68,7 @@ export const ChatReport = ({ responder }) => {
           </div>
         ))}
 
-        <div className="bg-[#f2c400] text-white px-3 sm:px-4 py-2 sm:py-3 rounded-2xl max-w-[80%] sm:max-w-[70%] self-end relative text-xs sm:text-sm md:text-base">
+        <div className="bg-accent text-white px-3 sm:px-4 py-2 sm:py-3 rounded-2xl max-w-[80%] sm:max-w-[70%] self-end relative text-xs sm:text-sm md:text-base">
           Here’s my current location: [Location Attachment]
           <span className="block text-[10px] sm:text-xs text-white mt-1 text-right">
             {new Date().toLocaleTimeString([], {
