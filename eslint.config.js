@@ -53,6 +53,11 @@ export default defineConfig([
     },
   },
   {
+    // UI kit and providers intentionally co-export variants/hooks with components.
+    files: ['src/components/ui/**/*.{js,jsx}', 'src/context/**/*.{js,jsx}'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
     files: ['src/test/**/*.{js,jsx}', '**/*.test.{js,jsx}'],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node, ...globals.vitest },

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "@/context/ThemeContext";
 import {
   Activity,
   AlertTriangle,
@@ -81,11 +82,8 @@ export const AdminLayout = ({
   apiStatusConfig = {},
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage for theme preference
-    const savedTheme = localStorage.getItem("theme");
-    return savedTheme === "dark";
-  });
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const isDarkMode = resolvedTheme === "dark";
   const [timeRange, setTimeRange] = useState("6h");
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
   const [alertHighlight, setAlertHighlight] = useState(null);
@@ -365,15 +363,6 @@ export const AdminLayout = ({
     [fetchQuickActionMetrics, onSectionChange, quickActionMetrics],
   );
 
-  // Apply theme to document element on mount and when it changes
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [isDarkMode]);
-
   useEffect(() => {
     const handleClickAway = (event) => {
       if (
@@ -389,21 +378,6 @@ export const AdminLayout = ({
     document.addEventListener("mousedown", handleClickAway);
     return () => document.removeEventListener("mousedown", handleClickAway);
   }, []);
-
-  const toggleTheme = () => {
-    setIsDarkMode((prev) => {
-      const next = !prev;
-
-      if (next) {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("theme", "light");
-      }
-      return next;
-    });
-  };
 
   const handleProfileAction = (value) => {
     setIsProfileMenuOpen(false);

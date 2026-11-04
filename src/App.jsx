@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -9,6 +9,12 @@ import { IncidentProvider } from "./context/IncidentContext";
 import { TriageProvider } from "./context/TriageProvider";
 import { ResponderDevMenuProvider } from "./context/ResponderDevMenuContext";
 import { Toaster } from "./components/ui/toaster";
+import { ConfirmProvider } from "./components/ui/confirm";
+import { TooltipProvider } from "./components/ui/controls";
+
+import NotFound from "./pages-home/NotFound";
+
+const StyleGuide = lazy(() => import("./pages-dev/StyleGuide"));
 
 // Route Modules
 import { PublicRoutes } from "./routes/PublicRoutes";
@@ -20,17 +26,17 @@ import { LogisticsRoutes } from "./routes/LogisticsRoutes";
 
 // Loading component for Suspense fallback
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-      <p className="text-muted-foreground">Loading...</p>
-    </div>
+  <div role="status" className="flex min-h-dvh flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
+    <span className="size-8 animate-spin rounded-full border-2 border-border border-t-primary motion-reduce:animate-none" aria-hidden="true" />
+    Loading…
   </div>
 );
 
 function App() {
   return (
     <ErrorBoundary>
+      <TooltipProvider delayDuration={300}>
+      <ConfirmProvider>
       <Toaster />
       <BrowserRouter>
         <AuthProvider>
@@ -58,22 +64,10 @@ function App() {
                       {/* Logistics Routes */}
                       {LogisticsRoutes()}
 
+                      {import.meta.env.DEV && <Route path="/dev/ui" element={<StyleGuide />} />}
+
                       {/* 404 Not Found */}
-                      <Route
-                        path="*"
-                        element={
-                          <div className="flex items-center justify-center min-h-screen">
-                            <div className="text-center">
-                              <h1 className="text-6xl font-bold text-primary mb-4">
-                                404
-                              </h1>
-                              <p className="text-xl text-muted-foreground">
-                                Page Not Found
-                              </p>
-                            </div>
-                          </div>
-                        }
-                      />
+                      <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>
                 </ResponderDevMenuProvider>
@@ -82,6 +76,8 @@ function App() {
           </RealtimeProvider>
         </AuthProvider>
       </BrowserRouter>
+      </ConfirmProvider>
+      </TooltipProvider>
     </ErrorBoundary>
   );
 }

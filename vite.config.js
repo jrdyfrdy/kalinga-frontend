@@ -21,8 +21,8 @@ export default defineConfig({
         name: "Kalinga Web App",
         short_name: "Kalinga",
         description: "Kalinga Incident Management and Response System",
-        theme_color: "#ffffff",
-        background_color: "#ffffff",
+        theme_color: "#173d1d",
+        background_color: "#f8faf9",
         display: "standalone",
         icons: [
           {

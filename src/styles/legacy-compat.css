@@ -1,0 +1,189 @@
+/* Dark-theme compatibility layer (temporary) for raw palette utilities (bg-white, text-gray-700, …)
+ * used by screens that have not migrated to semantic tokens yet. Unlayered so it
+ * wins over Tailwind utilities, and scoped to .dark so light mode is untouched.
+ * Delete a rule once `grep` finds no remaining users of its classes. */
+
+.dark .bg-white,
+.dark .bg-gray-50\/50 {
+  background-color: var(--surface);
+}
+
+.dark .bg-gray-50,
+.dark .bg-slate-50,
+.dark .bg-neutral-50,
+.dark .bg-green-50\/30,
+.dark .bg-emerald-50\/30 {
+  background-color: var(--background);
+}
+
+.dark .bg-gray-100,
+.dark .bg-slate-100,
+.dark .bg-gray-50\/80,
+.dark .bg-white\/60,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/90,
+.dark .bg-white\/95 {
+  background-color: var(--surface-2);
+}
+
+.dark .bg-gray-200,
+.dark .bg-slate-200,
+.dark .bg-gray-300 {
+  background-color: var(--input);
+}
+
+.dark .bg-green-50,
+.dark .bg-emerald-50,
+.dark .bg-green-100,
+.dark .bg-emerald-100 {
+  background-color: var(--primary-subtle);
+}
+
+.dark .bg-red-50,
+.dark .bg-rose-50,
+.dark .bg-red-100,
+.dark .bg-rose-100 {
+  background-color: var(--critical-subtle);
+}
+
+.dark .bg-yellow-50,
+.dark .bg-amber-50,
+.dark .bg-yellow-100,
+.dark .bg-amber-100,
+.dark .bg-orange-50,
+.dark .bg-orange-100 {
+  background-color: var(--warning-subtle);
+}
+
+.dark .bg-blue-50,
+.dark .bg-blue-100,
+.dark .bg-sky-50,
+.dark .bg-indigo-50,
+.dark .bg-purple-50,
+.dark .bg-purple-100,
+.dark .bg-cyan-50 {
+  background-color: var(--info-subtle);
+}
+
+.dark .text-black,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-gray-700,
+.dark .text-slate-700,
+.dark .text-neutral-900,
+.dark .text-neutral-800 {
+  color: var(--foreground);
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-slate-600,
+.dark .text-slate-500,
+.dark .text-neutral-600,
+.dark .text-neutral-500 {
+  color: var(--muted-foreground);
+}
+
+.dark .text-green-950,
+.dark .text-green-900,
+.dark .text-green-800,
+.dark .text-green-700,
+.dark .text-emerald-900,
+.dark .text-emerald-800,
+.dark .text-emerald-700,
+.dark .text-green-600,
+.dark .text-emerald-600 {
+  color: var(--color-brand-300);
+}
+
+.dark .text-red-900,
+.dark .text-red-800,
+.dark .text-red-700,
+.dark .text-red-600,
+.dark .text-rose-700,
+.dark .text-rose-600 {
+  color: var(--critical-subtle-foreground);
+}
+
+.dark .text-yellow-900,
+.dark .text-yellow-800,
+.dark .text-yellow-700,
+.dark .text-amber-900,
+.dark .text-amber-800,
+.dark .text-amber-700,
+.dark .text-orange-700,
+.dark .text-orange-800 {
+  color: var(--warning-subtle-foreground);
+}
+
+.dark .text-blue-900,
+.dark .text-blue-800,
+.dark .text-blue-700,
+.dark .text-blue-600,
+.dark .text-indigo-700,
+.dark .text-purple-700,
+.dark .text-purple-800 {
+  color: var(--info-subtle-foreground);
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-slate-300,
+.dark .border-white,
+.dark .divide-gray-100 > :not(:last-child),
+.dark .divide-gray-200 > :not(:last-child) {
+  border-color: var(--border);
+}
+
+.dark .border-green-100,
+.dark .border-green-200,
+.dark .border-emerald-100,
+.dark .border-emerald-200 {
+  border-color: oklch(0.4 0.07 150 / 0.5);
+}
+
+.dark .border-red-100,
+.dark .border-red-200 {
+  border-color: oklch(0.45 0.1 25 / 0.5);
+}
+
+.dark .border-yellow-200,
+.dark .border-amber-200,
+.dark .border-orange-200 {
+  border-color: oklch(0.5 0.08 75 / 0.5);
+}
+
+.dark .border-blue-100,
+.dark .border-blue-200 {
+  border-color: oklch(0.45 0.08 250 / 0.5);
+}
+
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-white:hover {
+  background-color: var(--surface-2);
+}
+
+.dark .hover\:bg-green-50:hover,
+.dark .hover\:bg-emerald-50:hover,
+.dark .hover\:bg-green-100:hover {
+  background-color: var(--primary-subtle);
+}
+
+.dark .hover\:bg-red-50:hover {
+  background-color: var(--critical-subtle);
+}
+
+.dark .hover\:text-gray-900:hover,
+.dark .hover\:text-gray-800:hover,
+.dark .hover\:text-gray-700:hover {
+  color: var(--foreground);
+}
