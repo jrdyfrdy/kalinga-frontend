@@ -212,302 +212,125 @@ const formatETA = (isoTime) => {
 };
 
 // --- CHART COMPONENT ---
-const PIE_COLORS = [
-  "#34D399",
-  "#1c2414",
-  "#394e2c",
-  "#FBBF24",
-  "#f0d003",
-  "#fae526",
-];
+/** Shared shell for the four KPI tiles: whole tile links to the detail page. */
+const KpiTile = ({ to, title, icon: Icon, value, unit, children }) => (
+  <Link
+    to={to}
+    className="group flex h-full flex-col rounded-xl border border-border bg-surface p-5 shadow-xs transition-shadow hover:shadow-md"
+  >
+    <div className="flex items-center justify-between gap-2">
+      <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
+      <Icon className="size-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+    </div>
+    <p className="tabular mt-3 text-3xl font-bold tracking-tight">
+      {value}
+      {unit && <span className="ml-1 text-base font-semibold text-muted-foreground">{unit}</span>}
+    </p>
+    <ul className="mt-3 space-y-1.5 text-sm">{children}</ul>
+  </Link>
+);
 
-const FacilityPieChart = ({ data }) => {
-  if (!data || data.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full text-gray-400">
-        No facility data
-      </div>
-    );
-  }
-
-  const facilityResourceData = data.map((item) => ({
-    name: item.name,
-    value: item.resources,
-  }));
-
-  const renderTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const total = data.reduce((sum, item) => sum + item.resources, 0);
-      const value = payload[0].value;
-      const percent = ((value / total) * 100).toFixed(1);
-      return (
-        <div className="bg-white p-3 rounded-lg text-sm shadow-xl text-gray-900 border border-gray-300">
-          <p className="font-bold text-lg">{payload[0].name}</p>
-          <p className="text-gray-600">
-            {value} total resources ({percent}%)
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Pie
-          data={facilityResourceData}
-          cx="50%"
-          cy="50%"
-          innerRadius={45}
-          outerRadius={75}
-          dataKey="value"
-          labelLine={false}
-          paddingAngle={4}
-        >
-          {facilityResourceData.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={PIE_COLORS[index % PIE_COLORS.length]}
-            />
-          ))}
-        </Pie>
-        <Tooltip content={renderTooltip} />
-      </PieChart>
-    </ResponsiveContainer>
-  );
-};
+const KpiLine = ({ icon: Icon, tone = "text-muted-foreground", children }) => (
+  <li className="flex items-center gap-2">
+    <Icon className={`size-4 shrink-0 ${tone}`} aria-hidden="true" />
+    <span className="tabular">{children}</span>
+  </li>
+);
 
 const OverallStatusCard = ({ inventory, facilities }) => {
-  const [showAllFacilities, setShowAllFacilities] = useState(false);
-  const totalRemaining =
-    inventory?.reduce((sum, i) => sum + (i.remaining || 0), 0) || 0;
-  const criticalCount =
-    inventory?.filter((i) => i.status === "Critical").length || 0;
-  const facilityCount = facilities?.length || 0;
-  const itemCategories = [...new Set(inventory?.map((i) => i.category) || [])]
-    .length;
-  const visibleFacilities = showAllFacilities
-    ? facilities || []
-    : (facilities || []).slice(0, 6);
+  const totalRemaining = inventory?.reduce((sum, i) => sum + (i.remaining || 0), 0) || 0;
+  const criticalCount = inventory?.filter((i) => i.status === "Critical").length || 0;
+  const categories = new Set((inventory || []).map((i) => i.category)).size;
+  const ranked = [...(facilities || [])].sort((a, b) => (b.resources || 0) - (a.resources || 0));
+  const top = ranked.slice(0, 5);
+  const max = Math.max(1, ...top.map((f) => f.resources || 0));
 
   return (
-    <Link to="/logistics/resource-management" className="block h-full">
-      <div className="p-5 bg-white rounded-2xl shadow-md hover:shadow-xl transition flex flex-col h-full text-gray-900 border border-gray-200">
-        <h3 className="text-xl font-bold mb-4 border-b border-gray-100 pb-3 flex justify-center items-center">
-          Resource Overview
-        </h3>
-        <div className="flex flex-col flex-1 w-full h-full justify-between gap-4">
-          {/* Top row: Metrics + Chart (Wraps on very small screens) */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-6 sm:gap-4 w-full">
-            {/* Key Metrics */}
-            <div className="flex flex-col items-center sm:items-start justify-center shrink-0 w-full sm:w-auto">
-              <p className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-none text-center sm:text-left">
-                {totalRemaining}
-              </p>
-              <p className="text-[11px] md:text-xs text-gray-500 uppercase font-bold tracking-wider mt-2 mb-4 text-center sm:text-left">
-                Total Inventory
-              </p>
-
-              <div className="space-y-3 text-sm w-full">
-                <p className="font-medium text-gray-600 flex items-center justify-center sm:justify-start">
-                  <span className="w-6 flex shrink-0 justify-center sm:justify-start">
-                    <Home className="h-4 w-4 text-gray-400" />
-                  </span>
-                  <span className="truncate">{facilityCount} Facilities</span>
-                </p>
-                <p className="font-medium text-gray-600 flex items-center justify-center sm:justify-start">
-                  <span className="w-6 flex shrink-0 justify-center sm:justify-start">
-                    <Briefcase className="h-4 w-4 text-gray-400" />
-                  </span>
-                  <span className="truncate">{itemCategories} Categories</span>
-                </p>
-                <div className="flex justify-center sm:justify-start w-full">
-                  <p className="font-semibold text-red-600 flex items-center bg-red-50 py-1 px-2 rounded-lg w-max">
-                    <span className="w-6 flex shrink-0 justify-center sm:justify-start">
-                      <AlertTriangle className="h-4 w-4 text-red-600" />
-                    </span>
-                    <span>{criticalCount} Critical Alerts</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Pie Chart */}
-            <div className="w-full sm:w-1/2 flex justify-center items-center min-h-[160px] relative">
-              {facilities && facilities.length > 0 ? (
-                <div className="w-[140px] h-[140px] sm:w-[160px] sm:h-[160px] lg:w-[180px] lg:h-[180px]">
-                  <FacilityPieChart data={facilities} />
-                </div>
-              ) : (
-                <p className="text-gray-400 text-sm">No facility data</p>
-              )}
-            </div>
-          </div>
-
-          {/* Bottom: Custom Legend Container */}
-          <div className="w-full bg-slate-50/70 rounded-xl p-3 md:p-4 border border-slate-100 flex flex-col mt-auto">
-            <div className={showAllFacilities ? "max-h-64 overflow-y-auto pr-1 space-y-3" : "space-y-3"}>
-              {visibleFacilities.length > 0
-                ? visibleFacilities.map((fac, idx) => (
-                  <div key={idx} className="flex items-start gap-3 w-full">
-                    <div
-                      className="w-3.5 h-3.5 rounded shrink-0 mt-[2px] shadow-sm ring-1 ring-black/5"
-                      style={{
-                        backgroundColor: PIE_COLORS[idx % PIE_COLORS.length],
-                      }}
-                    ></div>
-                    <div className="flex-1 text-left min-w-0">
-                      <p
-                        className="text-[13px] md:text-sm text-gray-700 font-medium leading-tight m-0 p-0 line-clamp-2"
-                        title={fac.name}
-                      >
-                        {fac.name}
-                      </p>
-                    </div>
-                  </div>
-                ))
-                : null}
-            </div>
-
-            {facilityCount > 6 ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowAllFacilities((prev) => !prev);
-                }}
-                className="mt-3 self-start text-xs sm:text-sm font-semibold text-slate-700 hover:text-slate-900 underline underline-offset-2"
-              >
-                {showAllFacilities
-                  ? "Show fewer facilities"
-                  : `Show all facilities (${facilityCount})`}
-              </button>
-            ) : null}
-          </div>
-        </div>
+    <Link
+      to="/logistics/resource-management"
+      className="group flex h-full flex-col rounded-xl border border-border bg-surface p-5 shadow-xs transition-shadow hover:shadow-md"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold text-muted-foreground">Resource overview</h3>
+        <Package className="size-4 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
       </div>
+      <div className="mt-3 flex flex-wrap items-end gap-x-6 gap-y-2">
+        <p className="tabular text-3xl font-bold tracking-tight">
+          {totalRemaining.toLocaleString()}
+          <span className="ml-1 text-base font-semibold text-muted-foreground">units</span>
+        </p>
+        <p className="tabular text-sm text-muted-foreground">
+          {facilities?.length || 0} facilities · {categories} categories
+        </p>
+        {criticalCount > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-critical-subtle px-2 py-0.5 text-xs font-semibold text-critical-subtle-foreground">
+            <AlertTriangle className="size-3.5" aria-hidden="true" /> {criticalCount} critical
+          </span>
+        )}
+      </div>
+      {top.length > 0 ? (
+        <ul className="mt-4 space-y-2.5">
+          {top.map((f) => (
+            <li key={f.name} className="space-y-1">
+              <div className="flex justify-between gap-3 text-sm">
+                <span className="truncate" title={f.name}>{f.name}</span>
+                <span className="tabular shrink-0 text-muted-foreground">{(f.resources || 0).toLocaleString()}</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${((f.resources || 0) / max) * 100}%` }} />
+              </div>
+            </li>
+          ))}
+          {ranked.length > top.length && (
+            <li className="text-xs text-muted-foreground">+ {ranked.length - top.length} more facilities</li>
+          )}
+        </ul>
+      ) : (
+        <p className="mt-4 text-sm text-muted-foreground">No facility stock recorded yet.</p>
+      )}
     </Link>
   );
 };
 
 const AssetStatusCard = ({ assets }) => {
-  const totalAssets = assets?.length || 0;
+  const total = assets?.length || 0;
   const inUse = assets?.filter((a) => a.status === "In Use").length || 0;
   const repair = assets?.filter((a) => a.status === "Repair").length || 0;
-  const idle = totalAssets - inUse - repair;
-
   return (
-    <Link to="/logistics/asset-registry" className="block h-full">
-      <div className="p-5 bg-white rounded-2xl shadow-md hover:shadow-xl transition flex flex-col justify-between h-full text-gray-900 border border-gray-200">
-        <h3 className="text-xl font-bold border-b border-gray-100 pb-3 flex justify-center items-center">
-          {" "}
-          Asset Registry Status
-        </h3>
-        <div className="flex-1 flex flex-col justify-center space-y-2 min-w-0">
-          <div className="text-4xl sm:text-5xl font-extrabold flex flex-wrap items-baseline gap-x-2 min-w-0">
-            {totalAssets}
-            <span className="text-sm sm:text-lg font-medium text-gray-600 break-words">
-              Total Registered Assets
-            </span>
-          </div>
-
-          <p className="text-sm sm:text-[15px] font-semibold mt-1 text-green-700 flex items-center flex-wrap gap-1 min-w-0">
-            <CheckCircle className="h-4 w-4 mr-1 text-green-700" /> {idle}{" "}
-            Available Assets
-          </p>
-          <p className="text-sm sm:text-[15px] font-semibold text-slate-700 flex items-center flex-wrap gap-1 min-w-0">
-            <ChartColumnStacked className="h-4 w-4 mr-1 text-slate-500" />{" "}
-            {inUse} Active Assets
-          </p>
-          <p className="text-sm sm:text-[15px] font-semibold text-slate-700 flex items-center flex-wrap gap-1 min-w-0">
-            <Wrench className="h-4 w-4 mr-1 text-slate-500" /> {repair} Vehicles
-            Under Repair
-          </p>
-        </div>
-      </div>
-    </Link>
+    <KpiTile to="/logistics/asset-registry" title="Asset registry" icon={Truck} value={total} unit="assets">
+      <KpiLine icon={CheckCircle} tone="text-success">{total - inUse - repair} available</KpiLine>
+      <KpiLine icon={ChartColumnStacked}>{inUse} in use</KpiLine>
+      <KpiLine icon={Wrench} tone={repair ? "text-warning" : "text-muted-foreground"}>{repair} under repair</KpiLine>
+    </KpiTile>
   );
 };
 
-const DeliveryPerformanceCard = ({ requests, shipments }) => {
-  const delayed = shipments?.filter((s) => s.status === "Delayed").length || 0;
-  const totalRequests = requests?.length || 0;
-  const avgDispatchTime = "45";
-  const avgDispatchUnit = "m";
-
+const DeliveryPerformanceCard = ({ shipments }) => {
+  const list = shipments || [];
+  const delayed = list.filter((s) => s.status === "Delayed").length;
+  const delivered = list.filter((s) => s.status === "Delivered").length;
+  const inTransit = list.filter((s) => ["Shipped", "On-the-Way", "In Transit"].includes(s.status)).length;
+  const finished = delivered + delayed;
+  const onTime = finished > 0 ? Math.round((delivered / finished) * 100) : null;
   return (
-    <Link to="/logistics/supply-tracking" className="block h-full">
-      <div className="p-5 bg-white rounded-2xl shadow-md hover:shadow-xl transition flex flex-col justify-between h-full text-gray-900 border border-gray-200 cursor-pointer">
-        <h3 className="text-xl font-bold mb-0 border-b border-gray-100 pb-3 flex justify-center items-center">
-          {" "}
-          Delivery Performance
-        </h3>
-        <div className="flex-1 flex flex-col justify-center space-y-4">
-          <div className="text-4xl sm:text-5xl font-extrabold flex flex-wrap items-baseline gap-x-1 min-w-0">
-            {avgDispatchTime}{" "}
-            <span className="text-xl sm:text-2xl font-extrabold mr-1">
-              {avgDispatchUnit}
-            </span>
-            <span className="text-xs sm:text-sm font-light ml-1 sm:ml-2 text-gray-600 break-words">
-              Avg Dispatch Time
-            </span>
-          </div>
-
-          <p className="text-sm sm:text-[15px] font-semibold text-red-600 flex items-center flex-wrap gap-1 min-w-0">
-            <AlertTriangle className="h-4 w-4 mr-1 text-red-600" /> {delayed}{" "}
-            Delayed Shipments
-          </p>
-
-          <div className="text-sm sm:text-[15px] font-medium flex items-center flex-wrap gap-1 min-w-0 text-gray-600">
-            <CheckCircle className="mr-1 h-4 w-4" /> 80% On-Time Success
-          </div>
-        </div>
-      </div>
-    </Link>
+    <KpiTile to="/logistics/supply-tracking" title="Deliveries" icon={Clock} value={onTime == null ? "—" : `${onTime}%`} unit={onTime == null ? "" : "on time"}>
+      <KpiLine icon={Truck}>{inTransit} in transit</KpiLine>
+      <KpiLine icon={CheckCircle} tone="text-success">{delivered} delivered</KpiLine>
+      <KpiLine icon={AlertTriangle} tone={delayed ? "text-critical" : "text-muted-foreground"}>{delayed} delayed</KpiLine>
+    </KpiTile>
   );
 };
 
 const PendingRequestsCard = ({ requests }) => {
-  const totalRequests = requests?.length || 0;
-  const criticalRequests =
-    requests?.filter((r) => r.urgency === "Critical").length || 0;
-  const shippedRequests =
-    requests?.filter((r) => r.urgency === "Shipped").length || 0;
-  const highRequests =
-    requests?.filter((r) => r.urgency === "High").length || 0;
-
+  const list = requests || [];
+  const critical = list.filter((r) => r.urgency === "Critical").length;
+  const high = list.filter((r) => r.urgency === "High").length;
   return (
-    <Link to="/logistics/requested-allocation" className="block h-full">
-      <div className="p-5 bg-white rounded-2xl shadow-md hover:shadow-xl transition flex flex-col justify-between h-full text-gray-900 border border-gray-200">
-        <h3 className="text-xl font-bold border-b border-gray-100 pb-3 flex justify-center items-center">
-          Requested Allocation
-        </h3>
-
-        <div className="flex-1 flex flex-col justify-center space-y-1">
-          <div className="text-4xl sm:text-5xl font-extrabold flex flex-wrap items-baseline gap-x-2 min-w-0">
-            {totalRequests}{" "}
-            <span className="text-sm sm:text-lg font-medium text-gray-600 break-words">
-              Total Pending Requests
-            </span>
-          </div>
-
-          <p className="text-sm sm:text-[15px] font-semibold mt-1 text-red-600 flex items-center flex-wrap gap-1 min-w-0">
-            <AlertTriangle className="h-4 w-4 mr-1 text-red-600" />{" "}
-            {criticalRequests} Critical
-          </p>
-          <p className="text-sm sm:text-[15px] font-semibold text-yellow-600 flex items-center flex-wrap gap-1 min-w-0">
-            <Clock className="h-4 w-4 mr-1 text-yellow-600" /> {highRequests}{" "}
-            High Priority
-          </p>
-          <p className="text-sm sm:text-[15px] font-semibold text-gray-600 flex items-center flex-wrap gap-1 min-w-0">
-            <Truck className="h-4 w-4 mr-1 text-gray-600" /> {shippedRequests}{" "}
-            Shipments Dispatched
-          </p>
-        </div>
-      </div>
-    </Link>
+    <KpiTile to="/logistics/requested-allocation" title="Pending requests" icon={ClipboardList} value={list.length} unit="open">
+      <KpiLine icon={AlertTriangle} tone={critical ? "text-critical" : "text-muted-foreground"}>{critical} critical</KpiLine>
+      <KpiLine icon={Clock} tone={high ? "text-warning" : "text-muted-foreground"}>{high} high priority</KpiLine>
+      <KpiLine icon={Package}>{list.length - critical - high} standard</KpiLine>
+    </KpiTile>
   );
 };
 
