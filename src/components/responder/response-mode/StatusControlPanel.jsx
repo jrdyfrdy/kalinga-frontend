@@ -9,6 +9,8 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 const STATUS_FLOW = [
   {
@@ -85,6 +87,7 @@ export default function StatusControlPanel({
   statusUpdating = false,
   statusError = null,
 }) {
+  const confirmDialog = useConfirm();
   const [noteDraft, setNoteDraft] = useState("");
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportCount, setSupportCount] = useState(1);
@@ -114,7 +117,7 @@ export default function StatusControlPanel({
     }
 
     if (value === "cancelled") {
-      const confirmed = window.confirm(
+      const confirmed = await confirmDialog(
         "Mark incident as cancelled? This action notifies dispatch."
       );
       if (!confirmed) {
@@ -534,7 +537,7 @@ export default function StatusControlPanel({
                 type="button"
                 onClick={async () => {
                   if (!supportNotes.trim()) {
-                    alert("Please describe what kind of support you need.");
+                    notify.warning("Please describe what kind of support you need.");
                     return;
                   }
 

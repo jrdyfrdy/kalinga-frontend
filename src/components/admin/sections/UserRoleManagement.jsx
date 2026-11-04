@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { SectionHeader } from "../SectionHeader";
 import adminService from "../../../services/adminService";
+import { notify } from "@/lib/notify";
 
 // Role badge styling
 const roleBadges = {
@@ -562,7 +563,7 @@ export const UserRoleManagement = () => {
       fetchUsers();
     } catch (err) {
       console.error("Error assigning hospital:", err);
-      alert(
+      notify.error(
         err.response?.data?.message || "Failed to update hospital assignment",
       );
     } finally {

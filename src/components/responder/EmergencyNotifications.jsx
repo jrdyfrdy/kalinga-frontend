@@ -22,6 +22,7 @@ import {
   INCIDENT_STATUS_LABELS,
 } from "../../constants/incidentStatus";
 import { ROUTES } from "../../config/routes";
+import { notify } from "@/lib/notify";
 
 const emptyHistoryMessage =
   "No updates recorded yet. Log a status change so everyone stays aligned.";
@@ -66,7 +67,7 @@ export default function EmergencyNotifications() {
     } catch (err) {
       console.error("Failed to join incident", err);
       if (err?.response?.status === 409) {
-        window.alert(
+        notify.warning(
           err.response?.data?.message ||
             "Another responder already claimed this incident."
         );
@@ -86,7 +87,7 @@ export default function EmergencyNotifications() {
     const requestingSupport = status === SUPPORT_STATUS;
 
     if (requestingSupport && !noteValue) {
-      window.alert(
+      notify.warning(
         "Please describe the support or resources you need before requesting assistance."
       );
       return;
@@ -122,7 +123,7 @@ export default function EmergencyNotifications() {
       setSelectedStatus((prev) => ({ ...prev, [incidentId]: "" }));
     } catch (err) {
       console.error("Failed to update incident status", err);
-      alert(
+      notify.error(
         err?.response?.status === 403
           ? "Join this incident before updating its status."
           : err?.response?.data?.message || "Failed to update the incident status.",

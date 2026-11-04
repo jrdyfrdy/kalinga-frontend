@@ -13,6 +13,8 @@ import {
   Shield
 } from "lucide-react";
 import requestService from "../../services/requestService";
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 export default function RequestSupply({ 
   isOpen, 
@@ -21,6 +23,7 @@ export default function RequestSupply({
   editingDraft = null,
   mode = "create" // "create", "edit-draft", "submit-draft"
 }) {
+  const confirmDialog = useConfirm();
   const [form, setForm] = useState({
     quantity: "",
     urgency_level: "Medium",
@@ -109,11 +112,11 @@ export default function RequestSupply({
       if (mode === "edit-draft" && editingDraft) {
         // Update existing draft
         await requestService.updateDraft(editingDraft.id, payload);
-        alert("Draft updated successfully!");
+        notify.success("Draft updated successfully!");
       } else {
         // Create new draft
         await requestService.saveDraft(payload);
-        alert("Draft saved successfully!");
+        notify.success("Draft saved successfully!");
       }
 
       onClose(true); // Pass success flag
@@ -138,7 +141,7 @@ export default function RequestSupply({
       if (mode === "submit-draft" && editingDraft) {
         // Submit existing draft directly
         await requestService.submitFromDraft(editingDraft.id);
-        alert("Draft submitted successfully!");
+        notify.success("Draft submitted successfully!");
       } else if (mode === "edit-draft" && editingDraft) {
         // Update draft and submit
         const payload = {
@@ -150,7 +153,7 @@ export default function RequestSupply({
         };
         await requestService.updateDraft(editingDraft.id, payload);
         await requestService.submitFromDraft(editingDraft.id);
-        alert("Draft updated and submitted successfully!");
+        notify.success("Draft updated and submitted successfully!");
       } else {
         // Create and submit new request (original functionality)
         const payload = {
@@ -161,7 +164,7 @@ export default function RequestSupply({
           reason: form.reason,
         };
         await requestService.submitRequest(payload);
-        alert("Request submitted successfully!");
+        notify.success("Request submitted successfully!");
       }
 
       onClose(true); // Pass success flag
@@ -174,14 +177,14 @@ export default function RequestSupply({
   };
 
   const handleDeleteDraft = async () => {
-    if (!editingDraft?.id || !confirm("Are you sure you want to delete this draft?")) {
+    if (!editingDraft?.id || !await confirmDialog("Are you sure you want to delete this draft?")) {
       return;
     }
 
     setLoading(true);
     try {
       await requestService.deleteDraft(editingDraft.id);
-      alert("Draft deleted successfully!");
+      notify.success("Draft deleted successfully!");
       onClose(true); // Pass success flag
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete draft");

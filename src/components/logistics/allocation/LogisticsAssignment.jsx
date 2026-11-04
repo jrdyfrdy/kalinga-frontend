@@ -10,6 +10,7 @@ import {
   Zap, Battery, CalendarDays, MapPinOff, MapPin as MapPinIcon, Eye, Search,
   Map as MapIcon, Filter as FilterIcon
 } from "lucide-react";
+import { notify } from "@/lib/notify";
 
 
 const Button = ({
@@ -1356,7 +1357,7 @@ export default function LogisticsAssignment({ allocation, onSuccess }) {
   // Assignment function with proper data conversion
   const handleAssign = async () => {
     if (!selectedVehicleId || !selectedResponderId) {
-      alert("Please select both a vehicle and a responder.");
+      notify.warning("Please select both a vehicle and a responder.");
       return;
     }
 
@@ -1405,7 +1406,7 @@ if (details?.status !== 'confirmed') {
       onSuccess?.();
     } catch (err) {
       console.error("Assign error:", err.response || err);
-      alert(err?.response?.data?.error || err.message || "Assignment failed. Please try again.");
+      notify.error(err?.response?.data?.error || err.message || "Assignment failed. Please try again.");
     } finally {
       setIsAssigning(false);
     }

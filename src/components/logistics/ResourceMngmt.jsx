@@ -14,6 +14,8 @@ import hospitalService from "../../services/hospitalService";
 import CalendarView from "./ResourceMngmt/CalendarView";
 import RequestsView from "./ResourceMngmt/RequestsView";
 import RequestSupply from "./RequestSupply"; 
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 
 // --- Configuration & Helpers ---
@@ -64,6 +66,7 @@ const StatCard = ({ title, value, icon: Icon, colorClass }) => (
 // --- Main Component ---
 
 export default function ResourceMngmt() {
+  const confirmDialog = useConfirm();
   // MOVE facilityCategories INSIDE the component
   const DEFAULT_CATEGORIES = ["All", "Medicine", "First Aid Kit", "Critical Only"];
 
@@ -284,7 +287,7 @@ export default function ResourceMngmt() {
       fetchResources(); // Refresh list
     } catch (err) {
       console.error("Failed to add resource:", err);
-      alert("Failed to add resource.");
+      notify.error("Failed to add resource.");
     } finally {
       setAdding(false);
     }
@@ -303,7 +306,7 @@ export default function ResourceMngmt() {
     
     const adjustmentValue = Number(stockAdjustment);
     if (adjustmentValue <= 0) {
-      alert("Please enter a valid quantity greater than 0.");
+      notify.warning("Please enter a valid quantity greater than 0.");
       setAdjusting(false);
       return;
     }
@@ -331,7 +334,7 @@ export default function ResourceMngmt() {
     } catch (err) {
       console.error("Stock adjustment failed:", err);
       console.error("Error details:", err.response?.data);
-      alert("Failed to add stock.");
+      notify.error("Failed to add stock.");
     } finally {
       setAdjusting(false);
     }
@@ -375,20 +378,20 @@ export default function ResourceMngmt() {
       fetchResources();
     } catch (err) {
       console.error("Failed to update resource:", err);
-      alert("Failed to update resource.");
+      notify.error("Failed to update resource.");
     } finally {
       setEditing(false);
     }
   };
 
   const handleDeleteResource = async (id) => {
-    if (window.confirm("Are you sure you want to delete this resource?")) {
+    if (await confirmDialog("Are you sure you want to delete this resource?")) {
       try {
         await resourceService.delete(id);
         fetchResources(); // Refresh list
       } catch (err) {
         console.error("Failed to delete resource:", err);
-        alert("Failed to delete resource.");
+        notify.error("Failed to delete resource.");
       }
     }
   };

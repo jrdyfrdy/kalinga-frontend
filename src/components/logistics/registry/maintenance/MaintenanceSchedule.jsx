@@ -3,6 +3,8 @@ import { useState, useEffect, useMemo } from "react";
 import { Plus, Calendar, Clock, X, Save } from "lucide-react";
 import assetService from "@/services/assetService";
 import { maintenanceCalendarService } from "@/services/maintenanceCalendarService";
+import { notify } from "@/lib/notify";
+import { Button, Dialog, DialogContent, DialogFooter, Field, Input } from "@/components/ui";
 
 const MaintenanceSchedule = ({ maintenanceData, onRefresh, onQuickAction, onScheduleUpdate }) => {
   const [showForm, setShowForm] = useState(false);
@@ -64,16 +66,21 @@ const MaintenanceSchedule = ({ maintenanceData, onRefresh, onQuickAction, onSche
     }
   };
 
-  const handleReschedule = async (item) => {
-    const newDate = window.prompt("New date (YYYY-MM-DD):", item.scheduledDate || "");
-    if (!newDate) return;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
-      alert("Please enter the date as YYYY-MM-DD.");
+  // Reschedule opens a dialog with a date picker (was window.prompt).
+  const [rescheduling, setRescheduling] = useState(null);
+  const handleReschedule = (item) =>
+    setRescheduling({ item, date: String(item.scheduledDate || "").slice(0, 10) });
+  const submitReschedule = async (event) => {
+    event.preventDefault();
+    const { item, date } = rescheduling;
+    if (!date) {
+      notify.warning("Choose a new date.");
       return;
     }
     setBusyId(item.id);
     try {
-      await onQuickAction?.("reschedule", item.id, { newDate });
+      await onQuickAction?.("reschedule", item.id, { newDate: date });
+      setRescheduling(null);
     } finally {
       setBusyId(null);
     }
@@ -106,7 +113,7 @@ const MaintenanceSchedule = ({ maintenanceData, onRefresh, onQuickAction, onSche
     
     // Basic validation
     if (!formData.assetId || !formData.scheduledDate || !formData.description) {
-      alert("Please fill in all required fields");
+      notify.warning("Please fill in all required fields");
       return;
     }
 
@@ -136,7 +143,7 @@ const MaintenanceSchedule = ({ maintenanceData, onRefresh, onQuickAction, onSche
       await refresh();
     } catch (error) {
       console.error('Error scheduling maintenance:', error);
-      alert(error?.response?.data?.message || "Failed to schedule maintenance. Please try again.");
+      notify.error(error?.response?.data?.message || "Failed to schedule maintenance. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -438,6 +445,28 @@ const MaintenanceSchedule = ({ maintenanceData, onRefresh, onQuickAction, onSche
           </div>
         </>
       )}
+      <Dialog open={!!rescheduling} onOpenChange={(open) => !open && setRescheduling(null)}>
+        <DialogContent size="sm" title="Reschedule maintenance" description={rescheduling?.item?.title || rescheduling?.item?.assetName || undefined}>
+          <form onSubmit={submitReschedule}>
+            <Field label="New date" required>
+              <Input
+                type="date"
+                value={rescheduling?.date || ""}
+                min={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setRescheduling((prev) => ({ ...prev, date: e.target.value }))}
+              />
+            </Field>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setRescheduling(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" loading={busyId === rescheduling?.item?.id}>
+                Reschedule
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

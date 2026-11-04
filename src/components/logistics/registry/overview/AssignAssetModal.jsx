@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { X, Truck, Users, Search, CheckCircle, MapPin, Battery } from "lucide-react";
 import assetService from "@/services/assetService";
 import api from "@/services/api";
+import { notify } from "@/lib/notify";
 
 export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -56,11 +57,11 @@ export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) 
 
   const handleAssign = async () => {
     if (!selectedAllocation) {
-      alert('Please select an allocation');
+      notify.warning('Please select an allocation');
       return;
     }
     if (!selectedResponder) {
-      alert('Please select a responder to drive this asset');
+      notify.warning('Please select a responder to drive this asset');
       return;
     }
 
@@ -75,7 +76,7 @@ export default function AssignAssetModal({ isOpen, onClose, asset, onSuccess }) 
       onClose();
     } catch (error) {
       console.error('Error assigning asset:', error);
-      alert(error?.response?.data?.error || error?.response?.data?.message || 'Failed to assign asset. Please try again.');
+      notify.error(error?.response?.data?.error || error?.response?.data?.message || 'Failed to assign asset. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -13,10 +13,13 @@ import {
   createRouteLog,
   appendRouteDeviation,
 } from "../../services/routeLogService";
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 const LOCATION_OVERRIDE_EVENT = "responder:location-override";
 
 export default function HospitalMap({ embedded = false, className = "" }) {
+  const confirmDialog = useConfirm();
   const { user } = useAuth();
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
@@ -1287,16 +1290,16 @@ export default function HospitalMap({ embedded = false, className = "" }) {
     setBlockadeMarkers(newMarkers);
   };
 
-  const findNearestHospital = () => {
+  const findNearestHospital = async () => {
     if (!userLocation || hospitalsWithDistance.length === 0) {
-      alert("User location not available or no hospitals loaded.");
+      notify.info("User location not available or no hospitals loaded.");
       return;
     }
 
     const nearest = hospitalsWithDistance[0];
 
     // Ask user if they want to start navigation
-    const startNavigation = window.confirm(
+    const startNavigation = await confirmDialog(
       `Nearest hospital: ${nearest.name}\nDistance: ${nearest.distance.toFixed(
         2,
       )} km\nAddress: ${nearest.address}\n\nStart turn-by-turn navigation?`,
@@ -1552,21 +1555,21 @@ export default function HospitalMap({ embedded = false, className = "" }) {
                 });
               }
 
-              alert("Blockade detected on route! Rerouted to avoid blockade.");
+              notify.info("Blockade detected on route! Rerouted to avoid blockade.");
             } else {
-              alert("No available detour route found.");
+              notify.info("No available detour route found.");
             }
           } catch (detourError) {
             console.error("Error fetching detour route:", detourError);
-            alert("Error calculating detour route.");
+            notify.error("Error calculating detour route.");
           }
         }
       } else {
-        alert("No route found.");
+        notify.info("No route found.");
       }
     } catch (error) {
       console.error("Error drawing route:", error);
-      alert("Error fetching route.");
+      notify.error("Error fetching route.");
     } finally {
       // Always reset drawing state
       setIsDrawingRoute(false);
@@ -1948,12 +1951,12 @@ export default function HospitalMap({ embedded = false, className = "" }) {
 
   const submitBlockadeReport = async () => {
     if (!selectedBlockadeLocation) {
-      alert("Please click on the map to select blockade location");
+      notify.warning("Please click on the map to select blockade location");
       return;
     }
 
     if (!blockadeForm.title.trim()) {
-      alert("Please enter a title for the road issue");
+      notify.warning("Please enter a title for the road issue");
       return;
     }
 
@@ -1982,7 +1985,7 @@ export default function HospitalMap({ embedded = false, className = "" }) {
       const data = await response.json();
 
       if (data.blockade) {
-        alert("Road blockade reported successfully!");
+        notify.success("Road blockade reported successfully!");
         cancelBlockadeReport();
 
         // Remove temporary marker
@@ -1997,17 +2000,17 @@ export default function HospitalMap({ embedded = false, className = "" }) {
           fetchRoadBlockades(map, L.default);
         }
       } else {
-        alert("Error reporting blockade: " + (data.message || "Unknown error"));
+        notify.error("Error reporting blockade: " + (data.message || "Unknown error"));
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error reporting road blockade");
+      notify.error("Error reporting road blockade");
     }
   };
 
   const removeBlockade = async (blockadeId, blockadeTitle) => {
     if (
-      !confirm(
+      !await confirmDialog(
         `Are you sure you want to remove the blockade "${blockadeTitle}"? This action cannot be undone.`,
       )
     ) {
@@ -2033,7 +2036,7 @@ export default function HospitalMap({ embedded = false, className = "" }) {
       const data = await response.json();
 
       if (data.message) {
-        alert(
+        notify.success(
           data.message +
             (data.blockade
               ? ` by ${data.blockade.removed_by} at ${data.blockade.removed_at_human}`
@@ -2046,11 +2049,11 @@ export default function HospitalMap({ embedded = false, className = "" }) {
           fetchRoadBlockades(map, L.default);
         }
       } else {
-        alert("Error removing blockade");
+        notify.error("Error removing blockade");
       }
     } catch (error) {
       console.error("Error removing blockade:", error);
-      alert("Error removing blockade");
+      notify.error("Error removing blockade");
     }
   };
 

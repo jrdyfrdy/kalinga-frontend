@@ -40,6 +40,19 @@ export default defineConfig([
       // Catch components used in JSX that were never imported/defined.
       'react/jsx-no-undef': 'error',
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // Use notify (toast) and useConfirm (dialog) instead of blocking browser dialogs.
+      'no-restricted-globals': [
+        'error',
+        { name: 'alert', message: 'Use notify from @/lib/notify.' },
+        { name: 'confirm', message: 'Use useConfirm from @/components/ui.' },
+        { name: 'prompt', message: 'Use a Dialog with a Field.' },
+      ],
+      'no-restricted-properties': [
+        'error',
+        { object: 'window', property: 'alert', message: 'Use notify from @/lib/notify.' },
+        { object: 'window', property: 'confirm', message: 'Use useConfirm from @/components/ui.' },
+        { object: 'window', property: 'prompt', message: 'Use a Dialog with a Field.' },
+      ],
     },
   },
   {

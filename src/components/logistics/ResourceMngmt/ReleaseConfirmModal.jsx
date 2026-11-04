@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   ShieldCheck
 } from 'lucide-react';
+import { notify } from "@/lib/notify";
 
 const ReleaseConfirmModal = ({ request, onConfirm, onClose }) => {
   const [confirmed, setConfirmed] = useState(false);
@@ -19,7 +20,7 @@ const ReleaseConfirmModal = ({ request, onConfirm, onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!confirmed) {
-      alert('Please confirm that you can release this stock.');
+      notify.warning('Please confirm that you can release this stock.');
       return;
     }
 

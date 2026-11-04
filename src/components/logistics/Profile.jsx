@@ -3,6 +3,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { User, Phone, Mail, MapPin, Calendar, Edit3, Download, Save, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import { notify } from "@/lib/notify";
 
 const formatJoined = (value) => {
   if (!value) return "—";
@@ -46,7 +47,7 @@ export default function LogisProfile() {
 
   const saveProfile = async () => {
     if (!form.name.trim()) {
-      alert("Name is required.");
+      notify.warning("Name is required.");
       return;
     }
     setSaving(true);
@@ -64,7 +65,7 @@ export default function LogisProfile() {
       setEditing(false);
     } catch (error) {
       console.error("Failed to update profile", error);
-      alert(error?.response?.data?.message || "Failed to update profile. Please try again.");
+      notify.error(error?.response?.data?.message || "Failed to update profile. Please try again.");
     } finally {
       setSaving(false);
     }

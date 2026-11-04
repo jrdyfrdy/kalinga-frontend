@@ -51,6 +51,7 @@ import requestService from "../../../services/requestService";
 
 // Import DeliveryConfirmModal for reuse in its own tab
 import DeliveryConfirmModal from "./DeliveryConfirmModal";
+import { notify } from "@/lib/notify";
 
 // Status configuration with enhanced styling following the green theme
 const statusConfig = {
@@ -627,7 +628,7 @@ const RequestsView = ({ facility, hospitalId }) => {
       setEditingRequest(null);
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || err?.response?.data?.error || "Failed to save the draft.");
+      notify.error(err?.response?.data?.message || err?.response?.data?.error || "Failed to save the draft.");
     }
   };
 

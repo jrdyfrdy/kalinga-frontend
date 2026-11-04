@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import ReCAPTCHA from "react-google-recaptcha";
 import api from "../../services/api"; 
+import { notify } from "@/lib/notify";
 
 // --- Configuration & Constants ---
 const TABS = {
@@ -385,13 +386,13 @@ const BookingFlow = ({ onClose, onSuccess }) => {
   const STEPS_LABELS = ["Terms", "Services", "Schedule", "Patient Info", "Summary"];
   
   const handleNext = async () => {
-    if (step === 1 && !formData.agreedToTerms) return alert("Please agree to the Terms.");
-    if (step === 2 && (!formData.hospital || !formData.serviceType)) return alert("Please select Hospital and Service.");
-    if (step === 3 && (!formData.date || !formData.time)) return alert("Please select Date and Time.");
+    if (step === 1 && !formData.agreedToTerms) return notify.warning("Please agree to the Terms.");
+    if (step === 2 && (!formData.hospital || !formData.serviceType)) return notify.warning("Please select Hospital and Service.");
+    if (step === 3 && (!formData.date || !formData.time)) return notify.warning("Please select Date and Time.");
     
     if (step === 5) {
         if (!formData.captchaToken) {
-            return alert("Please complete the reCAPTCHA verification.");
+            return notify.warning("Please complete the reCAPTCHA verification.");
         }
 
         setIsSubmitting(true);
@@ -421,7 +422,7 @@ const BookingFlow = ({ onClose, onSuccess }) => {
             setStep(prev => prev + 1); 
         } catch (error) {
             console.error("Booking Error:", error);
-            alert("Failed to book appointment. " + (error.response?.data?.message || "Please check your inputs."));
+            notify.error("Failed to book appointment. " + (error.response?.data?.message || "Please check your inputs."));
         } finally {
             setIsSubmitting(false);
         }
@@ -541,12 +542,12 @@ export default function Appointments() {
     
     try {
         await api.delete(`/appointments/${selectedAppointment.id}`);
-        alert("Appointment has been cancelled.");
+        notify.success("Appointment has been cancelled.");
         setIsCancelModalOpen(false); 
         setSelectedAppointment(null); 
         fetchAppointments(); 
     } catch (err) {
-        alert("Failed to cancel appointment.");
+        notify.error("Failed to cancel appointment.");
     }
   };
 
@@ -565,8 +566,37 @@ export default function Appointments() {
     setSelectedAppointment(null);
   };
 
+  // Download an .ics file that any calendar app can import.
   const handleAddToCalendar = (app) => {
-    alert(`Exporting appointment at ${app.hospital} to your calendar!`);
+    const start = new Date(app.appointment_date || app.appointment_at);
+    if (Number.isNaN(start.getTime())) {
+      notify.error("This appointment has no valid date to export.");
+      return;
+    }
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const stamp = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const escape = (v) => String(v ?? "").replace(/([,;\\])/g, "\\$1").replace(/\n/g, "\\n");
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Kalinga//Appointments//EN",
+      "BEGIN:VEVENT",
+      `UID:kalinga-appointment-${app.id ?? stamp(start)}@kalinga`,
+      `DTSTAMP:${stamp(new Date())}`,
+      `DTSTART:${stamp(start)}`,
+      `DTEND:${stamp(end)}`,
+      `SUMMARY:${escape(`${app.service || "Appointment"} · ${app.hospital || "Kalinga"}`)}`,
+      `LOCATION:${escape(app.hospital)}`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kalinga-appointment-${start.toISOString().slice(0, 10)}.ics`;
+    link.click();
+    URL.revokeObjectURL(url);
+    notify.success("Calendar file downloaded", "Open it to add the appointment to your calendar.");
   };
 
   return (

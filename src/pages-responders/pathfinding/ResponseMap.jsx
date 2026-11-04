@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { KALINGA_CONFIG } from "../../constants/mapConfig";
 import { useAuth } from "../../context/AuthContext";
 import Layout from "../../layouts/Layout";
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 // Leaflet CSS is imported in index.css
 
@@ -656,6 +658,7 @@ const deriveRouteAlert = (selection) => {
 };
 
 export default function ResponseMap({ embedded = false, className = "" }) {
+  const confirmDialog = useConfirm();
   const { user } = useAuth();
   const mapRef = useRef(null);
   const leafletRef = useRef(null);
@@ -1591,11 +1594,11 @@ export default function ResponseMap({ embedded = false, className = "" }) {
           });
         }
       } else {
-        alert("No route found.");
+        notify.info("No route found.");
       }
     } catch (error) {
       console.error("Error drawing route:", error);
-      alert("Error fetching route.");
+      notify.error("Error fetching route.");
     } finally {
       // Always reset drawing state
       setIsDrawingRoute(false);
@@ -1834,7 +1837,7 @@ export default function ResponseMap({ embedded = false, className = "" }) {
 
   const assignNearestIncident = async () => {
     if (!userLocation) {
-      alert("User location not available.");
+      notify.info("User location not available.");
       return;
     }
 
@@ -1860,7 +1863,7 @@ export default function ResponseMap({ embedded = false, className = "" }) {
 
       if (data.incident) {
         // Ask user if they want to start navigation
-        const startNavigation = window.confirm(
+        const startNavigation = await confirmDialog(
           `Assigned to ${data.incident.type} at ${
             data.incident.location
           }\nDistance: ${data.distance.toFixed(
@@ -1881,11 +1884,11 @@ export default function ResponseMap({ embedded = false, className = "" }) {
           fetchIncidents(map, L.default);
         }
       } else {
-        alert(data.message || "No incidents available for assignment.");
+        notify.info(data.message || "No incidents available for assignment.");
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error assigning incident.");
+      notify.error("Error assigning incident.");
     }
   };
 
@@ -1973,12 +1976,12 @@ export default function ResponseMap({ embedded = false, className = "" }) {
 
   const submitBlockadeReport = async () => {
     if (!selectedBlockadeLocation) {
-      alert("Please click on the map to select blockade location");
+      notify.warning("Please click on the map to select blockade location");
       return;
     }
 
     if (!blockadeForm.title.trim()) {
-      alert("Please enter a title for the road issue");
+      notify.warning("Please enter a title for the road issue");
       return;
     }
 
@@ -2007,7 +2010,7 @@ export default function ResponseMap({ embedded = false, className = "" }) {
       const data = await response.json();
 
       if (data.blockade) {
-        alert("Road blockade reported successfully!");
+        notify.success("Road blockade reported successfully!");
         cancelBlockadeReport();
 
         // Remove temporary marker
@@ -2022,17 +2025,17 @@ export default function ResponseMap({ embedded = false, className = "" }) {
           fetchRoadBlockades(map, L.default);
         }
       } else {
-        alert("Error reporting blockade: " + (data.message || "Unknown error"));
+        notify.error("Error reporting blockade: " + (data.message || "Unknown error"));
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error reporting road blockade");
+      notify.error("Error reporting road blockade");
     }
   };
 
   const removeBlockade = async (blockadeId, blockadeTitle) => {
     if (
-      !confirm(
+      !await confirmDialog(
         `Are you sure you want to remove the blockade "${blockadeTitle}"? This action cannot be undone.`,
       )
     ) {
@@ -2058,7 +2061,7 @@ export default function ResponseMap({ embedded = false, className = "" }) {
       const data = await response.json();
 
       if (data.message) {
-        alert(
+        notify.success(
           data.message +
             (data.blockade
               ? ` by ${data.blockade.removed_by} at ${data.blockade.removed_at_human}`
@@ -2071,11 +2074,11 @@ export default function ResponseMap({ embedded = false, className = "" }) {
           fetchRoadBlockades(map, L.default);
         }
       } else {
-        alert("Error removing blockade");
+        notify.error("Error removing blockade");
       }
     } catch (error) {
       console.error("Error removing blockade:", error);
-      alert("Error removing blockade");
+      notify.error("Error removing blockade");
     }
   };
 

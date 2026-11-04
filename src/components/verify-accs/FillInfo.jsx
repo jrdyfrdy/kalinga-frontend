@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../services/api";
+import { notify } from "@/lib/notify";
 
 export default function FillInfo() {
   const [step, setStep] = useState(1);
@@ -17,7 +18,7 @@ export default function FillInfo() {
 
   useEffect(() => {
     if (!selectedID || !frontFile) {
-      alert("Missing ID data. Please upload your ID again.");
+      notify.warning("Missing ID data. Please upload your ID again.");
       navigate("/upload-id");
     }
   }, [selectedID, frontFile, navigate]);
@@ -153,7 +154,7 @@ export default function FillInfo() {
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
       // Show success message
-      alert(
+      notify.success(
         response.data.message ||
           "Verification submitted successfully! Your account is pending admin approval."
       );

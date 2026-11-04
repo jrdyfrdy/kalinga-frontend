@@ -167,6 +167,7 @@ import CoordinationPanel from "@/components/logistics/allocation/CoordinationPan
 import LogisticsAssignment from "@/components/logistics/allocation/LogisticsAssignment";
 import VehicleDetailsModal from "@/components/logistics/allocation/VehicleDetailsModal";
 import ResponderViewModal from "@/components/logistics/allocation/ResponderViewModal";
+import { notify } from "@/lib/notify";
 
 // Toast Notification Component
 const Toast = ({ message, type = "success", onClose }) => {
@@ -1573,7 +1574,7 @@ const AssignmentSummaryModal = ({
                                   await navigator.share({ title: "Kalinga allocation", text });
                                 } else {
                                   await navigator.clipboard.writeText(text);
-                                  alert("Allocation summary copied to clipboard.");
+                                  notify.success("Allocation summary copied to clipboard.");
                                 }
                               } catch {
                                 // user cancelled share

@@ -33,6 +33,8 @@ import {
 } from "../../../services/routeLogService";
 import { useAuth } from "../../../context/AuthContext";
 import blockadeService from "../../../services/blockadeService";
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 const DEFAULT_POSITION = [
   KALINGA_CONFIG.DEFAULT_LOCATION.lat,
@@ -803,6 +805,7 @@ export default function LiveResponseMap({
   onRouteMetaChange,
   onNavigationStateChange,
 }) {
+  const confirmDialog = useConfirm();
   const [responderPosition, setResponderPosition] = useState(null);
   const [isSimulatingResponder, setIsSimulatingResponder] = useState(false);
   const [dragMarkerEnabled, setDragMarkerEnabled] = useState(false);
@@ -1601,12 +1604,12 @@ export default function LiveResponseMap({
       const id = blockade?.raw?.id ?? blockade?.id;
       if (!id) return;
       if (!canManageBlockades) {
-        alert("You do not have permission to remove blockades.");
+        notify.error("You do not have permission to remove blockades.");
         return;
       }
 
       const descriptor = blockade?.descriptor || blockade?.raw?.title;
-      const confirmed = window.confirm(
+      const confirmed = await confirmDialog(
         `Remove ${
           descriptor || "this blockade"
         }? This helps clear the map for other responders.`,
@@ -1625,7 +1628,7 @@ export default function LiveResponseMap({
         });
       } catch (err) {
         console.error("Failed to remove blockade", err);
-        alert(
+        notify.error(
           err?.response?.data?.message ||
             err?.message ||
             "Unable to remove blockade.",

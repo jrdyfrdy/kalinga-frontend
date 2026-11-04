@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { X, Save, Calendar, Wrench, DollarSign } from "lucide-react";
 import assetService from "@/services/assetService";
 import { maintenanceCalendarService } from "@/services/maintenanceCalendarService";
+import { notify } from "@/lib/notify";
 
 export default function ScheduleMaintenanceDrawer({ isOpen, onClose, onSchedule }) {
   const [formData, setFormData] = useState({
@@ -37,7 +38,7 @@ export default function ScheduleMaintenanceDrawer({ isOpen, onClose, onSchedule 
     
     // Basic validation
     if (!formData.assetId || !formData.scheduledDate || !formData.description) {
-      alert("Please fill in all required fields");
+      notify.warning("Please fill in all required fields");
       return;
     }
 
@@ -60,7 +61,7 @@ export default function ScheduleMaintenanceDrawer({ isOpen, onClose, onSchedule 
       onSchedule(); // Notify parent
     } catch (error) {
       console.error('Error scheduling maintenance:', error);
-      alert(error?.response?.data?.message || "Failed to schedule maintenance. Please try again.");
+      notify.error(error?.response?.data?.message || "Failed to schedule maintenance. Please try again.");
     } finally {
       setLoading(false);
     }

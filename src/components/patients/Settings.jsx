@@ -18,6 +18,8 @@ import {
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 function OtherNotificationsModal({ onClose }) {
   const [notificationSettings, setNotificationSettings] = useState({
@@ -48,11 +50,11 @@ function OtherNotificationsModal({ onClose }) {
     setIsLoading(true);
     try {
       await api.post("/notifications/other-settings", notificationSettings);
-      alert("Notification settings saved successfully!");
+      notify.success("Notification settings saved successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving notification settings:", error);
-      alert("Failed to save notification settings. Please try again.");
+      notify.error("Failed to save notification settings. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +158,7 @@ function MuteNotificationsModal({ onClose }) {
 
   const handleMute = async () => {
     if (selectedDuration === null && durations[4].unit !== "permanent") {
-      alert("Please select a duration");
+      notify.warning("Please select a duration");
       return;
     }
 
@@ -173,11 +175,11 @@ function MuteNotificationsModal({ onClose }) {
         unit: duration.unit,
       });
 
-      alert(`Notifications muted for ${duration.label.toLowerCase()}`);
+      notify.info(`Notifications muted for ${duration.label.toLowerCase()}`);
       onClose();
     } catch (error) {
       console.error("Error muting notifications:", error);
-      alert("Failed to mute notifications. Please try again.");
+      notify.error("Failed to mute notifications. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -294,7 +296,7 @@ function ChangePasswordModal({ onClose }) {
         new_password_confirmation: confirmPassword,
       });
 
-      alert("Password changed successfully!");
+      notify.success("Password changed successfully!");
       onClose();
     } catch (error) {
       console.error("Error changing password:", error);
@@ -396,6 +398,7 @@ function ChangePasswordModal({ onClose }) {
 }
 
 function LoggedInDevicesModal({ onClose }) {
+  const confirmDialog = useConfirm();
   const [devices, setDevices] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -428,14 +431,14 @@ function LoggedInDevicesModal({ onClose }) {
   };
 
   const handleLogout = async (deviceId) => {
-    if (window.confirm("Are you sure you want to log out this device?")) {
+    if (await confirmDialog("Are you sure you want to log out this device?")) {
       try {
         await api.post(`/devices/${deviceId}/logout`);
         setDevices(devices.filter((d) => d.id !== deviceId));
-        alert("Device logged out successfully");
+        notify.success("Device logged out successfully");
       } catch (error) {
         console.error("Error logging out device:", error);
-        alert("Failed to log out device. Please try again.");
+        notify.error("Failed to log out device. Please try again.");
       }
     }
   };
@@ -574,11 +577,11 @@ function AppointmentSettingsModal({ onClose }) {
     setIsLoading(true);
     try {
       await api.post("/appointments/settings", appointmentSettings);
-      alert("Appointment settings saved successfully!");
+      notify.success("Appointment settings saved successfully!");
       onClose();
     } catch (error) {
       console.error("Error saving appointment settings:", error);
-      alert("Failed to save appointment settings. Please try again.");
+      notify.error("Failed to save appointment settings. Please try again.");
     } finally {
       setIsLoading(false);
     }

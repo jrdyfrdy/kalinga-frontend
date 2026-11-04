@@ -33,13 +33,13 @@ import chatService from "../../services/chatService";
 import { useAuth } from "../../context/AuthContext";
 import { useRealtime } from "../../context/RealtimeContext";
 import { getCurrentLocation, buildMapsLink } from "../../utils/location";
+import { notify } from "@/lib/notify";
 
 /**
  * Tab/View Selector for the Main Content Area
  */
 const MainContentTabs = {
   INBOX: "Inbox",
-  COMPOSE: "Compose",
   CONTACTS: "Contacts",
   SUPPORT: "Support",
 };
@@ -916,134 +916,6 @@ const ChatThread = ({ conversation, currentUserId, onBack, onSendMessage }) => {
   );
 };
 
-/**
- * Component 1. Secure Messaging - Compose View
- */
-const MessageComposer = ({ initialSubject = "", onSend }) => {
-  const [subject, setSubject] = useState(initialSubject);
-  const [body, setBody] = useState("");
-  const [recipient, setRecipient] = useState("Nurse");
-  const [isSending, setIsSending] = useState(false);
-
-  const recipients = ["Nurse", "PCP", "Billing", "Scheduling", "Records"];
-
-  const handleSend = (e) => {
-    e.preventDefault();
-    if (!subject || !body) {
-      alert("Subject and message body are required.");
-      return;
-    }
-
-    setIsSending(true);
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsSending(false);
-      alert(`Message sent successfully to ${recipient}!\nSubject: ${subject}`);
-      setSubject("");
-      setBody("");
-      setRecipient("Nurse");
-      onSend(); // Switch back to inbox
-    }, 1500);
-  };
-
-  return (
-    <div className="p-6 bg-white rounded-xl shadow-lg border h-full flex flex-col">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4 border-b pb-2 flex items-center gap-2">
-        <Plus size={24} className="text-primary" /> New Secure Message
-      </h2>
-
-      <form onSubmit={handleSend} className="space-y-4 flex-1 flex flex-col">
-        {/* Recipient Selector */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Select Recipient
-          </label>
-          <select
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-xl bg-white shadow-sm focus:ring-green-500 focus:border-green-500 transition"
-            disabled={isSending}
-          >
-            {recipients.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Subject */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Subject
-          </label>
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-xl shadow-sm focus:ring-green-500 focus:border-green-500 transition"
-            placeholder="e.g., Question about my lab results"
-            disabled={isSending}
-          />
-        </div>
-
-        {/* Message Body */}
-        <div className="flex-1 min-h-[150px]">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Message
-          </label>
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-xl shadow-sm focus:ring-green-500 focus:border-green-500 resize-none h-full min-h-[150px] transition"
-            placeholder="Write your non-urgent message here..."
-            disabled={isSending}
-          />
-        </div>
-
-        <div className="pt-2">
-          <button
-            type="submit"
-            className="w-full bg-primary hover:bg-green-700 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2 transition shadow-lg disabled:opacity-50"
-            disabled={isSending}
-          >
-            {isSending ? (
-              <>
-                <svg
-                  className="animate-spin h-5 w-5 mr-3 text-white"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Sending...
-              </>
-            ) : (
-              <>
-                <Send size={18} /> Send Secure Message
-              </>
-            )}
-          </button>
-          <p className="text-xs text-gray-500 text-center mt-2">
-            Do not use for medical emergencies.
-          </p>
-        </div>
-      </form>
-    </div>
-  );
-};
-
 const ContactDirectory = () => (
   <div className="flex flex-col h-full bg-white rounded-xl shadow-lg border">
     <h2 className="shrink-0 text-2xl font-bold text-gray-900 border-b p-6 pb-4 flex items-center gap-2">
@@ -1136,7 +1008,7 @@ const SupportSection = () => (
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
         <a
-          href="#"
+          href="/faqs"
           className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-200 hover:bg-green-100 transition shadow-sm"
         >
           <FileText size={24} className="text-green-600 shrink-0" />
@@ -1148,7 +1020,7 @@ const SupportSection = () => (
           </div>
         </a>
         <a
-          href="#"
+          href="mailto:kalinga.tup@gmail.com?subject=Kalinga%20technical%20support"
           className="flex items-center gap-3 p-4 bg-green-50 rounded-xl border border-green-200 hover:bg-green-100 transition shadow-sm"
         >
           <Settings size={24} className="text-green-600 shrink-0" />
@@ -2695,12 +2567,6 @@ export default function MessagesContact() {
   );
 
   // Handlers for navigation
-  const navigateToCompose = () => {
-    setActiveTab(MainContentTabs.COMPOSE);
-    setSelectedConversationId(null);
-    selectedConversationIdRef.current = null;
-    selectedConversationSnapshotRef.current = null;
-  };
 
   useEffect(() => {
     const emergencyState = location.state?.startEmergencyChat;
@@ -2806,7 +2672,7 @@ export default function MessagesContact() {
   const handleArchiveConversation = useCallback(async (conversation) => {
     const conversationId = conversation?.conversationId;
     if (!conversationId) {
-      alert("This conversation has not been saved yet, so it cannot be archived.");
+      notify.error("This conversation has not been saved yet, so it cannot be archived.");
       return;
     }
     try {
@@ -2818,7 +2684,7 @@ export default function MessagesContact() {
       );
     } catch (error) {
       console.error("Failed to archive conversation", error);
-      alert(error?.response?.data?.message || "Failed to archive the conversation.");
+      notify.error(error?.response?.data?.message || "Failed to archive the conversation.");
     }
   }, []);
 
@@ -2863,8 +2729,6 @@ export default function MessagesContact() {
   // Determine which component to render in the main panel
   const renderMainPanel = () => {
     switch (activeTab) {
-      case MainContentTabs.COMPOSE:
-        return <MessageComposer initialSubject="" onSend={navigateToInbox} />;
       case MainContentTabs.CONTACTS:
         return <ContactDirectory />;
       case MainContentTabs.SUPPORT:

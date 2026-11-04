@@ -12,6 +12,7 @@ import {
   normalizeMessage,
   sortConversationsByRecency,
 } from "../../lib/chatUtils";
+import { notify } from "@/lib/notify";
 
 const formatTimestamp = (value) => {
   if (!value) return "";
@@ -306,7 +307,7 @@ const LatestResponseMessages = ({ incident, refreshKey, currentUserId }) => {
         sendError?.response?.data?.message ||
         sendError?.message ||
         "Unable to send message.";
-      window.alert(message);
+      notify.info(message);
     } finally {
       setSending(false);
     }

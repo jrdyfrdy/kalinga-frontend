@@ -14,6 +14,7 @@ import {
   INCIDENT_STATUS_LABELS,
 } from "../../constants/incidentStatus";
 import { updateIncidentStatus } from "../../services/incidents";
+import { notify } from "@/lib/notify";
 
 const formatDateTime = (value) => {
   if (!value) return "—";
@@ -257,7 +258,7 @@ const AssignedIncidentStatusPanel = ({
     async (incident) => {
       const status = selectedStatus[incident.id];
       if (!status) {
-        window.alert("Please select a status to continue.");
+        notify.warning("Please select a status to continue.");
         return;
       }
 
@@ -271,7 +272,7 @@ const AssignedIncidentStatusPanel = ({
         !Number.isFinite(respondersRequiredValue) ||
         respondersRequiredValue < 1
       ) {
-        window.alert("Responders required must be at least 1.");
+        notify.warning("Responders required must be at least 1.");
         return;
       }
 
@@ -305,7 +306,7 @@ const AssignedIncidentStatusPanel = ({
           error?.response?.data?.message ||
           error?.message ||
           "Unable to update status right now.";
-        window.alert(message);
+        notify.info(message);
       } finally {
         setUpdating((prev) => ({ ...prev, [incident.id]: false }));
       }

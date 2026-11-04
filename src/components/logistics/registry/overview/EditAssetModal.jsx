@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { X, Save } from "lucide-react";
 import assetService from "@/services/assetService";
+import { notify } from "@/lib/notify";
 
 export default function EditAssetModal({ isOpen, onClose, asset, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -82,7 +83,7 @@ export default function EditAssetModal({ isOpen, onClose, asset, onSuccess }) {
       onSuccess();
     } catch (error) {
       console.error('Error updating asset:', error);
-      alert('Failed to update asset. Please try again.');
+      notify.error('Failed to update asset. Please try again.');
     } finally {
       setLoading(false);
     }

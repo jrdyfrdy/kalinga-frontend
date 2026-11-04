@@ -14,6 +14,8 @@ import ViewAssetModal from "./ViewAssetModal";
 import EditAssetModal from "./EditAssetModal";
 import ScheduleMaintenanceModal from "./ScheduleMaintenanceModal";
 import AssignAssetModal from "./AssignAssetModal";
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 // Enhanced Theme CSS with Blur Effects
 const enhancedThemeStyles = `
@@ -611,6 +613,7 @@ const MetricCard = ({ title, value, color, icon: Icon, onClick }) => {
 };
 
 export default function AssetRegistry({ loading: initialLoading, assets: propAssets, onRefresh, metrics: propMetrics }) {
+  const confirmDialog = useConfirm();
   // ========== STATE ==========
   const [assets, setAssets] = useState([]);
   const [filteredAssets, setFilteredAssets] = useState([]);
@@ -799,7 +802,7 @@ export default function AssetRegistry({ loading: initialLoading, assets: propAss
   };
 
   const handleDeleteAsset = async (assetCode) => {
-    if (window.confirm(`Are you sure you want to delete asset ${assetCode}? This action cannot be undone.`)) {
+    if (await confirmDialog(`Are you sure you want to delete asset ${assetCode}? This action cannot be undone.`)) {
       try {
         await assetService.deleteAsset(assetCode);
         
@@ -813,7 +816,7 @@ export default function AssetRegistry({ loading: initialLoading, assets: propAss
         fetchAssets();
       } catch (error) {
         console.error('Error deleting asset:', error);
-        alert('Failed to delete asset. Please try again.');
+        notify.error('Failed to delete asset. Please try again.');
       }
     }
   };
@@ -871,12 +874,12 @@ export default function AssetRegistry({ loading: initialLoading, assets: propAss
 
     const summarize = (results, verb) => {
       const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed) alert(`${results.length - failed} ${verb}, ${failed} failed.`);
+      if (failed) notify.error(`${results.length - failed} ${verb}, ${failed} failed.`);
     };
 
     switch(action) {
       case 'delete':
-        if (window.confirm(`Delete ${selectedAssets.size} selected assets?`)) {
+        if (await confirmDialog(`Delete ${selectedAssets.size} selected assets?`)) {
           const results = await Promise.allSettled(keys.map((key) => assetService.deleteAsset(key)));
           summarize(results, "deleted");
           setSelectedAssets(new Map());
@@ -903,7 +906,7 @@ export default function AssetRegistry({ loading: initialLoading, assets: propAss
         const results = await Promise.allSettled(keys.map((key) => assetService.scheduleRoutineMaintenance(key)));
         summarize(results, "scheduled");
         if (results.every((r) => r.status === "fulfilled")) {
-          alert(`Routine maintenance scheduled for ${results.length} asset(s) in 7 days.`);
+          notify.success(`Routine maintenance scheduled for ${results.length} asset(s) in 7 days.`);
         }
         await fetchAssets();
         break;

@@ -4,6 +4,8 @@ import { Shield, User, Bell, Cog, Lock, ChevronDown, ChevronRight } from "lucide
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { ROUTES } from "@/config/routes";
+import { notify } from "@/lib/notify";
+import { useConfirm } from "@/components/ui/confirm";
 
 const Field = ({ label, children }) => (
   <label className="flex flex-col gap-1 text-sm">
@@ -23,6 +25,7 @@ const Toggle = ({ checked, onChange, label }) => (
 );
 
 function DevicesPanel() {
+  const confirmDialog = useConfirm();
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,12 +38,12 @@ function DevicesPanel() {
   }, []);
 
   const logoutDevice = async (id) => {
-    if (!window.confirm("Log out this device?")) return;
+    if (!await confirmDialog("Log out this device?")) return;
     try {
       await api.post(`/devices/${id}/logout`);
       setDevices((prev) => prev.filter((d) => d.id !== id));
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to log out device.");
+      notify.error(err?.response?.data?.message || "Failed to log out device.");
     }
   };
 
@@ -77,16 +80,16 @@ function PasswordPanel() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (form.new_password.length < 8) return alert("New password must be at least 8 characters.");
-    if (form.new_password !== form.new_password_confirmation) return alert("Passwords do not match.");
+    if (form.new_password.length < 8) return notify.warning("New password must be at least 8 characters.");
+    if (form.new_password !== form.new_password_confirmation) return notify.warning("Passwords do not match.");
     setSaving(true);
     try {
       await api.post("/change-password", form);
-      alert("Password changed. Other sessions were signed out.");
+      notify.success("Password changed. Other sessions were signed out.");
       setForm({ current_password: "", new_password: "", new_password_confirmation: "" });
     } catch (err) {
       const errors = err?.response?.data?.errors;
-      alert(errors ? Object.values(errors).flat().join("\n") : "Failed to change password.");
+      notify.error(errors ? Object.values(errors).flat().join("\n") : "Failed to change password.");
     } finally {
       setSaving(false);
     }
@@ -132,7 +135,7 @@ function AlertSettingsPanel() {
     try {
       await api.post("/notifications/alert-settings", next);
     } catch {
-      alert("Failed to save alert settings.");
+      notify.error("Failed to save alert settings.");
     }
   };
 
@@ -143,7 +146,7 @@ function AlertSettingsPanel() {
         : await api.delete("/notifications/mute");
       setMute(data);
     } catch {
-      alert("Failed to update mute setting.");
+      notify.error("Failed to update mute setting.");
     }
   };
 
@@ -192,9 +195,9 @@ function PreferencesPanel({ fields }) {
       const updated = { ...user, ...(data?.user || form) };
       setUser?.(updated);
       localStorage.setItem("user", JSON.stringify(updated));
-      alert("Preferences saved.");
+      notify.success("Preferences saved.");
     } catch (err) {
-      alert(err?.response?.data?.message || "Failed to save preferences.");
+      notify.error(err?.response?.data?.message || "Failed to save preferences.");
     } finally {
       setSaving(false);
     }

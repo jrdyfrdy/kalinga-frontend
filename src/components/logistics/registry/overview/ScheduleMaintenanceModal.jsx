@@ -3,6 +3,7 @@ import { useState } from "react";
 import { X, Calendar, Wrench, AlertCircle } from "lucide-react";
 import assetService from "@/services/assetService";
 import maintenanceService from "@/services/maintenanceService";
+import { notify } from "@/lib/notify";
 
 export default function ScheduleMaintenanceModal({ isOpen, onClose, asset, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -50,7 +51,7 @@ export default function ScheduleMaintenanceModal({ isOpen, onClose, asset, onSuc
       onClose();
     } catch (error) {
       console.error('Error scheduling maintenance:', error);
-      alert('Failed to schedule maintenance. Please try again.');
+      notify.error('Failed to schedule maintenance. Please try again.');
     } finally {
       setLoading(false);
     }

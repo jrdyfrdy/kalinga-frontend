@@ -2,6 +2,7 @@
 import React, { useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "../../layouts/Layout";
+import { notify } from "@/lib/notify";
 import "../../styles/infoPage.css";
 
 export default function InfoPage() {
@@ -67,12 +68,12 @@ export default function InfoPage() {
       // Finished a section
       if (currentSection === "generalInformation") {
         localStorage.setItem(`unlocked_helpful_${id}`, "true");
-        alert(
+        notify.success(
           "✅ You’ve completed the General Information section! Helpful Materials are now unlocked."
         );
         navigate(`/responder/modules/${id}/info/reference-materials`); // ✅ Fixed path
       } else {
-        alert("🎉 You’ve completed all topics in this section!");
+        notify.success("🎉 You’ve completed all topics in this section!");
       }
     }
   };

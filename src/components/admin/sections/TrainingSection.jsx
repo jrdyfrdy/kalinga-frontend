@@ -23,6 +23,7 @@ import {
   watchProgressByCourse,
   setAssessmentPassed,
 } from "@/services/trainingService";
+import { useConfirm } from "@/components/ui/confirm";
 
 const CONTENT_TYPES = [
   { value: "pdf", label: "PDF", icon: FileText },
@@ -96,6 +97,7 @@ function slugify(text) {
 }
 
 export const TrainingSection = () => {
+  const confirmDialog = useConfirm();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -315,7 +317,7 @@ export const TrainingSection = () => {
   };
 
   const handleDeleteCourse = async (id) => {
-    if (!confirm("Delete this course and all its content?")) return;
+    if (!await confirmDialog("Delete this course and all its content?")) return;
     setDeletingId(id);
     setError(null);
     try {

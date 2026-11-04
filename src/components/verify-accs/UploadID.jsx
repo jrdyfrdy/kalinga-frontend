@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { X, ScanLine, Loader2, Camera, Upload } from "lucide-react";
+import { notify } from "@/lib/notify";
 
 // IMAGE PROCESSING CONSTANTS
 
@@ -35,7 +36,7 @@ export default function UploadID() {
 
   useEffect(() => {
     if (!currentIDType) {
-      alert("No ID Type selected. Returning to selection screen.");
+      notify.warning("No ID Type selected. Returning to selection screen.");
       navigate("/verify-id"); 
     } else {
       localStorage.setItem("selectedID", currentIDType);
@@ -73,14 +74,14 @@ export default function UploadID() {
     if (uploadedFile) {
       // 1. Validate File Type (Must be an image)
       if (!uploadedFile.type.startsWith("image/")) {
-        alert("Invalid file format. Please upload a valid image file (JPEG, PNG, etc.).");
+        notify.error("Invalid file format. Please upload a valid image file (JPEG, PNG, etc.).");
         e.target.value = ""; // Clear the input
         return;
       }
 
       // 2. Validate File Size (Enforce max size to prevent crashes)
       if (uploadedFile.size > MAX_FILE_SIZE_BYTES) {
-        alert(`File is too large. Please upload an image smaller than ${MAX_FILE_SIZE_MB}MB.`);
+        notify.warning(`File is too large. Please upload an image smaller than ${MAX_FILE_SIZE_MB}MB.`);
         e.target.value = ""; // Clear the input
         return;
       }
@@ -174,7 +175,7 @@ export default function UploadID() {
   const handleScanAndNext = async (e) => {
     e.preventDefault();
     if (!frontFile || !backFile) {
-      alert("Please upload both the Front and Back of your ID.");
+      notify.warning("Please upload both the Front and Back of your ID.");
       return;
     }
 
@@ -223,7 +224,7 @@ export default function UploadID() {
 
     } catch (error) {
       console.error("OCR Error:", error);
-      alert("Scan failed. Please enter details manually.\n\nError: " + error.message);
+      notify.error("Scan failed. Please enter details manually.\n\nError: " + error.message);
       navigate("/fill-info", { 
         state: { 
             selectedID: currentIDType, 

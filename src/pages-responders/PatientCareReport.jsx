@@ -20,6 +20,7 @@ import {
 } from "../services/pcrService";
 import { useToast } from "@/hooks/use-toast";
 import { ROUTES } from "../config/routes";
+import { useConfirm } from "@/components/ui/confirm";
 
 const NOI_MOI_OPTIONS = [
   "Cardiac Arrest",
@@ -170,6 +171,7 @@ const SectionCard = React.memo(function SectionCard({
 const fieldLockPath = (index, key) => `vitals.${index}.${key}`;
 
 export default function PatientCareReport() {
+  const confirmDialog = useConfirm();
   const [activeSection, setActiveSection] = useState(0);
   const [edgeStatus, setEdgeStatus] = useState("waiting");
   const [queueCount, setQueueCount] = useState(0);
@@ -455,8 +457,8 @@ export default function PatientCareReport() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const resetFormState = () => {
-    const shouldReset = window.confirm(
+  const resetFormState = async () => {
+    const shouldReset = await confirmDialog(
       "Clear all current PCR entries and start a new form?"
     );
     if (!shouldReset) return;

@@ -48,9 +48,9 @@ export function ConfirmProvider({ children }) {
                 </div>
               )}
               <div className="min-w-0 space-y-1.5">
-                <AlertDialog.Title className="text-base font-semibold">{options?.title || "Are you sure?"}</AlertDialog.Title>
-                <AlertDialog.Description className="text-sm text-muted-foreground">
-                  {options?.description || "This action can't be undone."}
+                <AlertDialog.Title className="whitespace-pre-line text-base font-semibold">{options?.title || "Are you sure?"}</AlertDialog.Title>
+                <AlertDialog.Description className={options?.description ? "whitespace-pre-line text-sm text-muted-foreground" : "sr-only"}>
+                  {options?.description || options?.title || "Confirm this action."}
                 </AlertDialog.Description>
               </div>
             </div>
@@ -73,6 +73,7 @@ export function useConfirm() {
   const confirm = useContext(ConfirmContext);
   if (!confirm) {
     // Outside the provider (e.g. isolated tests): degrade to the native dialog.
+    // eslint-disable-next-line no-restricted-properties -- last-resort fallback outside the provider
     return async (opts) => window.confirm(typeof opts === "string" ? opts : opts?.title || "Are you sure?");
   }
   return confirm;

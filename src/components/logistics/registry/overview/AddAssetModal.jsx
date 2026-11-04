@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { X, Save, Truck, Zap, Shield, Home, Ship, Radio, Battery, Thermometer, MapPin, Calendar, DollarSign, User, Settings, Clock } from "lucide-react";
 import assetService from "@/services/assetService";
+import { notify } from "@/lib/notify";
 
 export default function AddAssetModal({ isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -125,7 +126,7 @@ export default function AddAssetModal({ isOpen, onClose, onSuccess }) {
       onClose();
     } catch (error) {
       console.error('Error creating asset:', error);
-      alert('Failed to create asset. Please try again.');
+      notify.error('Failed to create asset. Please try again.');
     } finally {
       setLoading(false);
     }

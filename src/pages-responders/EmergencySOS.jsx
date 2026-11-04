@@ -16,6 +16,7 @@ import "leaflet/dist/leaflet.css";
 import { useIncidents } from "../context/IncidentContext";
 import { useAuth } from "../context/AuthContext";
 import { updateIncidentStatus } from "../services/incidents";
+import { notify } from "@/lib/notify";
 
 // Fix Leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -816,7 +817,7 @@ const EmergencySOS = () => {
                             });
                             setShowAlertDetails(null);
                           } catch (err) {
-                            alert(err?.response?.data?.message || "Failed to request more units.");
+                            notify.error(err?.response?.data?.message || "Failed to request more units.");
                           } finally {
                             setRequestingSupport(false);
                           }

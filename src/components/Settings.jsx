@@ -10,6 +10,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { notify } from "@/lib/notify";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("privacy");
@@ -126,7 +127,7 @@ export default function Settings() {
   };
 
   const handleSave = (section) => {
-    alert(`${section} settings saved!`);
+    notify.success(`${section} settings saved!`);
   };
 
   // Contact handlers

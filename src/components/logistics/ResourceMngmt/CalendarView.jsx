@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Filter, Edit, X, Save, Package, User, Building, Clock, FileText, ChevronDown } from "lucide-react";
 import resourceCalendarService from "../../../services/resourceCalendarService";
+import { notify } from "@/lib/notify";
 
 const CalendarView = ({ facility, onEventClick }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -156,7 +157,7 @@ const CalendarView = ({ facility, onEventClick }) => {
       // Check if we have a valid ID
       if (!editingEvent.id) {
         console.error('Cannot save: No movement ID found');
-        alert('Error: Cannot save changes - missing event ID');
+        notify.error('Error: Cannot save changes - missing event ID');
         return;
       }
 
@@ -174,7 +175,7 @@ const CalendarView = ({ facility, onEventClick }) => {
       
     } catch (error) {
       console.error('Error updating event:', error);
-      alert('Failed to update event. Please try again.');
+      notify.error('Failed to update event. Please try again.');
     }
   };
 
