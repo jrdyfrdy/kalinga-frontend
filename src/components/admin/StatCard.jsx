@@ -16,18 +16,18 @@ export const StatCard = ({
     warning:
       "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300",
     danger: "bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300",
-    neutral: "bg-foreground/5 text-foreground/80",
+    neutral: "bg-foreground/5 text-muted-foreground",
   };
 
   return (
     <div
       className={cn(
-        "rounded-2xl border border-border/60 bg-card/60 p-5 shadow-sm",
+        "rounded-xl border border-border bg-surface p-5 shadow-xs",
         className
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-foreground/70">{label}</span>
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
         {Icon && (
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Icon className="h-5 w-5" />

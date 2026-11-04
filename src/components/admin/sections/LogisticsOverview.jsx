@@ -56,7 +56,7 @@ const formatRelativeTime = (dateString) => {
 
 // Stat Card component
 const StatCard = ({ icon: Icon, label, value, subtext, color = "primary" }) => (
-  <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+  <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
     <div
       className={`flex h-12 w-12 items-center justify-center rounded-xl bg-${color}-500/10`}
     >
@@ -64,8 +64,8 @@ const StatCard = ({ icon: Icon, label, value, subtext, color = "primary" }) => (
     </div>
     <div>
       <p className="text-2xl font-bold text-foreground">{value}</p>
-      <p className="text-sm text-foreground/60">{label}</p>
-      {subtext && <p className="text-xs text-foreground/50">{subtext}</p>}
+      <p className="text-sm text-muted-foreground">{label}</p>
+      {subtext && <p className="text-xs text-muted-foreground">{subtext}</p>}
     </div>
   </div>
 );
@@ -119,7 +119,7 @@ export const LogisticsOverview = () => {
           <button
             onClick={fetchData}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
           >
             <RefreshCw
               className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -131,7 +131,7 @@ export const LogisticsOverview = () => {
 
       {/* Stats Overview */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10">
             <Clock className="h-6 w-6 text-amber-500" />
           </div>
@@ -139,10 +139,10 @@ export const LogisticsOverview = () => {
             <p className="text-2xl font-bold text-foreground">
               {stats?.pendingRequests ?? 0}
             </p>
-            <p className="text-sm text-foreground/60">Pending Requests</p>
+            <p className="text-sm text-muted-foreground">Pending Requests</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10">
             <Truck className="h-6 w-6 text-blue-500" />
           </div>
@@ -150,10 +150,10 @@ export const LogisticsOverview = () => {
             <p className="text-2xl font-bold text-foreground">
               {stats?.inTransit ?? 0}
             </p>
-            <p className="text-sm text-foreground/60">In Transit</p>
+            <p className="text-sm text-muted-foreground">In Transit</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
             <CheckCircle className="h-6 w-6 text-emerald-500" />
           </div>
@@ -161,10 +161,10 @@ export const LogisticsOverview = () => {
             <p className="text-2xl font-bold text-foreground">
               {stats?.delivered ?? 0}
             </p>
-            <p className="text-sm text-foreground/60">Delivered</p>
+            <p className="text-sm text-muted-foreground">Delivered</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
             <Package className="h-6 w-6 text-primary" />
           </div>
@@ -172,13 +172,13 @@ export const LogisticsOverview = () => {
             <p className="text-2xl font-bold text-foreground">
               {stats?.totalRequests ?? 0}
             </p>
-            <p className="text-sm text-foreground/60">Total Requests</p>
+            <p className="text-sm text-muted-foreground">Total Requests</p>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border/60 pb-2">
+      <div className="flex gap-2 border-b border-border pb-2">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -186,7 +186,7 @@ export const LogisticsOverview = () => {
             className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition ${
               activeTab === tab.id
                 ? "bg-primary text-primary-foreground"
-                : "text-foreground/70 hover:bg-primary/10"
+                : "text-muted-foreground hover:bg-primary/10"
             }`}
           >
             {tab.label}
@@ -204,13 +204,13 @@ export const LogisticsOverview = () => {
       </div>
 
       {/* Content */}
-      <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : currentData.length === 0 ? (
-          <div className="flex flex-col items-center py-12 text-foreground/60">
+          <div className="flex flex-col items-center py-12 text-muted-foreground">
             <Package className="h-12 w-12 mb-4 opacity-50" />
             <p>No {activeTab} data available</p>
           </div>
@@ -220,7 +220,7 @@ export const LogisticsOverview = () => {
             {tracking.map((shipment) => (
               <div
                 key={shipment.id}
-                className="rounded-2xl border border-border/60 bg-background/60 p-4"
+                className="rounded-xl border border-border bg-surface-2/60 p-4"
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex items-center gap-3">
@@ -231,15 +231,15 @@ export const LogisticsOverview = () => {
                       <p className="font-semibold text-foreground">
                         {shipment.id}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-foreground/60">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{shipment.route}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 text-sm">
-                    <Package className="h-4 w-4 text-foreground/50" />
-                    <span className="text-foreground/70">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">
                       {shipment.contents}
                     </span>
                   </div>
@@ -261,7 +261,7 @@ export const LogisticsOverview = () => {
                     </span>
                   </div>
 
-                  <div className="text-right text-xs text-foreground/60">
+                  <div className="text-right text-xs text-muted-foreground">
                     <p>
                       ETA:{" "}
                       {shipment.eta
@@ -278,7 +278,7 @@ export const LogisticsOverview = () => {
           // Request list view
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-border/60 text-sm">
-              <thead className="bg-primary/5 text-left text-xs uppercase tracking-wide text-foreground/60">
+              <thead className="bg-primary/5 text-left text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 font-medium">Request ID</th>
                   <th className="px-4 py-3 font-medium">Item</th>
@@ -288,7 +288,7 @@ export const LogisticsOverview = () => {
                   <th className="px-4 py-3 font-medium">Created</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/60 bg-background/50">
+              <tbody className="divide-y divide-border/60 bg-surface-2/60">
                 {currentData.slice(0, 10).map((request) => (
                   <tr
                     key={request.id || request.request_id}
@@ -300,12 +300,12 @@ export const LogisticsOverview = () => {
                     <td className="px-4 py-3">
                       <div>
                         <p className="text-foreground">{request.item_name}</p>
-                        <p className="text-xs text-foreground/60">
+                        <p className="text-xs text-muted-foreground">
                           Qty: {request.item_quantity}
                         </p>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-foreground/70">
+                    <td className="px-4 py-3 text-muted-foreground">
                       {request.destination_hospital || request.source_location}
                     </td>
                     <td className="px-4 py-3">
@@ -326,7 +326,7 @@ export const LogisticsOverview = () => {
                         {request.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-foreground/60 text-xs">
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
                       {formatRelativeTime(request.created_at)}
                     </td>
                   </tr>

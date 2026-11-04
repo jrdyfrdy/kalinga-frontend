@@ -103,7 +103,7 @@ const RiskBar = ({ distribution }) => {
   const levels = ["critical", "high", "medium", "low"];
   const total = levels.reduce((s, l) => s + (distribution[l] || 0), 0);
   if (!total)
-    return <span className="text-xs text-foreground/50">No data</span>;
+    return <span className="text-xs text-muted-foreground">No data</span>;
 
   return (
     <div className="flex items-center gap-2">
@@ -122,7 +122,7 @@ const RiskBar = ({ distribution }) => {
           );
         })}
       </div>
-      <span className="text-xs font-medium text-foreground/60 tabular-nums">
+      <span className="text-xs font-medium text-muted-foreground tabular-nums">
         {total}
       </span>
     </div>
@@ -133,7 +133,7 @@ const RiskBar = ({ distribution }) => {
 const RiskTable = ({ items = [] }) => {
   if (!items.length)
     return (
-      <p className="py-8 text-center text-sm text-foreground/50">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         No high-risk items detected in this forecast window.
       </p>
     );
@@ -142,7 +142,7 @@ const RiskTable = ({ items = [] }) => {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border/40 text-left text-xs font-medium uppercase text-foreground/50">
+          <tr className="border-b border-border text-left text-xs font-medium uppercase text-muted-foreground">
             <th className="pb-2 pr-4">Hospital</th>
             <th className="pb-2 pr-4">Resource</th>
             <th className="pb-2 pr-4">Category</th>
@@ -159,16 +159,16 @@ const RiskTable = ({ items = [] }) => {
                 <td className="py-2.5 pr-4 font-medium text-foreground">
                   {item.hospital_name}
                 </td>
-                <td className="py-2.5 pr-4 text-foreground/80">
+                <td className="py-2.5 pr-4 text-muted-foreground">
                   {item.resource_name}
                 </td>
-                <td className="py-2.5 pr-4 text-foreground/60">
+                <td className="py-2.5 pr-4 text-muted-foreground">
                   {item.resource_category}
                 </td>
                 <td className="py-2.5 pr-4 text-right font-semibold tabular-nums text-foreground">
                   {(Number(item.risk_prob) * 100).toFixed(0)}%
                 </td>
-                <td className="py-2.5 pr-4 text-right tabular-nums text-foreground/70">
+                <td className="py-2.5 pr-4 text-right tabular-nums text-muted-foreground">
                   {item.days_until_stockout != null
                     ? formatDisplayQuantity(item.days_until_stockout, "days")
                     : "—"}
@@ -193,7 +193,7 @@ const RiskTable = ({ items = [] }) => {
 const DemandList = ({ items = [] }) => {
   if (!items.length)
     return (
-      <p className="py-6 text-center text-sm text-foreground/50">
+      <p className="py-6 text-center text-sm text-muted-foreground">
         No demand data available.
       </p>
     );
@@ -215,7 +215,7 @@ const DemandList = ({ items = [] }) => {
               <span className="font-medium text-foreground">
                 {res.name || `Resource #${d.resource_id}`}
               </span>
-              <span className="tabular-nums text-foreground/70">
+              <span className="tabular-nums text-muted-foreground">
                 {formatWithUnit(demand, res.unit || "units")}
               </span>
             </div>
@@ -236,14 +236,14 @@ const DemandList = ({ items = [] }) => {
 const NarrativePanel = ({ narrative, isLoading }) => {
   if (isLoading)
     return (
-      <div className="flex items-center gap-3 py-8 text-sm text-foreground/50">
+      <div className="flex items-center gap-3 py-8 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" /> Generating AI narrative…
       </div>
     );
 
   if (!narrative?.narrative && !narrative?.text)
     return (
-      <p className="py-6 text-sm text-foreground/50">
+      <p className="py-6 text-sm text-muted-foreground">
         No AI narrative available. Run the forecast pipeline first.
       </p>
     );
@@ -251,7 +251,7 @@ const NarrativePanel = ({ narrative, isLoading }) => {
   const text = narrative.narrative || narrative.text || "";
 
   return (
-    <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert whitespace-pre-line leading-relaxed">
+    <div className="prose prose-sm max-w-none text-muted-foreground dark:prose-invert whitespace-pre-line leading-relaxed">
       {text}
     </div>
   );
@@ -270,16 +270,16 @@ const HospitalFilter = ({ hospitals, selected, onSelect }) => {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:border-primary/40"
+        className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground shadow-xs transition hover:border-primary/40"
       >
-        <Building2 className="h-4 w-4 text-foreground/60" />
+        <Building2 className="h-4 w-4 text-muted-foreground" />
         {label}
-        <ChevronDown className="h-3.5 w-3.5 text-foreground/40" />
+        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-border/60 bg-card shadow-xl">
+          <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-border bg-surface shadow-xl">
             <div className="max-h-64 overflow-y-auto p-1">
               <button
                 onClick={() => {
@@ -289,7 +289,7 @@ const HospitalFilter = ({ hospitals, selected, onSelect }) => {
                 className={`w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-foreground/5 ${
                   !selected
                     ? "bg-primary/10 font-semibold text-primary"
-                    : "text-foreground/80"
+                    : "text-muted-foreground"
                 }`}
               >
                 All Hospitals (National)
@@ -304,7 +304,7 @@ const HospitalFilter = ({ hospitals, selected, onSelect }) => {
                   className={`w-full rounded-lg px-3 py-2 text-left text-sm transition hover:bg-foreground/5 ${
                     String(selected) === String(h.id)
                       ? "bg-primary/10 font-semibold text-primary"
-                      : "text-foreground/80"
+                      : "text-muted-foreground"
                   }`}
                 >
                   {h.name}
@@ -494,7 +494,7 @@ export const LogisticsForecastSection = () => {
             <button
               onClick={handleTrigger}
               disabled={triggering || isLoading}
-              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-xs transition hover:bg-violet-700 disabled:opacity-50"
               title="Manually run the AI forecast pipeline"
             >
               {triggering ? (
@@ -507,7 +507,7 @@ export const LogisticsForecastSection = () => {
             <button
               onClick={fetchAll}
               disabled={isLoading}
-              className="inline-flex items-center gap-2 rounded-xl border border-border/60 bg-card/80 px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:border-primary/40 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground shadow-xs transition hover:border-primary/40 disabled:opacity-50"
             >
               <RefreshCw
                 className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -538,7 +538,7 @@ export const LogisticsForecastSection = () => {
       {/* Loading spinner */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-foreground/30" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <>
@@ -575,17 +575,17 @@ export const LogisticsForecastSection = () => {
           </div>
 
           {/* Risk distribution bar */}
-          <div className="rounded-2xl border border-border/60 bg-card/60 p-5 shadow-sm">
-            <h3 className="mb-3 text-sm font-semibold text-foreground/70">
+          <div className="rounded-xl border border-border bg-surface p-5 shadow-xs">
+            <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
               Risk Distribution
               {selectedHospital && (
-                <span className="ml-2 text-xs font-normal text-foreground/40">
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
                   (filtered)
                 </span>
               )}
             </h3>
             <RiskBar distribution={riskDist} />
-            <div className="mt-2 flex flex-wrap gap-4 text-xs text-foreground/60">
+            <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted-foreground">
               {["critical", "high", "medium", "low"].map((l) => (
                 <span key={l} className="flex items-center gap-1.5">
                   <span
@@ -600,12 +600,12 @@ export const LogisticsForecastSection = () => {
           {/* Two-column: risk table + demand ranking */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Risk table (2/3) */}
-            <div className="rounded-2xl border border-border/60 bg-card/60 p-5 shadow-sm lg:col-span-2">
+            <div className="rounded-xl border border-border bg-surface p-5 shadow-xs lg:col-span-2">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground/70">
+                <h3 className="text-sm font-semibold text-muted-foreground">
                   High-Risk Items
                   {selectedHospital && (
-                    <span className="ml-2 text-xs font-normal text-foreground/40">
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
                       (filtered)
                     </span>
                   )}
@@ -618,8 +618,8 @@ export const LogisticsForecastSection = () => {
             </div>
 
             {/* Demand ranking (1/3) */}
-            <div className="rounded-2xl border border-border/60 bg-card/60 p-5 shadow-sm">
-              <h3 className="mb-4 text-sm font-semibold text-foreground/70">
+            <div className="rounded-xl border border-border bg-surface p-5 shadow-xs">
+              <h3 className="mb-4 text-sm font-semibold text-muted-foreground">
                 Top Demand (48h)
               </h3>
               <DemandList items={topDemand} />
@@ -627,10 +627,10 @@ export const LogisticsForecastSection = () => {
           </div>
 
           {/* AI Narrative */}
-          <div className="rounded-2xl border border-border/60 bg-card/60 p-5 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-5 shadow-xs">
             <div className="mb-4 flex items-center gap-2">
               <BrainCircuit className="h-5 w-5 text-violet-500" />
-              <h3 className="text-sm font-semibold text-foreground/70">
+              <h3 className="text-sm font-semibold text-muted-foreground">
                 AI Executive Summary
               </h3>
               {narrative?.source && (
@@ -647,7 +647,7 @@ export const LogisticsForecastSection = () => {
 
           {/* Footer metadata */}
           {lastRefresh && (
-            <p className="text-center text-xs text-foreground/40">
+            <p className="text-center text-xs text-muted-foreground">
               Last refreshed: {lastRefresh.toLocaleTimeString()} · Horizon:{" "}
               {summary?.meta?.horizon_hours || 48}h ·{" "}
               {selectedHospital

@@ -557,7 +557,7 @@ export default function AssessmentPage() {
                           [`q${i}`]: e.target.value,
                         }))
                       }
-                      className="w-full rounded-lg border border-border/60 bg-background px-3 py-2"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2"
                     />
                   )}
                   {q.type === "textarea" && (
@@ -569,7 +569,7 @@ export default function AssessmentPage() {
                           [`q${i}`]: e.target.value,
                         }))
                       }
-                      className="w-full rounded-lg border border-border/60 bg-background px-3 py-2"
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2"
                       rows={3}
                     />
                   )}
@@ -678,7 +678,7 @@ export default function AssessmentPage() {
                   : "Final Assessment"}
             </h4>
             {fromFirestore && course.certificationEnabled && (
-              <p className="text-sm text-foreground/70 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Passing score: {passingScore}%
               </p>
             )}
@@ -767,7 +767,7 @@ export default function AssessmentPage() {
               </p>
             )}
             {savingResult && (
-              <p className="text-sm text-foreground/60">Saving result...</p>
+              <p className="text-sm text-muted-foreground">Saving result...</p>
             )}
             {progressError && (
               <p className="text-sm text-red-600 mt-2">{progressError}</p>

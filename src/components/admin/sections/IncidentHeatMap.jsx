@@ -385,7 +385,7 @@ export const IncidentHeatMap = () => {
         title="Incident Logs & Heat Map"
         description="Live geospatial feed of incidents across the Philippines. Tile layers are sourced from OpenStreetMap while event telemetry is driven by the USGS hazards API."
         actions={
-          <div className="flex items-center gap-2 text-xs text-foreground/60">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" /> {lastUpdatedLabel}
           </div>
         }
@@ -393,7 +393,7 @@ export const IncidentHeatMap = () => {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/80 px-3 py-1 text-xs text-foreground/70">
+          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2/60 px-3 py-1 text-xs text-muted-foreground">
             <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
             {incidents.length} telemetry points
           </div>
@@ -405,7 +405,7 @@ export const IncidentHeatMap = () => {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/60 px-2 py-1">
+          <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2/60 px-2 py-1">
             Source:
           </div>
           <div className="flex items-center gap-1">
@@ -413,8 +413,8 @@ export const IncidentHeatMap = () => {
               onClick={() => setViewMode("all")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 viewMode === "all"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "border border-border/60 bg-background/60 text-foreground/70 hover:border-primary/40 hover:text-primary"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "border border-border bg-surface-2/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
               }`}
             >
               All
@@ -423,8 +423,8 @@ export const IncidentHeatMap = () => {
               onClick={() => setViewMode("system")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 viewMode === "system"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "border border-border/60 bg-background/60 text-foreground/70 hover:border-primary/40 hover:text-primary"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "border border-border bg-surface-2/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
               }`}
             >
               System
@@ -433,8 +433,8 @@ export const IncidentHeatMap = () => {
               onClick={() => setViewMode("usgs")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 viewMode === "usgs"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "border border-border/60 bg-background/60 text-foreground/70 hover:border-primary/40 hover:text-primary"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "border border-border bg-surface-2/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
               }`}
             >
               USGS
@@ -442,7 +442,7 @@ export const IncidentHeatMap = () => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/60 px-2 py-1">
+          <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2/60 px-2 py-1">
             <History className="h-3 w-3 text-slate-500" /> Lifecycle:
           </div>
           <div className="flex items-center gap-1">
@@ -453,9 +453,9 @@ export const IncidentHeatMap = () => {
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   lifecycleView === option.value
                     ? option.value === "resolved"
-                      ? "bg-emerald-500 text-white shadow-sm"
-                      : "bg-primary text-primary-foreground shadow-sm"
-                    : "border border-border/60 bg-background/60 text-foreground/70 hover:border-primary/40 hover:text-primary"
+                      ? "bg-emerald-500 text-white shadow-xs"
+                      : "bg-primary text-primary-foreground shadow-xs"
+                    : "border border-border bg-surface-2/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
                 }`}
               >
                 {option.label}
@@ -464,7 +464,7 @@ export const IncidentHeatMap = () => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <div className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/60 px-2 py-1">
+          <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2/60 px-2 py-1">
             <Flame className="h-3 w-3 text-rose-400" /> Severity filter:
           </div>
           <div className="flex items-center gap-1">
@@ -472,8 +472,8 @@ export const IncidentHeatMap = () => {
               onClick={() => setSelectedSeverity("all")}
               className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                 selectedSeverity === "all"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "border border-border/60 bg-background/60 text-foreground/70 hover:border-primary/40 hover:text-primary"
+                  ? "bg-primary text-primary-foreground shadow-xs"
+                  : "border border-border bg-surface-2/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
               }`}
             >
               All
@@ -484,8 +484,8 @@ export const IncidentHeatMap = () => {
                 onClick={() => setSelectedSeverity(level)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition ${
                   selectedSeverity === level
-                    ? `${severityStyles[level].badge} text-white shadow-sm`
-                    : "border border-border/60 bg-background/60 text-foreground/70 hover:border-primary/40 hover:text-primary"
+                    ? `${severityStyles[level].badge} text-white shadow-xs`
+                    : "border border-border bg-surface-2/60 text-muted-foreground hover:border-primary/40 hover:text-primary"
                 }`}
               >
                 {level}
@@ -499,28 +499,28 @@ export const IncidentHeatMap = () => {
             fetchSystemIncidents();
             if (showRoutes) fetchHistoricalRoutes();
           }}
-          className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+          className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2/60 px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
         >
           <RefreshCcw className="h-4 w-4" /> Refresh feed
         </button>
       </div>
 
       {/* Route toggle bar */}
-      <div className="flex items-center justify-between rounded-2xl border border-border/40 bg-background/60 px-4 py-2">
+      <div className="flex items-center justify-between rounded-xl border border-border bg-surface-2/60 px-4 py-2">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowRoutes(!showRoutes)}
             className={`inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium transition ${
               showRoutes
-                ? "bg-blue-500 text-white shadow-sm"
-                : "border border-border/60 bg-background/60 text-foreground/70 hover:border-blue-400 hover:text-blue-600"
+                ? "bg-blue-500 text-white shadow-xs"
+                : "border border-border bg-surface-2/60 text-muted-foreground hover:border-blue-400 hover:text-blue-600"
             }`}
           >
             <Route className="h-3.5 w-3.5" />
             {showRoutes ? "Hide Routes" : "Show Response Routes"}
           </button>
           {showRoutes && (
-            <span className="text-xs text-foreground/60">
+            <span className="text-xs text-muted-foreground">
               {routesLoading
                 ? "Loading routes..."
                 : historicalRoutes.length > 0
@@ -534,13 +534,13 @@ export const IncidentHeatMap = () => {
             {historicalRoutes.slice(0, 5).map((route) => (
               <div
                 key={route.id}
-                className="flex items-center gap-1.5 rounded-full border border-border/40 bg-background/80 px-2 py-1 text-xs"
+                className="flex items-center gap-1.5 rounded-full border border-border bg-surface-2/60 px-2 py-1 text-xs"
               >
                 <span
                   className="h-2 w-2 rounded-full"
                   style={{ backgroundColor: route.color }}
                 />
-                <span className="text-foreground/70 truncate max-w-[80px]">
+                <span className="text-muted-foreground truncate max-w-[80px]">
                   {route.responder}
                 </span>
               </div>
@@ -550,7 +550,7 @@ export const IncidentHeatMap = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="h-[26rem] overflow-hidden rounded-3xl border border-border/60 bg-card/80 shadow-sm">
+        <div className="h-[26rem] overflow-hidden rounded-xl border border-border bg-surface shadow-xs">
           <MapContainer
             center={[12.8797, 121.774]} // Geographic center of the Philippines
             zoom={5}
@@ -583,7 +583,7 @@ export const IncidentHeatMap = () => {
                       <div className="text-xs">
                         <p className="font-semibold">{route.responder}</p>
                         {route.distance && (
-                          <p className="text-foreground/70">
+                          <p className="text-muted-foreground">
                             {(route.distance / 1000).toFixed(1)} km
                           </p>
                         )}
@@ -593,7 +593,7 @@ export const IncidentHeatMap = () => {
                           </p>
                         )}
                         {route.startedAt && (
-                          <p className="text-foreground/50">
+                          <p className="text-muted-foreground">
                             {formatRelativeTime(new Date(route.startedAt))}
                           </p>
                         )}
@@ -645,13 +645,13 @@ export const IncidentHeatMap = () => {
                       <p className="font-semibold text-foreground">
                         {incident.type}
                       </p>
-                      <p className="text-foreground/70">{incident.barangay}</p>
+                      <p className="text-muted-foreground">{incident.barangay}</p>
                       {isEarthquake && (
-                        <p className="text-foreground/60">
+                        <p className="text-muted-foreground">
                           Magnitude {magnitude.toFixed(1)} • USGS telemetry
                         </p>
                       )}
-                      <p className="text-foreground/50">
+                      <p className="text-muted-foreground">
                         Updated{" "}
                         {formatRelativeTime(incident.updatedAt, {
                           short: true,
@@ -666,11 +666,11 @@ export const IncidentHeatMap = () => {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <h3 className="text-lg font-semibold text-foreground">
               Severity distribution
             </h3>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-muted-foreground">
               Live count of incident telemetry by severity band.
             </p>
             <div className="mt-5 space-y-3 text-sm">
@@ -686,7 +686,7 @@ export const IncidentHeatMap = () => {
                     <span className="font-medium text-foreground">{level}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-foreground/60">
+                    <span className="text-muted-foreground">
                       {summary[level]} incidents
                     </span>
                   </div>
@@ -695,11 +695,11 @@ export const IncidentHeatMap = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <h3 className="text-lg font-semibold text-foreground">
               Rapid incident snapshot
             </h3>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-muted-foreground">
               Most recent escalations with automated status updates.
             </p>
             {highlights.length ? (
@@ -716,10 +716,10 @@ export const IncidentHeatMap = () => {
                       <p className="font-semibold text-foreground">
                         {item.barangay}
                       </p>
-                      <p className="text-foreground/60">
+                      <p className="text-muted-foreground">
                         {item.type} • {item.severity} severity
                       </p>
-                      <p className="text-xs text-foreground/50">
+                      <p className="text-xs text-muted-foreground">
                         Updated {formatRelativeTime(item.updatedAt)}
                       </p>
                     </div>
@@ -727,25 +727,25 @@ export const IncidentHeatMap = () => {
                 ))}
               </div>
             ) : (
-              <p className="mt-5 rounded-2xl border border-dashed border-border/60 bg-card/60 p-4 text-sm text-foreground/60">
+              <p className="mt-5 rounded-xl border border-dashed border-border bg-surface p-4 text-sm text-muted-foreground">
                 No recent incidents within the selected filters.
               </p>
             )}
           </div>
 
           {closedIncidents.length > 0 && (
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
               <h3 className="text-lg font-semibold text-foreground">
                 Closed incidents log
               </h3>
-              <p className="text-sm text-foreground/60">
+              <p className="text-sm text-muted-foreground">
                 Recently resolved or cancelled events retained for audit.
               </p>
               <div className="mt-5 space-y-4 text-sm">
                 {closedIncidents.slice(0, 4).map((incident) => (
                   <div
                     key={incident.id}
-                    className="flex items-start justify-between gap-3 rounded-2xl border border-border/50 bg-background/70 p-4"
+                    className="flex items-start justify-between gap-3 rounded-xl border border-border bg-background/70 p-4"
                   >
                     <div className="flex items-start gap-3">
                       <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
@@ -755,12 +755,12 @@ export const IncidentHeatMap = () => {
                         <p className="font-semibold text-foreground">
                           {incident.type}
                         </p>
-                        <p className="text-xs text-foreground/60">
+                        <p className="text-xs text-muted-foreground">
                           {incident.barangay}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right text-xs text-foreground/50">
+                    <div className="text-right text-xs text-muted-foreground">
                       <p className="font-semibold capitalize text-emerald-600">
                         {(incident.status || "resolved").replace(/_/g, " ")}
                       </p>

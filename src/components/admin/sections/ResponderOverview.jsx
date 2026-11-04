@@ -204,7 +204,7 @@ export const ResponderOverview = () => {
           <button
             onClick={fetchData}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
           >
             <RefreshCw
               className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -216,53 +216,53 @@ export const ResponderOverview = () => {
 
       {/* Stats Overview */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
             <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">{totalCardValue}</p>
-            <p className="text-sm text-foreground/60">Total Responders</p>
-            <p className="text-xs text-foreground/50">
+            <p className="text-sm text-muted-foreground">Total Responders</p>
+            <p className="text-xs text-muted-foreground">
               {presenceReady
                 ? `${onlineCount} online via presence`
                 : "Awaiting presence channel"}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
             <UserCheck className="h-6 w-6 text-emerald-500" />
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">{availableCardValue}</p>
-            <p className="text-sm text-foreground/60">Available</p>
-            <p className="text-xs text-foreground/50">
+            <p className="text-sm text-muted-foreground">Available</p>
+            <p className="text-xs text-muted-foreground">
               {presenceReady
                 ? `${standbyOnline} ready & online`
                 : "Using account status fallback"}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10">
             <Activity className="h-6 w-6 text-amber-500" />
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">{busyCardValue}</p>
-            <p className="text-sm text-foreground/60">On Assignment</p>
-            <p className="text-xs text-foreground/50">
+            <p className="text-sm text-muted-foreground">On Assignment</p>
+            <p className="text-xs text-muted-foreground">
               {onlineBusyDisplay} online
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+        <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-500/10">
             <XCircle className="h-6 w-6 text-gray-500" />
           </div>
           <div>
             <p className="text-2xl font-bold text-foreground">{offlineCardValue}</p>
-            <p className="text-sm text-foreground/60">Offline</p>
+            <p className="text-sm text-muted-foreground">Offline</p>
           </div>
         </div>
       </div>
@@ -273,19 +273,19 @@ export const ResponderOverview = () => {
           {/* Search & Filters */}
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/50" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="search"
                 placeholder="Search responders..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-11 w-full rounded-full border border-border/60 bg-background/60 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40"
+                className="h-11 w-full rounded-full border border-border bg-surface-2/60 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-11 rounded-full border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="h-11 rounded-full border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
             >
               <option value="">All Status</option>
               <option value="available">Available</option>
@@ -295,7 +295,7 @@ export const ResponderOverview = () => {
           </div>
 
           {/* Responders Table */}
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <h3 className="text-lg font-semibold text-foreground mb-4">
               Responder Directory
             </h3>
@@ -305,7 +305,7 @@ export const ResponderOverview = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : filteredResponders.length === 0 ? (
-              <p className="text-center py-8 text-foreground/60">
+              <p className="text-center py-8 text-muted-foreground">
                 No responders found
               </p>
             ) : (
@@ -316,7 +316,7 @@ export const ResponderOverview = () => {
                   return (
                     <div
                       key={responder.id}
-                      className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/60 p-4 md:flex-row md:items-center md:justify-between"
+                      className="flex flex-col gap-4 rounded-xl border border-border bg-surface-2/60 p-4 md:flex-row md:items-center md:justify-between"
                     >
                       <div className="flex items-center gap-3">
                         <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
@@ -326,7 +326,7 @@ export const ResponderOverview = () => {
                           <p className="font-semibold text-foreground">
                             {responder.name}
                           </p>
-                          <p className="text-xs text-foreground/60">
+                          <p className="text-xs text-muted-foreground">
                             {responder.email}
                           </p>
                         </div>
@@ -334,7 +334,7 @@ export const ResponderOverview = () => {
 
                       <div className="flex items-center gap-4 text-sm">
                         {responder.phone && (
-                          <div className="flex items-center gap-1.5 text-foreground/60">
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Phone className="h-4 w-4" />
                             <span>{responder.phone}</span>
                           </div>
@@ -361,7 +361,7 @@ export const ResponderOverview = () => {
             )}
 
             {filteredResponders.length > 10 && (
-              <p className="mt-4 text-xs text-foreground/50">
+              <p className="mt-4 text-xs text-muted-foreground">
                 Showing 10 of {filteredResponders.length} responders
               </p>
             )}
@@ -371,7 +371,7 @@ export const ResponderOverview = () => {
         {/* Sidebar - Active Incidents with Assignments */}
         <div className="space-y-4">
           {/* Active Assignments */}
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">
@@ -384,7 +384,7 @@ export const ResponderOverview = () => {
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
               </div>
             ) : incidents.length === 0 ? (
-              <p className="text-sm text-foreground/60">No active incidents</p>
+              <p className="text-sm text-muted-foreground">No active incidents</p>
             ) : (
               <div className="space-y-3">
                 {incidents.slice(0, 5).map((incident) => {
@@ -397,14 +397,14 @@ export const ResponderOverview = () => {
                   return (
                     <div
                       key={incident.id}
-                      className="rounded-xl border border-border/60 bg-background/60 p-3"
+                      className="rounded-xl border border-border bg-surface-2/60 p-3"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <p className="text-sm font-medium text-foreground">
                             {incident.type || "Emergency"}
                           </p>
-                          <p className="text-xs text-foreground/60">
+                          <p className="text-xs text-muted-foreground">
                             INC-{incident.id}
                           </p>
                         </div>
@@ -419,8 +419,8 @@ export const ResponderOverview = () => {
                       </div>
 
                       {activeAssignments.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-border/40">
-                          <p className="text-xs text-foreground/50 mb-1">
+                        <div className="mt-2 pt-2 border-t border-border">
+                          <p className="text-xs text-muted-foreground mb-1">
                             Assigned Responders:
                           </p>
                           <div className="flex flex-wrap gap-1">
@@ -435,7 +435,7 @@ export const ResponderOverview = () => {
                               </span>
                             ))}
                             {activeAssignments.length > 3 && (
-                              <span className="text-xs text-foreground/50">
+                              <span className="text-xs text-muted-foreground">
                                 +{activeAssignments.length - 3} more
                               </span>
                             )}
@@ -457,29 +457,29 @@ export const ResponderOverview = () => {
           </div>
 
           {/* Quick Stats */}
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <h3 className="text-lg font-semibold text-foreground mb-4">
               Response Metrics
             </h3>
             <div className="space-y-4 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-foreground/70">Active Incidents</span>
+                <span className="text-muted-foreground">Active Incidents</span>
                 <span className="font-semibold text-foreground">
                   {incidents.length}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-foreground/70">Unassigned Incidents</span>
+                <span className="text-muted-foreground">Unassigned Incidents</span>
                 <span className="font-semibold text-amber-600">
                   {incidents.filter((i) => !i.assignments?.length).length}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-foreground/70">Avg Response Time</span>
+                <span className="text-muted-foreground">Avg Response Time</span>
                 <span className="font-semibold text-foreground">~14 min</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-foreground/70">Coverage Rate</span>
+                <span className="text-muted-foreground">Coverage Rate</span>
                 <span className="font-semibold text-emerald-600">
                   {coverageRate}
                   %

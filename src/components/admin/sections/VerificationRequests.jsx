@@ -129,7 +129,7 @@ export const VerificationRequests = () => {
           {requests.map((req) => (
             <div
               key={req.id}
-              className="group relative overflow-hidden rounded-xl border bg-card p-4 transition-all hover:shadow-md"
+              className="group relative overflow-hidden rounded-xl border bg-surface p-4 transition-all hover:shadow-md"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -163,7 +163,7 @@ export const VerificationRequests = () => {
       {/* Review Modal */}
       {selectedReq && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b p-4">
               <h3 className="text-lg font-bold">Review Application</h3>
@@ -300,7 +300,7 @@ export const VerificationRequests = () => {
       {/* Custom Approval Confirmation Modal */}
       {showApproveModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl p-6">
+          <div className="w-full max-w-md flex flex-col overflow-hidden rounded-xl bg-white shadow-2xl p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Approval</h3>
             <p className="text-sm text-gray-500 mb-6">
               Are you sure you want to verify this user? An email notification containing their access link will be sent immediately.
@@ -330,7 +330,7 @@ export const VerificationRequests = () => {
       {/* Rejection Reason Pop-up Modal */}
       {showRejectModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl p-6">
+          <div className="w-full max-w-md flex flex-col overflow-hidden rounded-xl bg-white shadow-2xl p-6">
             <h3 className="text-xl font-bold text-gray-900 mb-2">Reject Application</h3>
             <p className="text-sm text-gray-500 mb-4">
               Please provide a reason for rejecting this verification request. This will be included in the email sent to the user.

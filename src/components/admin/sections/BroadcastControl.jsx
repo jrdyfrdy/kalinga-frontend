@@ -137,7 +137,7 @@ export const BroadcastControl = () => {
           <button
             onClick={fetchNotifications}
             disabled={isLoading}
-            className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
           >
             <RefreshCw
               className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -148,11 +148,11 @@ export const BroadcastControl = () => {
       />
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
           <h3 className="text-lg font-semibold text-foreground">
             Message composer
           </h3>
-          <p className="text-sm text-foreground/60">
+          <p className="text-sm text-muted-foreground">
             Draft advisories and broadcast to all users.
           </p>
 
@@ -170,9 +170,9 @@ export const BroadcastControl = () => {
             </div>
           )}
 
-          <div className="mt-5 space-y-4 text-sm text-foreground/70">
+          <div className="mt-5 space-y-4 text-sm text-muted-foreground">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Notification Type
               </label>
               <div className="mt-2 flex flex-wrap gap-2">
@@ -183,7 +183,7 @@ export const BroadcastControl = () => {
                     className={`rounded-full px-4 py-2 text-xs font-medium transition ${
                       notificationType === type.value
                         ? `bg-${type.color}-500 text-white`
-                        : "border border-border/60 bg-background/60 text-foreground/70 hover:border-primary/40"
+                        : "border border-border bg-surface-2/60 text-muted-foreground hover:border-primary/40"
                     }`}
                   >
                     {type.label}
@@ -192,7 +192,7 @@ export const BroadcastControl = () => {
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Subject
               </label>
               <input
@@ -200,11 +200,11 @@ export const BroadcastControl = () => {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="e.g. Heavy rainfall advisory for low-lying barangays"
-                className="mt-2 w-full rounded-2xl border border-border/60 bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary/40"
+                className="mt-2 w-full rounded-xl border border-border bg-surface-2/60 px-4 py-3 text-sm outline-none transition focus:border-primary/40"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-foreground/50">
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 Message body
               </label>
               <textarea
@@ -212,7 +212,7 @@ export const BroadcastControl = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Key message, affected areas, expected timeline, call-to-action, contact details"
-                className="mt-2 w-full rounded-3xl border border-border/60 bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary/40"
+                className="mt-2 w-full rounded-xl border border-border bg-surface-2/60 px-4 py-3 text-sm outline-none transition focus:border-primary/40"
               />
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -223,13 +223,13 @@ export const BroadcastControl = () => {
                     setShowAudienceMenu((v) => !v);
                     setShowTemplateMenu(false);
                   }}
-                  className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
                 >
                   <Users className="h-4 w-4" /> Audience:{" "}
                   {audiences.find((a) => a.value === audience)?.label}
                 </button>
                 {showAudienceMenu && (
-                  <ul className="absolute z-20 mt-2 w-56 rounded-2xl border border-border/60 bg-background p-1 shadow-lg">
+                  <ul className="absolute z-20 mt-2 w-56 rounded-xl border border-border bg-background p-1 shadow-lg">
                     {audiences.map((a) => (
                       <li key={a.value}>
                         <button
@@ -256,12 +256,12 @@ export const BroadcastControl = () => {
                     setShowTemplateMenu((v) => !v);
                     setShowAudienceMenu(false);
                   }}
-                  className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+                  className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
                 >
                   <MessageCircle className="h-4 w-4" /> Templates
                 </button>
                 {showTemplateMenu && (
-                  <ul className="absolute z-20 mt-2 w-56 rounded-2xl border border-border/60 bg-background p-1 shadow-lg">
+                  <ul className="absolute z-20 mt-2 w-56 rounded-xl border border-border bg-background p-1 shadow-lg">
                     {templates.map((t) => (
                       <li key={t.label}>
                         <button
@@ -285,7 +285,7 @@ export const BroadcastControl = () => {
           </div>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3 text-xs text-foreground/60">
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 font-medium text-primary">
                 <Mic className="h-3.5 w-3.5" /> PIO approval required
               </span>
@@ -294,7 +294,7 @@ export const BroadcastControl = () => {
             <button
               onClick={handleSendBroadcast}
               disabled={isSending || !subject.trim() || !message.trim()}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -307,19 +307,19 @@ export const BroadcastControl = () => {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <h3 className="text-lg font-semibold text-foreground">Channels</h3>
             <div className="mt-4 space-y-3 text-sm">
               {channels.map((channel) => (
                 <div
                   key={channel.name}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/60 px-4 py-3"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3"
                 >
                   <div>
                     <p className="font-semibold text-foreground">
                       {channel.name}
                     </p>
-                    <p className="text-xs text-foreground/60">
+                    <p className="text-xs text-muted-foreground">
                       {channel.reach}
                     </p>
                   </div>
@@ -336,11 +336,11 @@ export const BroadcastControl = () => {
           </div>
 
           {/* Recent Broadcasts */}
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <h3 className="text-lg font-semibold text-foreground">
               Recent Broadcasts
             </h3>
-            <p className="text-xs text-foreground/60">
+            <p className="text-xs text-muted-foreground">
               Last 5 notifications sent
             </p>
             <div className="mt-4 space-y-3 text-sm">
@@ -349,19 +349,19 @@ export const BroadcastControl = () => {
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : recentBroadcasts.length === 0 ? (
-                <p className="text-center py-4 text-foreground/50">
+                <p className="text-center py-4 text-muted-foreground">
                   No broadcasts yet
                 </p>
               ) : (
                 recentBroadcasts.map((broadcast) => (
                   <div
                     key={broadcast.id}
-                    className="rounded-2xl border border-border/60 bg-background/60 p-3"
+                    className="rounded-xl border border-border bg-surface-2/60 p-3"
                   >
                     <p className="font-semibold text-foreground text-sm truncate">
                       {broadcast.title}
                     </p>
-                    <p className="text-xs text-foreground/60 line-clamp-2 mt-1">
+                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                       {broadcast.message}
                     </p>
                     <div className="flex items-center justify-between mt-2">
@@ -378,7 +378,7 @@ export const BroadcastControl = () => {
                       >
                         {broadcast.type || "info"}
                       </span>
-                      <span className="text-xs text-foreground/50">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(broadcast.created_at).toLocaleDateString()}
                       </span>
                     </div>

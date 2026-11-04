@@ -215,22 +215,22 @@ export default function WeatherSection() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 py-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
-            <div className="inline-flex items-center gap-2 text-xs text-foreground/60">
+            <div className="inline-flex items-center gap-2 text-xs text-muted-foreground">
               <MapPin className="h-4 w-4" />
               {selectedCity.name}, Philippines
             </div>
             <h1 className="text-2xl font-semibold">
               Philippines Weather Console
             </h1>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-muted-foreground">
               Powered by the Open-Meteo public weather service, refreshed every
               10 minutes.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative">
-              <div className="flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1.5 text-sm shadow-sm">
-                <Search className="h-4 w-4 text-foreground/60" />
+              <div className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-sm shadow-sm">
+                <Search className="h-4 w-4 text-muted-foreground" />
                 <input
                   value={query}
                   onChange={(event) => {
@@ -243,12 +243,12 @@ export default function WeatherSection() {
                 />
               </div>
               {pickerOpen && (
-                <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-2xl border border-border/60 bg-card/90 backdrop-blur">
+                <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-2xl border border-border bg-surface backdrop-blur">
                   <ul className="max-h-52 overflow-y-auto text-sm">
                     {filteredCities.map((city) => (
                       <li
                         key={city.name}
-                        className="flex cursor-pointer items-center justify-between px-3 py-2 text-foreground/80 transition hover:bg-primary/10 hover:text-primary"
+                        className="flex cursor-pointer items-center justify-between px-3 py-2 text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
                         onMouseDown={(event) => {
                           event.preventDefault();
                           setSelectedCity(city);
@@ -260,7 +260,7 @@ export default function WeatherSection() {
                       </li>
                     ))}
                     {!filteredCities.length && (
-                      <li className="px-3 py-2 text-xs text-foreground/50">
+                      <li className="px-3 py-2 text-xs text-muted-foreground">
                         No matches found
                       </li>
                     )}
@@ -268,7 +268,7 @@ export default function WeatherSection() {
                 </div>
               )}
             </div>
-            <div className="inline-flex rounded-full border border-border/60 bg-card/60 p-1 text-xs shadow-sm">
+            <div className="inline-flex rounded-full border border-border bg-surface p-1 text-xs shadow-sm">
               {["c", "f"].map((value) => (
                 <button
                   key={value}
@@ -276,14 +276,14 @@ export default function WeatherSection() {
                   className={`rounded-full px-3 py-1 font-medium transition ${
                     unit === value
                       ? "bg-primary text-primary-foreground"
-                      : "text-foreground/60 hover:text-primary"
+                      : "text-muted-foreground hover:text-primary"
                   }`}
                 >
                   {value.toUpperCase()}
                 </button>
               ))}
             </div>
-            <div className="inline-flex rounded-full border border-border/60 bg-card/60 p-1 text-xs shadow-sm">
+            <div className="inline-flex rounded-full border border-border bg-surface p-1 text-xs shadow-sm">
               {FORECAST_LENGTH_OPTIONS.map((value) => (
                 <button
                   key={value}
@@ -291,7 +291,7 @@ export default function WeatherSection() {
                   className={`rounded-full px-3 py-1 font-medium transition ${
                     forecastLength === value
                       ? "bg-primary text-primary-foreground"
-                      : "text-foreground/60 hover:text-primary"
+                      : "text-muted-foreground hover:text-primary"
                   }`}
                 >
                   {value} days
@@ -300,21 +300,21 @@ export default function WeatherSection() {
             </div>
             <button
               onClick={fetchWeather}
-              className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
             >
               <RefreshCcw className="h-4 w-4" /> Refresh
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs text-foreground/50">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {status === "loading" && (
-            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Syncing live
               weather…
             </span>
           )}
-          <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1">
             <Gauge className="h-3.5 w-3.5" /> {lastUpdatedLabel}
           </span>
         </div>
@@ -328,25 +328,25 @@ export default function WeatherSection() {
 
         <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
           <div className="space-y-6">
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
               <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
                   <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                     <WeatherIcon className="h-10 w-10" />
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-foreground/60">
+                    <p className="text-sm font-medium text-muted-foreground">
                       Current Conditions
                     </p>
                     <p className="text-4xl font-semibold text-foreground">
                       {formatTemperature(weather.current?.temperature_2m, unit)}
                     </p>
-                    <p className="text-sm text-foreground/60">
+                    <p className="text-sm text-muted-foreground">
                       {currentDescriptor.label}
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm text-foreground/70">
+                <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
                   <DataPoint
                     icon={ThermometerSun}
                     label="Feels like"
@@ -386,13 +386,13 @@ export default function WeatherSection() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">
                     Next 12 hours
                   </h2>
-                  <p className="text-sm text-foreground/60">
+                  <p className="text-sm text-muted-foreground">
                     Hourly forecast in {selectedCity.name}.
                   </p>
                 </div>
@@ -404,9 +404,9 @@ export default function WeatherSection() {
                   return (
                     <div
                       key={entry.time}
-                      className="flex flex-col gap-2 rounded-2xl border border-border/60 bg-background/80 p-4 text-sm"
+                      className="flex flex-col gap-2 rounded-2xl border border-border bg-background/80 p-4 text-sm"
                     >
-                      <div className="flex items-center justify-between text-xs text-foreground/60">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>
                           {formatHourLabel(
                             new Date(entry.time),
@@ -425,7 +425,7 @@ export default function WeatherSection() {
                         </span>
                         <Icon className="h-8 w-8 text-primary" />
                       </div>
-                      <p className="text-xs text-foreground/60">
+                      <p className="text-xs text-muted-foreground">
                         Humidity{" "}
                         {entry.humidity != null ? `${entry.humidity}%` : "–"} •
                         Wind{" "}
@@ -439,13 +439,13 @@ export default function WeatherSection() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-foreground">
                     {forecastLength}-day outlook
                   </h2>
-                  <p className="text-sm text-foreground/60">
+                  <p className="text-sm text-muted-foreground">
                     Daily trend with maximum and minimum temperature plus
                     precipitation odds.
                   </p>
@@ -458,10 +458,10 @@ export default function WeatherSection() {
                   return (
                     <div
                       key={entry.date}
-                      className="flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-background/80 p-4 text-sm"
+                      className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-background/80 p-4 text-sm"
                     >
                       <div>
-                        <p className="text-xs font-medium text-foreground/50">
+                        <p className="text-xs font-medium text-muted-foreground">
                           {formatDateLabel(
                             new Date(entry.date),
                             weather.timezone
@@ -470,7 +470,7 @@ export default function WeatherSection() {
                         <p className="text-sm font-semibold text-foreground">
                           {descriptor.label}
                         </p>
-                        <p className="text-xs text-foreground/60">
+                        <p className="text-xs text-muted-foreground">
                           Rain chance{" "}
                           {entry.precipitationProbability != null
                             ? `${entry.precipitationProbability}%`
@@ -483,7 +483,7 @@ export default function WeatherSection() {
                           <p className="font-semibold text-foreground">
                             {formatTemperature(entry.temperatureMax, unit)}
                           </p>
-                          <p className="text-foreground/60">
+                          <p className="text-muted-foreground">
                             {formatTemperature(entry.temperatureMin, unit)}
                           </p>
                         </div>
@@ -496,21 +496,21 @@ export default function WeatherSection() {
           </div>
 
           <div className="space-y-6">
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-foreground">
                 Sun cycle
               </h3>
-              <p className="text-sm text-foreground/60">
+              <p className="text-sm text-muted-foreground">
                 Sunrise and sunset for today in {selectedCity.name}.
               </p>
               <div className="mt-5 space-y-3 text-sm">
-                <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+                <div className="flex items-center justify-between rounded-2xl border border-border bg-background/70 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <Sunrise className="h-5 w-5" />
                     </span>
                     <div>
-                      <p className="text-xs font-medium text-foreground/60">
+                      <p className="text-xs font-medium text-muted-foreground">
                         Sunrise
                       </p>
                       <p className="text-lg font-semibold text-foreground">
@@ -524,13 +524,13 @@ export default function WeatherSection() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
+                <div className="flex items-center justify-between rounded-2xl border border-border bg-background/70 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <Sunset className="h-5 w-5" />
                     </span>
                     <div>
-                      <p className="text-xs font-medium text-foreground/60">
+                      <p className="text-xs font-medium text-muted-foreground">
                         Sunset
                       </p>
                       <p className="text-lg font-semibold text-foreground">
@@ -547,7 +547,7 @@ export default function WeatherSection() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-foreground">
                 Current metrics
               </h3>
@@ -570,11 +570,11 @@ export default function WeatherSection() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-foreground">
                 Data provenance
               </h3>
-              <p className="text-sm text-foreground/60">
+              <p className="text-sm text-muted-foreground">
                 Forecasts are generated by the open-source{" "}
                 <a
                   href="https://open-meteo.com/"
@@ -586,7 +586,7 @@ export default function WeatherSection() {
                 </a>{" "}
                 using ICON and GFS models tuned for Philippine conditions.
               </p>
-              <p className="mt-3 text-xs text-foreground/50">
+              <p className="mt-3 text-xs text-muted-foreground">
                 Response includes hourly and daily predictions with 0.25°
                 resolution. Values are refreshed from the API every 10 minutes.
               </p>
@@ -599,16 +599,16 @@ export default function WeatherSection() {
 }
 
 const DataPoint = ({ icon: Icon, label, value }) => (
-  <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1.5 text-xs">
+  <div className="flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1.5 text-xs">
     <Icon className="h-4 w-4 text-primary" />
-    <span className="text-foreground/60">{label}</span>
+    <span className="text-muted-foreground">{label}</span>
     <span className="font-semibold text-foreground">{value}</span>
   </div>
 );
 
 const KeyValue = ({ label, value, suffix = "" }) => (
-  <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
-    <span className="text-foreground/60">{label}</span>
+  <div className="flex items-center justify-between rounded-2xl border border-border bg-background/70 px-4 py-3">
+    <span className="text-muted-foreground">{label}</span>
     <span className="font-semibold text-foreground">
       {value !== null && value !== "–" ? `${value}${suffix}` : "–"}
     </span>

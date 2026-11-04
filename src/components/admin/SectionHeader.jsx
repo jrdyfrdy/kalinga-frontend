@@ -4,7 +4,7 @@ export const SectionHeader = ({ title, description, actions, className }) => {
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-4",
+        "flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4",
         className
       )}
     >
@@ -13,7 +13,7 @@ export const SectionHeader = ({ title, description, actions, className }) => {
           {title}
         </h2>
         {description && (
-          <p className="text-sm text-foreground/70 max-w-2xl leading-relaxed">
+          <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
             {description}
           </p>
         )}

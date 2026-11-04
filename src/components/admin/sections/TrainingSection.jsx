@@ -565,7 +565,7 @@ export const TrainingSection = () => {
                 setShowCreate(true);
               }
             }}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:shadow-md"
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition hover:shadow-md"
           >
             <GraduationCap className="h-4 w-4" />
             {showCreate || editingId ? "Cancel" : "Create course"}
@@ -574,7 +574,7 @@ export const TrainingSection = () => {
       />
 
       {error && (
-        <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-300">
+        <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-600 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -582,7 +582,7 @@ export const TrainingSection = () => {
       {(showCreate || editingId) && (
         <form
           onSubmit={handleCreateCourse}
-          className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm space-y-8"
+          className="rounded-xl border border-border bg-surface p-6 shadow-xs space-y-8"
         >
           <h3 className="text-xl font-semibold text-foreground">
             {editingId ? "Edit Training Module" : "Create Training Module"}
@@ -590,12 +590,12 @@ export const TrainingSection = () => {
 
           {/* Basic Information */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground/70 border-b border-border/60 pb-2">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-2">
               Basic Information
             </h4>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Module ID / Code
                 </label>
                 <input
@@ -604,12 +604,12 @@ export const TrainingSection = () => {
                   onChange={(e) =>
                     setCreateForm((f) => ({ ...f, moduleCode: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="e.g. TRN-001"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Module Title
                 </label>
                 <input
@@ -618,14 +618,14 @@ export const TrainingSection = () => {
                   onChange={(e) =>
                     setCreateForm((f) => ({ ...f, title: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="Course title"
                   required
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Module Description / Overview
               </label>
               <textarea
@@ -633,14 +633,14 @@ export const TrainingSection = () => {
                 onChange={(e) =>
                   setCreateForm((f) => ({ ...f, description: e.target.value }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 rows={3}
                 placeholder="Brief summary of the module"
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Training Category / Type
                 </label>
                 <select
@@ -648,7 +648,7 @@ export const TrainingSection = () => {
                   onChange={(e) =>
                     setCreateForm((f) => ({ ...f, category: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -658,7 +658,7 @@ export const TrainingSection = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Target Audience
                 </label>
                 <select
@@ -669,7 +669,7 @@ export const TrainingSection = () => {
                       targetAudience: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 >
                   <option value="">Select</option>
                   {TARGET_AUDIENCES.map((a) => (
@@ -680,7 +680,7 @@ export const TrainingSection = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Difficulty Level
                 </label>
                 <select
@@ -691,7 +691,7 @@ export const TrainingSection = () => {
                       difficultyLevel: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 >
                   {DIFFICULTY_LEVELS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -701,7 +701,7 @@ export const TrainingSection = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Estimated Duration
                 </label>
                 <input
@@ -713,7 +713,7 @@ export const TrainingSection = () => {
                       estimatedDuration: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="e.g. 2 hours or 90 minutes"
                 />
               </div>
@@ -722,11 +722,11 @@ export const TrainingSection = () => {
 
           {/* Learning Structure */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground/70 border-b border-border/60 pb-2">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-2">
               Learning Structure
             </h4>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Learning Objectives (one per line)
               </label>
               <textarea
@@ -737,13 +737,13 @@ export const TrainingSection = () => {
                     learningObjectives: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 rows={3}
                 placeholder="What learners will achieve"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Prerequisites (if any, one per line)
               </label>
               <textarea
@@ -754,13 +754,13 @@ export const TrainingSection = () => {
                     prerequisites: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 rows={2}
                 placeholder="Prior knowledge or modules required"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Key Topics / Lessons (one per line)
               </label>
               <textarea
@@ -768,7 +768,7 @@ export const TrainingSection = () => {
                 onChange={(e) =>
                   setCreateForm((f) => ({ ...f, keyTopics: e.target.value }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 rows={3}
                 placeholder="Main subjects covered"
               />
@@ -776,7 +776,7 @@ export const TrainingSection = () => {
           </div>
 
           {/* Content & Materials - note */}
-          <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground/80">
+          <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
             <span className="font-medium text-primary">
               Content & Materials:
             </span>{" "}
@@ -787,12 +787,12 @@ export const TrainingSection = () => {
 
           {/* Assessment & Evaluation */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground/70 border-b border-border/60 pb-2">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-2">
               Assessment & Evaluation
             </h4>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Assessment Type
                 </label>
                 <select
@@ -803,7 +803,7 @@ export const TrainingSection = () => {
                       assessmentType: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 >
                   <option value="">Select</option>
                   {ASSESSMENT_TYPES.map((t) => (
@@ -824,18 +824,18 @@ export const TrainingSection = () => {
                       certificationEnabled: e.target.checked,
                     }))
                   }
-                  className="rounded border-border/60"
+                  className="rounded border-border"
                 />
                 <label
                   htmlFor="certificationEnabled"
-                  className="text-sm font-medium text-foreground/80"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Certification / Completion status
                 </label>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Passing Criteria
               </label>
               <input
@@ -847,12 +847,12 @@ export const TrainingSection = () => {
                     passingCriteria: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 placeholder="e.g. 70% or above"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Assessment Materials (notes)
               </label>
               <textarea
@@ -863,24 +863,24 @@ export const TrainingSection = () => {
                     assessmentMaterials: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 rows={2}
                 placeholder="Question banks, scenarios, etc."
               />
             </div>
             {createForm.assessmentType === "Evaluation Form" && (
-              <div className="rounded-xl border border-border/60 bg-background/60 p-4 space-y-3">
-                <h4 className="text-sm font-semibold text-foreground/90">
+              <div className="rounded-xl border border-border bg-surface-2/60 p-4 space-y-3">
+                <h4 className="text-sm font-semibold text-foreground">
                   Evaluation Form Questions
                 </h4>
-                <p className="text-xs text-foreground/60">
+                <p className="text-xs text-muted-foreground">
                   Define the form responders will fill. Options are required for
                   radio/checkbox.
                 </p>
                 {(createForm.evaluationFormQuestions || []).map((eq, eqIdx) => (
                   <div
                     key={eqIdx}
-                    className="rounded-lg border border-border/40 bg-background p-3 space-y-2"
+                    className="rounded-lg border border-border bg-background p-3 space-y-2"
                   >
                     <input
                       type="text"
@@ -901,7 +901,7 @@ export const TrainingSection = () => {
                         }));
                       }}
                       placeholder="Question text"
-                      className="w-full rounded-lg border border-border/60 bg-background px-2 py-1.5 text-sm"
+                      className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
                     />
                     <div className="flex flex-wrap gap-2 items-center">
                       <select
@@ -921,7 +921,7 @@ export const TrainingSection = () => {
                             evaluationFormQuestions: list,
                           }));
                         }}
-                        className="rounded border border-border/60 bg-background px-2 py-1 text-sm"
+                        className="rounded border border-border bg-background px-2 py-1 text-sm"
                       >
                         <option value="text">Text (short)</option>
                         <option value="textarea">Textarea (long)</option>
@@ -955,7 +955,7 @@ export const TrainingSection = () => {
                             }));
                           }}
                           placeholder="Options (comma-separated)"
-                          className="flex-1 min-w-[160px] rounded border border-border/60 bg-background px-2 py-1 text-sm"
+                          className="flex-1 min-w-[160px] rounded border border-border bg-background px-2 py-1 text-sm"
                         />
                       )}
                       <button
@@ -969,7 +969,7 @@ export const TrainingSection = () => {
                             evaluationFormQuestions: list,
                           }));
                         }}
-                        className="rounded p-1.5 text-foreground/50 hover:text-rose-600"
+                        className="rounded p-1.5 text-muted-foreground hover:text-rose-600"
                         aria-label="Remove question"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -997,7 +997,7 @@ export const TrainingSection = () => {
             {(createForm.certificationEnabled ||
               (createForm.signatories?.length ?? 0) > 0) && (
               <div>
-                <label className="block text-sm font-medium text-foreground/80 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Certificate Signatories (name & title shown on certificate)
                 </label>
                 <div className="space-y-3">
@@ -1013,7 +1013,7 @@ export const TrainingSection = () => {
                             s[idx] = { ...s[idx], name: e.target.value };
                             setCreateForm((f) => ({ ...f, signatories: s }));
                           }}
-                          className="flex-1 rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground text-sm"
+                          className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-foreground text-sm"
                           placeholder="Signatory name"
                         />
                         <input
@@ -1025,7 +1025,7 @@ export const TrainingSection = () => {
                             s[idx] = { ...s[idx], title: e.target.value };
                             setCreateForm((f) => ({ ...f, signatories: s }));
                           }}
-                          className="flex-1 rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground text-sm"
+                          className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-foreground text-sm"
                           placeholder="Title / position"
                         />
                         <button
@@ -1071,12 +1071,12 @@ export const TrainingSection = () => {
 
           {/* Administration & Tracking */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground/70 border-b border-border/60 pb-2">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-2">
               Administration & Tracking
             </h4>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Trainer / Facilitator Name
                 </label>
                 <input
@@ -1088,12 +1088,12 @@ export const TrainingSection = () => {
                       trainerName: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="Name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Training Schedule / Availability
                 </label>
                 <input
@@ -1102,12 +1102,12 @@ export const TrainingSection = () => {
                   onChange={(e) =>
                     setCreateForm((f) => ({ ...f, schedule: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="e.g. Always available"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Delivery Mode
                 </label>
                 <select
@@ -1118,7 +1118,7 @@ export const TrainingSection = () => {
                       deliveryMode: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 >
                   <option value="online">Online</option>
                   <option value="on-site">On-site</option>
@@ -1126,7 +1126,7 @@ export const TrainingSection = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Max Participants
                 </label>
                 <input
@@ -1139,14 +1139,14 @@ export const TrainingSection = () => {
                       maxParticipants: e.target.value,
                     }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="Optional"
                 />
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Version Number
                 </label>
                 <input
@@ -1155,12 +1155,12 @@ export const TrainingSection = () => {
                   onChange={(e) =>
                     setCreateForm((f) => ({ ...f, version: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                   placeholder="e.g. 1"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground/80">
+                <label className="block text-sm font-medium text-muted-foreground">
                   Status
                 </label>
                 <select
@@ -1168,7 +1168,7 @@ export const TrainingSection = () => {
                   onChange={(e) =>
                     setCreateForm((f) => ({ ...f, status: e.target.value }))
                   }
-                  className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 >
                   {MODULE_STATUSES.map((s) => (
                     <option key={s.value} value={s.value}>
@@ -1182,11 +1182,11 @@ export const TrainingSection = () => {
 
           {/* Content references */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground/70 border-b border-border/60 pb-2">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-2">
               Content & Materials (references)
             </h4>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Required Materials / Equipment
               </label>
               <textarea
@@ -1197,13 +1197,13 @@ export const TrainingSection = () => {
                     requiredMaterials: e.target.value,
                   }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 rows={2}
                 placeholder="Materials or equipment needed"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 References / Sources
               </label>
               <textarea
@@ -1211,7 +1211,7 @@ export const TrainingSection = () => {
                 onChange={(e) =>
                   setCreateForm((f) => ({ ...f, references: e.target.value }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 rows={2}
                 placeholder="External references or sources"
               />
@@ -1220,11 +1220,11 @@ export const TrainingSection = () => {
 
           {/* Feedback & Improvement */}
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground/70 border-b border-border/60 pb-2">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground border-b border-border pb-2">
               Feedback & Improvement
             </h4>
             <div>
-              <label className="block text-sm font-medium text-foreground/80">
+              <label className="block text-sm font-medium text-muted-foreground">
                 Trainer Notes / Remarks
               </label>
               <textarea
@@ -1232,14 +1232,14 @@ export const TrainingSection = () => {
                 onChange={(e) =>
                   setCreateForm((f) => ({ ...f, trainerNotes: e.target.value }))
                 }
-                className="mt-1 w-full rounded-xl border border-border/60 bg-background px-3 py-2 text-foreground"
+                className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-foreground"
                 rows={2}
                 placeholder="Internal notes"
               />
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4 border-t border-border/60">
+          <div className="flex gap-3 pt-4 border-t border-border">
             <button
               type="submit"
               disabled={creating}
@@ -1251,7 +1251,7 @@ export const TrainingSection = () => {
             <button
               type="button"
               onClick={closeForm}
-              className="rounded-full border border-border/60 px-5 py-2.5 text-sm font-medium text-foreground/70"
+              className="rounded-full border border-border px-5 py-2.5 text-sm font-medium text-muted-foreground"
             >
               Cancel
             </button>
@@ -1259,13 +1259,13 @@ export const TrainingSection = () => {
         </form>
       )}
 
-      <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
         <h3 className="text-lg font-semibold text-foreground">Courses</h3>
-        <p className="mt-1 text-sm text-foreground/60">
+        <p className="mt-1 text-sm text-muted-foreground">
           Expand a course to add sections and upload PDFs, videos, or documents
           to Firebase Storage. Responders see these in Online Training.
         </p>
-        <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground/80">
+        <div className="mt-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
           <span className="font-medium text-primary">How to upload:</span>{" "}
           Create a course → Expand it (click the row) → Add section → Click
           &quot;Upload PDF, video, or document&quot; → Choose file → Add. Files
@@ -1277,7 +1277,7 @@ export const TrainingSection = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : courses.length === 0 ? (
-          <div className="mt-6 rounded-2xl border border-dashed border-border/60 bg-background/40 py-12 text-center text-sm text-foreground/60">
+          <div className="mt-6 rounded-xl border border-dashed border-border bg-background/40 py-12 text-center text-sm text-muted-foreground">
             No courses yet. Create one above, then expand it, add a section, and
             use &quot;Upload PDF, video, or document&quot; to upload files to
             Firebase Storage.
@@ -1294,7 +1294,7 @@ export const TrainingSection = () => {
               return (
                 <div
                   key={course.id}
-                  className="rounded-2xl border border-border/60 bg-background/60"
+                  className="rounded-xl border border-border bg-surface-2/60"
                 >
                   <button
                     type="button"
@@ -1306,15 +1306,15 @@ export const TrainingSection = () => {
                     className="flex w-full items-center gap-3 p-4 text-left"
                   >
                     {isExpanded ? (
-                      <ChevronDown className="h-5 w-5 text-foreground/70" />
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="h-5 w-5 text-foreground/70" />
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
                     )}
                     <div className="flex-1">
                       <p className="font-semibold text-foreground">
                         {course.title}
                       </p>
-                      <p className="text-xs text-foreground/60">
+                      <p className="text-xs text-muted-foreground">
                         {course.moduleCode ? `${course.moduleCode} · ` : ""}
                         {course.category} · {course.status || "draft"} ·{" "}
                         {sectionCount} section(s) · {itemCount} item(s)
@@ -1327,7 +1327,7 @@ export const TrainingSection = () => {
                         handleDeleteCourse(course.id);
                       }}
                       disabled={deletingId === course.id}
-                      className="rounded-lg p-2 text-foreground/50 hover:bg-rose-500/10 hover:text-rose-600 disabled:opacity-50"
+                      className="rounded-lg p-2 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600 disabled:opacity-50"
                       aria-label="Delete course"
                     >
                       {deletingId === course.id ? (
@@ -1339,12 +1339,12 @@ export const TrainingSection = () => {
                   </button>
 
                   {isExpanded && (
-                    <div className="border-t border-border/60 p-4 pt-2">
+                    <div className="border-t border-border p-4 pt-2">
                       <div className="mb-4 flex items-center justify-between">
                         <button
                           type="button"
                           onClick={() => openEditForm(course)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm font-medium text-foreground/80 hover:border-primary/40 hover:text-primary"
+                          className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-sm font-medium text-muted-foreground hover:border-primary/40 hover:text-primary"
                         >
                           <Pencil className="h-4 w-4" />
                           Edit module details
@@ -1352,18 +1352,18 @@ export const TrainingSection = () => {
                       </div>
 
                       {/* Assessments: passing score + pretest / quiz / final questions */}
-                      <div className="mb-6 rounded-xl border border-border/40 bg-background/40 p-4">
+                      <div className="mb-6 rounded-xl border border-border bg-background/40 p-4">
                         <h4 className="mb-3 font-medium text-foreground">
                           Assessments (for certification)
                         </h4>
-                        <p className="mb-3 text-xs text-foreground/60">
+                        <p className="mb-3 text-xs text-muted-foreground">
                           Set passing score and add questions for Pre-test,
                           Quiz, and Final. Responders must pass all assessments
                           (at this score) and complete all content to earn the
                           certificate.
                         </p>
                         <div className="mb-4 flex items-center gap-2">
-                          <label className="text-sm text-foreground/80">
+                          <label className="text-sm text-muted-foreground">
                             Passing score (%):
                           </label>
                           <input
@@ -1381,7 +1381,7 @@ export const TrainingSection = () => {
                             onBlur={(e) =>
                               handleSavePassingScore(course.id, e.target.value)
                             }
-                            className="w-20 rounded-lg border border-border/60 bg-background px-2 py-1.5 text-sm"
+                            className="w-20 rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
                           />
                         </div>
                         {["pretest", "quiz", "final"].map((atype) => {
@@ -1399,7 +1399,7 @@ export const TrainingSection = () => {
                           return (
                             <div
                               key={atype}
-                              className="mb-4 rounded-lg border border-border/40 bg-background/60 p-3"
+                              className="mb-4 rounded-lg border border-border bg-surface-2/60 p-3"
                             >
                               <div className="mb-2 flex items-center justify-between">
                                 <span className="text-sm font-medium text-foreground">
@@ -1422,11 +1422,11 @@ export const TrainingSection = () => {
                                 )}
                               </div>
                               {questions.length > 0 && (
-                                <ul className="mb-2 space-y-1 text-sm text-foreground/80">
+                                <ul className="mb-2 space-y-1 text-sm text-muted-foreground">
                                   {questions.map((q, qi) => (
                                     <li
                                       key={qi}
-                                      className="flex items-center justify-between rounded bg-background/60 px-2 py-1.5"
+                                      className="flex items-center justify-between rounded bg-surface-2/60 px-2 py-1.5"
                                     >
                                       <span className="truncate flex-1">
                                         {q.q}
@@ -1440,7 +1440,7 @@ export const TrainingSection = () => {
                                             qi,
                                           )
                                         }
-                                        className="rounded p-1 text-foreground/50 hover:text-rose-600"
+                                        className="rounded p-1 text-muted-foreground hover:text-rose-600"
                                         aria-label="Remove question"
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
@@ -1461,7 +1461,7 @@ export const TrainingSection = () => {
                                       }))
                                     }
                                     placeholder="Question text"
-                                    className="mb-2 w-full rounded border border-border/60 bg-background px-2 py-1.5"
+                                    className="mb-2 w-full rounded border border-border bg-background px-2 py-1.5"
                                   />
                                   {[1, 2, 3, 4].map((i) => (
                                     <input
@@ -1475,11 +1475,11 @@ export const TrainingSection = () => {
                                         }))
                                       }
                                       placeholder={`Option ${i}`}
-                                      className="mb-1.5 w-full rounded border border-border/60 bg-background px-2 py-1"
+                                      className="mb-1.5 w-full rounded border border-border bg-background px-2 py-1"
                                     />
                                   ))}
                                   <div className="mt-2 flex items-center gap-2">
-                                    <label className="text-foreground/70">
+                                    <label className="text-muted-foreground">
                                       Correct answer:
                                     </label>
                                     <select
@@ -1490,7 +1490,7 @@ export const TrainingSection = () => {
                                           answer: Number(e.target.value),
                                         }))
                                       }
-                                      className="rounded border border-border/60 bg-background px-2 py-1"
+                                      className="rounded border border-border bg-background px-2 py-1"
                                     >
                                       <option value={0}>Option 1</option>
                                       <option value={1}>Option 2</option>
@@ -1514,7 +1514,7 @@ export const TrainingSection = () => {
                                     <button
                                       type="button"
                                       onClick={() => setAddingQuestion(null)}
-                                      className="rounded border border-border/60 px-2 py-1 text-xs"
+                                      className="rounded border border-border px-2 py-1 text-xs"
                                     >
                                       Cancel
                                     </button>
@@ -1529,11 +1529,11 @@ export const TrainingSection = () => {
                       {(course.assessmentType === "Practical Test" ||
                         course.assessmentType === "Simulation" ||
                         course.assessmentType === "Evaluation Form") && (
-                        <div className="mb-6 rounded-xl border border-border/40 bg-background/40 p-4">
+                        <div className="mb-6 rounded-xl border border-border bg-background/40 p-4">
                           <h4 className="mb-3 font-medium text-foreground">
                             Submissions (review &amp; re-evaluate)
                           </h4>
-                          <p className="mb-3 text-xs text-foreground/60">
+                          <p className="mb-3 text-xs text-muted-foreground">
                             Responders submit{" "}
                             {course.assessmentType === "Evaluation Form"
                               ? "evaluation forms"
@@ -1543,7 +1543,7 @@ export const TrainingSection = () => {
                           <button
                             type="button"
                             onClick={() => loadSubmissionsForCourse(course.id)}
-                            className="mb-3 inline-flex items-center gap-2 rounded-lg border border-border/60 bg-background/80 px-3 py-2 text-sm font-medium text-foreground/80 hover:border-primary/40"
+                            className="mb-3 inline-flex items-center gap-2 rounded-lg border border-border bg-surface-2/60 px-3 py-2 text-sm font-medium text-muted-foreground hover:border-primary/40"
                           >
                             Load submissions
                           </button>
@@ -1559,9 +1559,9 @@ export const TrainingSection = () => {
                                 .map((p) => (
                                   <li
                                     key={p.progressId}
-                                    className="rounded-lg border border-border/40 bg-background/60 p-3 text-sm"
+                                    className="rounded-lg border border-border bg-surface-2/60 p-3 text-sm"
                                   >
-                                    <div className="mb-2 font-medium text-foreground/90">
+                                    <div className="mb-2 font-medium text-foreground">
                                       User ID:{" "}
                                       {p.userId ||
                                         extractUserIdFromStoragePath(
@@ -1571,14 +1571,14 @@ export const TrainingSection = () => {
                                     </div>
                                     {p.videoSubmission?.downloadURL && (
                                       <div className="mb-3 space-y-2">
-                                        <div className="text-xs text-foreground/70">
+                                        <div className="text-xs text-muted-foreground">
                                           File Name:{" "}
                                           {extractFileName(p) || "Unknown file"}
                                         </div>
                                         <video
                                           controls
                                           preload="metadata"
-                                          className="w-full max-w-md rounded border border-border/40 bg-black"
+                                          className="w-full max-w-md rounded border border-border bg-black"
                                           src={p.videoSubmission.downloadURL}
                                         >
                                           Your browser cannot play this uploaded
@@ -1597,7 +1597,7 @@ export const TrainingSection = () => {
                                     {p.evalFormSubmission &&
                                       typeof p.evalFormSubmission ===
                                         "object" && (
-                                        <div className="mb-2 space-y-1 rounded bg-background/80 p-2">
+                                        <div className="mb-2 space-y-1 rounded bg-surface-2/60 p-2">
                                           {Object.entries(
                                             p.evalFormSubmission,
                                           ).map(([k, v]) => {
@@ -1609,7 +1609,7 @@ export const TrainingSection = () => {
                                               k;
                                             return (
                                               <div key={k}>
-                                                <span className="text-foreground/60">
+                                                <span className="text-muted-foreground">
                                                   {label}:
                                                 </span>{" "}
                                                 {String(v)}
@@ -1620,7 +1620,7 @@ export const TrainingSection = () => {
                                       )}
                                     {!p.videoSubmission?.downloadURL &&
                                       !p.evalFormSubmission && (
-                                        <div className="mb-2 rounded bg-amber-500/10 p-2 text-xs text-foreground/80">
+                                        <div className="mb-2 rounded bg-amber-500/10 p-2 text-xs text-muted-foreground">
                                           No attachment metadata found for this
                                           submission record. You can still set
                                           grading status.
@@ -1631,7 +1631,7 @@ export const TrainingSection = () => {
                                         className={
                                           p.assessmentResults?.final?.passed
                                             ? "text-green-600 font-medium"
-                                            : "text-foreground/70"
+                                            : "text-muted-foreground"
                                         }
                                       >
                                         {p.assessmentResults?.final?.passed
@@ -1671,7 +1671,7 @@ export const TrainingSection = () => {
                                             false,
                                           )
                                         }
-                                        className="rounded border border-border/60 px-2 py-1 text-xs font-medium hover:bg-rose-500/10 text-rose-600 disabled:opacity-50"
+                                        className="rounded border border-border px-2 py-1 text-xs font-medium hover:bg-rose-500/10 text-rose-600 disabled:opacity-50"
                                       >
                                         Mark failed
                                       </button>
@@ -1684,7 +1684,7 @@ export const TrainingSection = () => {
                                   p.evalFormSubmission ||
                                   p.assessmentResults?.final,
                               ).length === 0 && (
-                                <li className="text-foreground/60 text-sm">
+                                <li className="text-muted-foreground text-sm">
                                   No submissions yet.
                                 </li>
                               )}
@@ -1694,7 +1694,7 @@ export const TrainingSection = () => {
                       )}
 
                       {(course.sections || []).length === 0 && (
-                        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground/90">
+                        <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-foreground">
                           <span className="font-medium">
                             Add a section first, then upload files.
                           </span>{" "}
@@ -1707,7 +1707,7 @@ export const TrainingSection = () => {
                       {(course.sections || []).map((section, sIdx) => (
                         <div
                           key={sIdx}
-                          className="mb-6 rounded-xl border border-border/40 bg-background/40 p-4"
+                          className="mb-6 rounded-xl border border-border bg-background/40 p-4"
                         >
                           <div className="flex items-center justify-between">
                             <span className="flex items-center gap-2 font-medium text-foreground">
@@ -1719,7 +1719,7 @@ export const TrainingSection = () => {
                               onClick={() =>
                                 handleRemoveSection(course.id, sIdx)
                               }
-                              className="rounded p-1.5 text-foreground/50 hover:bg-rose-500/10 hover:text-rose-600"
+                              className="rounded p-1.5 text-muted-foreground hover:bg-rose-500/10 hover:text-rose-600"
                               aria-label="Remove section"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -1729,17 +1729,17 @@ export const TrainingSection = () => {
                             {(section.items || []).map((item, iIdx) => (
                               <li
                                 key={iIdx}
-                                className="flex items-center justify-between rounded-lg bg-background/60 px-3 py-2 text-sm"
+                                className="flex items-center justify-between rounded-lg bg-surface-2/60 px-3 py-2 text-sm"
                               >
                                 <span className="flex items-center gap-2 text-foreground">
                                   {item.type === "video" ? (
-                                    <Film className="h-4 w-4 text-foreground/60" />
+                                    <Film className="h-4 w-4 text-muted-foreground" />
                                   ) : (
-                                    <FileText className="h-4 w-4 text-foreground/60" />
+                                    <FileText className="h-4 w-4 text-muted-foreground" />
                                   )}
                                   {item.title}
                                   {item.downloadURL ? (
-                                    <span className="text-xs text-foreground/50">
+                                    <span className="text-xs text-muted-foreground">
                                       (file)
                                     </span>
                                   ) : null}
@@ -1753,7 +1753,7 @@ export const TrainingSection = () => {
                                       iIdx,
                                     )
                                   }
-                                  className="rounded p-1 text-foreground/50 hover:text-rose-600"
+                                  className="rounded p-1 text-muted-foreground hover:text-rose-600"
                                   aria-label="Remove item"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -1773,7 +1773,7 @@ export const TrainingSection = () => {
                                   setNewItemTitle(e.target.value)
                                 }
                                 placeholder="Item title (or use file name)"
-                                className="mb-3 w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
+                                className="mb-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                               />
                               <div className="mb-3 flex gap-4">
                                 {CONTENT_TYPES.map(({ value, label }) => (
@@ -1792,14 +1792,14 @@ export const TrainingSection = () => {
                                 ))}
                               </div>
                               <label className="mb-3 flex cursor-pointer flex-col gap-1 text-sm">
-                                <span className="font-medium text-foreground/80">
+                                <span className="font-medium text-muted-foreground">
                                   Choose file (PDF, video, or document)
                                 </span>
                                 <input
                                   id={`file-${course.id}-${sIdx}`}
                                   type="file"
                                   accept=".pdf,.doc,.docx,.mp4,.webm,.mov,.avi,.mkv,.txt"
-                                  className="block w-full text-sm text-foreground/70 file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground file:cursor-pointer"
+                                  className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-foreground file:cursor-pointer"
                                 />
                               </label>
                               <div className="flex gap-2">
@@ -1826,7 +1826,7 @@ export const TrainingSection = () => {
                                     setAddingItem(null);
                                     setNewItemTitle("");
                                   }}
-                                  className="rounded-lg border border-border/60 px-3 py-1.5 text-sm"
+                                  className="rounded-lg border border-border px-3 py-1.5 text-sm"
                                 >
                                   Cancel
                                 </button>
@@ -1856,7 +1856,7 @@ export const TrainingSection = () => {
                               setNewSectionHeading(e.target.value)
                             }
                             placeholder="Section heading (e.g. General Information)"
-                            className="flex-1 rounded-lg border border-border/60 bg-background px-3 py-2 text-sm"
+                            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
                           />
                           <button
                             type="button"
@@ -1871,7 +1871,7 @@ export const TrainingSection = () => {
                               setAddingSection(null);
                               setNewSectionHeading("");
                             }}
-                            className="rounded-lg border border-border/60 px-3 py-2 text-sm"
+                            className="rounded-lg border border-border px-3 py-2 text-sm"
                           >
                             Cancel
                           </button>

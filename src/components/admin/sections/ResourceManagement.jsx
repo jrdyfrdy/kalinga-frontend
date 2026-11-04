@@ -207,7 +207,7 @@ export const ResourceManagement = () => {
             <button
               onClick={fetchData}
               disabled={isLoading}
-              className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
             >
               <RefreshCw
                 className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -216,7 +216,7 @@ export const ResourceManagement = () => {
             </button>
             <button
               onClick={() => navigate("/admin/logistics")}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition hover:shadow-md"
             >
               <Truck className="h-4 w-4" />
               Launch logistics board
@@ -226,7 +226,7 @@ export const ResourceManagement = () => {
       />
 
       {warnings.length > 0 && (
-        <div className="flex items-start gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-800">
+        <div className="flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-sm text-amber-800">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <div className="space-y-1">
             {warnings.map((message) => (
@@ -239,7 +239,7 @@ export const ResourceManagement = () => {
       {/* Stats Overview */}
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
               <Package className="h-6 w-6 text-primary" />
             </div>
@@ -247,10 +247,10 @@ export const ResourceManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.total}
               </p>
-              <p className="text-sm text-foreground/60">Total Items</p>
+              <p className="text-sm text-muted-foreground">Total Items</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10">
               <AlertTriangle className="h-6 w-6 text-amber-500" />
             </div>
@@ -258,10 +258,10 @@ export const ResourceManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.lowStock}
               </p>
-              <p className="text-sm text-foreground/60">Low Stock</p>
+              <p className="text-sm text-muted-foreground">Low Stock</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500/10">
               <AlertTriangle className="h-6 w-6 text-rose-500" />
             </div>
@@ -269,10 +269,10 @@ export const ResourceManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.critical}
               </p>
-              <p className="text-sm text-foreground/60">Critical</p>
+              <p className="text-sm text-muted-foreground">Critical</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10">
               <Calendar className="h-6 w-6 text-purple-500" />
             </div>
@@ -280,7 +280,7 @@ export const ResourceManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.expiring}
               </p>
-              <p className="text-sm text-foreground/60">Expiring Soon</p>
+              <p className="text-sm text-muted-foreground">Expiring Soon</p>
             </div>
           </div>
         </div>
@@ -292,19 +292,19 @@ export const ResourceManagement = () => {
           {/* Search & Filters */}
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/50" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="search"
                 placeholder="Search resources..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-11 w-full rounded-full border border-border/60 bg-background/60 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40"
+                className="h-11 w-full rounded-full border border-border bg-surface-2/60 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40"
               />
             </div>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-11 rounded-full border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="h-11 rounded-full border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
             >
               <option value="">All Categories</option>
               {categories.map((cat) => (
@@ -324,19 +324,19 @@ export const ResourceManagement = () => {
 
           {/* Resources Table */}
           {!isLoading && (
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm overflow-hidden">
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-xs overflow-hidden">
               <h3 className="text-lg font-semibold text-foreground mb-4">
                 Inventory List
               </h3>
 
               {filteredResources.length === 0 ? (
-                <p className="text-center py-8 text-foreground/60">
+                <p className="text-center py-8 text-muted-foreground">
                   No resources found
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-border/60 text-sm">
-                    <thead className="bg-primary/5 text-left text-xs uppercase tracking-wide text-foreground/60">
+                    <thead className="bg-primary/5 text-left text-xs uppercase tracking-wide text-muted-foreground">
                       <tr>
                         <th
                           className="px-4 py-3 font-medium cursor-pointer hover:text-primary"
@@ -372,7 +372,7 @@ export const ResourceManagement = () => {
                         <th className="px-4 py-3 font-medium">Expiry</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-border/60 bg-background/50">
+                    <tbody className="divide-y divide-border/60 bg-surface-2/60">
                       {filteredResources.slice(0, 10).map((resource) => (
                         <tr
                           key={resource.id}
@@ -384,13 +384,13 @@ export const ResourceManagement = () => {
                                 {resource.name}
                               </p>
                               {resource.sku && (
-                                <p className="text-xs text-foreground/60">
+                                <p className="text-xs text-muted-foreground">
                                   {resource.sku}
                                 </p>
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-foreground/70">
+                          <td className="px-4 py-3 text-muted-foreground">
                             {resource.category || "—"}
                           </td>
                           <td className="px-4 py-3">
@@ -398,7 +398,7 @@ export const ResourceManagement = () => {
                               {resource.quantity} {resource.unit}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-foreground/70">
+                          <td className="px-4 py-3 text-muted-foreground">
                             {resource.location || "—"}
                           </td>
                           <td className="px-4 py-3">
@@ -411,7 +411,7 @@ export const ResourceManagement = () => {
                               {resource.status || "In Stock"}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-foreground/60 text-xs">
+                          <td className="px-4 py-3 text-muted-foreground text-xs">
                             {resource.expiry_date
                               ? formatRelativeTime(resource.expiry_date)
                               : "—"}
@@ -424,7 +424,7 @@ export const ResourceManagement = () => {
               )}
 
               {filteredResources.length > 10 && (
-                <p className="mt-4 text-xs text-foreground/50">
+                <p className="mt-4 text-xs text-muted-foreground">
                   Showing 10 of {filteredResources.length} resources
                 </p>
               )}
@@ -433,7 +433,7 @@ export const ResourceManagement = () => {
 
           {/* Category Breakdown */}
           {stats?.byCategory && Object.keys(stats.byCategory).length > 0 && (
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
               <h3 className="text-lg font-semibold text-foreground mb-4">
                 By Category
               </h3>
@@ -451,7 +451,7 @@ export const ResourceManagement = () => {
                             {category}
                           </span>
                         </div>
-                        <span className="text-sm text-foreground/70">
+                        <span className="text-sm text-muted-foreground">
                           {count} items ({percentage}%)
                         </span>
                       </div>
@@ -472,7 +472,7 @@ export const ResourceManagement = () => {
         {/* Sidebar */}
         <div className="space-y-4">
           {/* Low Stock Alerts */}
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               <h3 className="text-lg font-semibold text-foreground">
@@ -480,7 +480,7 @@ export const ResourceManagement = () => {
               </h3>
             </div>
             {lowStock.length === 0 ? (
-              <p className="text-sm text-foreground/60">No low stock items</p>
+              <p className="text-sm text-muted-foreground">No low stock items</p>
             ) : (
               <div className="space-y-3">
                 {lowStock.slice(0, 5).map((item) => (
@@ -492,7 +492,7 @@ export const ResourceManagement = () => {
                       <p className="text-sm font-medium text-foreground">
                         {item.name}
                       </p>
-                      <p className="text-xs text-foreground/60">
+                      <p className="text-xs text-muted-foreground">
                         {item.location}
                       </p>
                     </div>
@@ -507,7 +507,7 @@ export const ResourceManagement = () => {
 
           {/* Critical Items */}
           {critical.length > 0 && (
-            <div className="rounded-3xl border border-rose-500/30 bg-rose-500/5 p-6 shadow-sm">
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-6 shadow-xs">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle className="h-5 w-5 text-rose-500" />
                 <h3 className="text-lg font-semibold text-rose-600">
@@ -524,7 +524,7 @@ export const ResourceManagement = () => {
                       <p className="text-sm font-medium text-foreground">
                         {item.name}
                       </p>
-                      <p className="text-xs text-foreground/60">
+                      <p className="text-xs text-muted-foreground">
                         {item.location}
                       </p>
                     </div>
@@ -538,7 +538,7 @@ export const ResourceManagement = () => {
           )}
 
           {/* Expiring Soon */}
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <div className="flex items-center gap-2 mb-4">
               <Calendar className="h-5 w-5 text-purple-500" />
               <h3 className="text-lg font-semibold text-foreground">
@@ -546,7 +546,7 @@ export const ResourceManagement = () => {
               </h3>
             </div>
             {expiring.length === 0 ? (
-              <p className="text-sm text-foreground/60">
+              <p className="text-sm text-muted-foreground">
                 {expiringUnavailable
                   ? "Expiring inventory is temporarily unavailable."
                   : "No items are expiring within 30 days."}
@@ -562,7 +562,7 @@ export const ResourceManagement = () => {
                       <p className="text-sm font-medium text-foreground">
                         {item.name}
                       </p>
-                      <p className="text-xs text-foreground/60">
+                      <p className="text-xs text-muted-foreground">
                         {item.location}
                       </p>
                     </div>
@@ -577,14 +577,14 @@ export const ResourceManagement = () => {
 
           {/* Facility Capacity */}
           {stats?.byLocation && Object.keys(stats.byLocation).length > 0 && (
-            <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
               <h3 className="text-lg font-semibold text-foreground">
                 Facility Capacity
               </h3>
-              <p className="mt-1 text-sm text-foreground/60">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Resources by location
               </p>
-              <div className="mt-5 space-y-4 text-sm text-foreground/70">
+              <div className="mt-5 space-y-4 text-sm text-muted-foreground">
                 {Object.entries(stats.byLocation)
                   .slice(0, 5)
                   .map(([location, data]) => (

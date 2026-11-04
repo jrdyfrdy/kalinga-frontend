@@ -137,7 +137,7 @@ export const ConversationNLPPanel = ({
   if (loading && !analysis) {
     return (
       <div
-        className={`rounded-xl border border-border/60 bg-card p-4 ${className}`}
+        className={`rounded-xl border border-border bg-card p-4 ${className}`}
       >
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -150,7 +150,7 @@ export const ConversationNLPPanel = ({
   if (error && !analysis) {
     return (
       <div
-        className={`rounded-xl border border-border/60 bg-card p-4 ${className}`}
+        className={`rounded-xl border border-border bg-card p-4 ${className}`}
       >
         <div className="flex flex-col items-center gap-2 text-center">
           <span className="text-sm text-rose-500">{error}</span>
@@ -224,7 +224,7 @@ export const ConversationNLPPanel = ({
                   AI Summary
                 </span>
               </div>
-              <p className="text-sm text-foreground/90 leading-relaxed">
+              <p className="text-sm text-foreground leading-relaxed">
                 {analysis.ai_summary}
               </p>
             </div>
@@ -291,7 +291,7 @@ export const ConversationNLPPanel = ({
                   .map((question, i) => (
                     <li
                       key={i}
-                      className="flex items-start gap-2 text-sm text-foreground/80"
+                      className="flex items-start gap-2 text-sm text-muted-foreground"
                     >
                       <span className="text-muted-foreground">•</span>
                       {question}
@@ -302,7 +302,7 @@ export const ConversationNLPPanel = ({
           )}
 
           {/* Refresh Button */}
-          <div className="pt-2 border-t border-border/60">
+          <div className="pt-2 border-t border-border">
             <button
               onClick={fetchAnalysis}
               disabled={loading}

@@ -105,7 +105,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-foreground">
             Create New User
@@ -127,7 +127,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Full Name
             </label>
             <input
@@ -137,13 +137,13 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
               placeholder="Enter full name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Email
             </label>
             <input
@@ -153,13 +153,13 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
               placeholder="Enter email address"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Password
             </label>
             <input
@@ -170,13 +170,13 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
               onChange={(e) =>
                 setFormData({ ...formData, password: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
               placeholder="Minimum 8 characters"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Role
             </label>
             <select
@@ -184,7 +184,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
               onChange={(e) =>
                 setFormData({ ...formData, role: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
             >
               <option value="patient">Patient</option>
               <option value="responder">Responder</option>
@@ -194,7 +194,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Phone (Optional)
             </label>
             <input
@@ -203,7 +203,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
               placeholder="+63 XXX XXX XXXX"
             />
           </div>
@@ -212,7 +212,7 @@ const CreateUserModal = ({ isOpen, onClose, onUserCreated }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-11 rounded-xl border border-border/60 text-sm font-medium text-foreground/70 hover:bg-primary/5"
+              className="flex-1 h-11 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-primary/5"
             >
               Cancel
             </button>
@@ -295,7 +295,7 @@ const EditUserModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-border/60 bg-card p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-foreground">Edit User</h2>
           <button
@@ -318,7 +318,7 @@ const EditUserModal = ({
           className="space-y-4 max-h-[60vh] overflow-y-auto px-1"
         >
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Full Name
             </label>
             <input
@@ -328,13 +328,13 @@ const EditUserModal = ({
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
               placeholder="Enter full name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Email
             </label>
             <input
@@ -344,13 +344,13 @@ const EditUserModal = ({
               onChange={(e) =>
                 setFormData({ ...formData, email: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
               placeholder="Enter email address"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Phone
             </label>
             <input
@@ -359,7 +359,7 @@ const EditUserModal = ({
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
               placeholder="Enter phone number"
             />
           </div>
@@ -367,7 +367,7 @@ const EditUserModal = ({
           {formData.role === "patient" && (
             <>
               <div>
-                <label className="block text-sm font-medium text-foreground/70 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Blood Type
                 </label>
                 <input
@@ -376,13 +376,13 @@ const EditUserModal = ({
                   onChange={(e) =>
                     setFormData({ ...formData, bloodType: e.target.value })
                   }
-                  className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+                  className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
                   placeholder="e.g. O+, A-"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground/70 mb-1">
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Patient ID
                 </label>
                 <input
@@ -391,7 +391,7 @@ const EditUserModal = ({
                   onChange={(e) =>
                     setFormData({ ...formData, patientId: e.target.value })
                   }
-                  className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+                  className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
                   placeholder="Patient specific generic identifier"
                 />
               </div>
@@ -400,7 +400,7 @@ const EditUserModal = ({
 
           {formData.role === "logistics" && (
             <div>
-              <label className="block text-sm font-medium text-foreground/70 mb-1">
+              <label className="block text-sm font-medium text-muted-foreground mb-1">
                 Assigned Hospital
               </label>
               <select
@@ -408,7 +408,7 @@ const EditUserModal = ({
                 onChange={(e) =>
                   setFormData({ ...formData, hospital_id: e.target.value })
                 }
-                className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+                className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
               >
                 <option value="">No Hospital Assigned</option>
                 {hospitals.map((hospital) => (
@@ -421,7 +421,7 @@ const EditUserModal = ({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-foreground/70 mb-1">
+            <label className="block text-sm font-medium text-muted-foreground mb-1">
               Role
             </label>
             <select
@@ -429,7 +429,7 @@ const EditUserModal = ({
               onChange={(e) =>
                 setFormData({ ...formData, role: e.target.value })
               }
-              className="w-full h-11 rounded-xl border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="w-full h-11 rounded-xl border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
             >
               <option value="patient">Patient</option>
               <option value="responder">Responder</option>
@@ -438,11 +438,11 @@ const EditUserModal = ({
             </select>
           </div>
 
-          <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-card py-2 border-t border-border/40">
+          <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-surface py-2 border-t border-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-border/60 text-sm font-medium hover:bg-foreground/5 transition"
+              className="px-5 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-foreground/5 transition"
             >
               Cancel
             </button>
@@ -586,20 +586,20 @@ export const UserRoleManagement = () => {
           onClick={() => setShowRoleMatrix(false)}
         >
           <div
-            className="w-full max-w-2xl rounded-3xl border border-border/60 bg-background p-6 shadow-xl"
+            className="w-full max-w-2xl rounded-xl border border-border bg-background p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold">Role matrix</h3>
-              <button onClick={() => setShowRoleMatrix(false)} className="text-sm text-foreground/60 hover:text-foreground">
+              <button onClick={() => setShowRoleMatrix(false)} className="text-sm text-muted-foreground hover:text-foreground">
                 Close
               </button>
             </div>
-            <p className="mb-4 text-sm text-foreground/60">
+            <p className="mb-4 text-sm text-muted-foreground">
               Access enforced by the API for each role (see backend/routes/api.php).
             </p>
             <table className="w-full text-left text-sm">
-              <thead className="text-xs uppercase text-foreground/60">
+              <thead className="text-xs uppercase text-muted-foreground">
                 <tr>
                   <th className="py-2">Role</th>
                   <th className="py-2">Can access</th>
@@ -609,7 +609,7 @@ export const UserRoleManagement = () => {
                 {ROLE_MATRIX.map((row) => (
                   <tr key={row.role}>
                     <td className="py-2 pr-4 font-semibold capitalize">{row.role}</td>
-                    <td className="py-2 text-foreground/80">{row.access}</td>
+                    <td className="py-2 text-muted-foreground">{row.access}</td>
                   </tr>
                 ))}
               </tbody>
@@ -627,7 +627,7 @@ export const UserRoleManagement = () => {
                 fetchUsers();
                 fetchStats();
               }}
-              className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
             >
               <RefreshCw
                 className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
@@ -635,7 +635,7 @@ export const UserRoleManagement = () => {
               Refresh
             </button>
             <button
-              className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium text-foreground/70 transition hover:border-primary/40 hover:text-primary"
+              className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary/40 hover:text-primary"
               onClick={() => setShowRoleMatrix(true)}
             >
               <Shield className="h-4 w-4" />
@@ -643,7 +643,7 @@ export const UserRoleManagement = () => {
             </button>
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:shadow-md"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-xs transition hover:shadow-md"
             >
               <UserPlus className="h-4 w-4" />
               Add operator
@@ -655,7 +655,7 @@ export const UserRoleManagement = () => {
       {/* Stats Grid */}
       {stats && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
               <UserCog className="h-6 w-6 text-primary" />
             </div>
@@ -663,11 +663,11 @@ export const UserRoleManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.total}
               </p>
-              <p className="text-sm text-foreground/60">Total Users</p>
+              <p className="text-sm text-muted-foreground">Total Users</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
               <UserCheck className="h-6 w-6 text-emerald-500" />
             </div>
@@ -675,11 +675,11 @@ export const UserRoleManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.active}
               </p>
-              <p className="text-sm text-foreground/60">Active</p>
+              <p className="text-sm text-muted-foreground">Active</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500/10">
               <Shield className="h-6 w-6 text-sky-500" />
             </div>
@@ -687,11 +687,11 @@ export const UserRoleManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.byRole?.responder || 0}
               </p>
-              <p className="text-sm text-foreground/60">Responders</p>
+              <p className="text-sm text-muted-foreground">Responders</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10">
               <UserPlus className="h-6 w-6 text-purple-500" />
             </div>
@@ -699,11 +699,11 @@ export const UserRoleManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.byRole?.patient || 0}
               </p>
-              <p className="text-sm text-foreground/60">Patients</p>
+              <p className="text-sm text-muted-foreground">Patients</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10">
               <UserCog className="h-6 w-6 text-orange-500" />
             </div>
@@ -711,11 +711,11 @@ export const UserRoleManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.byRole?.logistics || 0}
               </p>
-              <p className="text-sm text-foreground/60">Logistics</p>
+              <p className="text-sm text-muted-foreground">Logistics</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10">
               <AlertCircle className="h-6 w-6 text-amber-500" />
             </div>
@@ -723,23 +723,23 @@ export const UserRoleManagement = () => {
               <p className="text-2xl font-bold text-foreground">
                 {stats.pendingVerification}
               </p>
-              <p className="text-sm text-foreground/60">Pending Verify</p>
+              <p className="text-sm text-muted-foreground">Pending Verify</p>
             </div>
           </div>
         </div>
       )}
 
-      <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-1 gap-3">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-foreground/50" />
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="search"
                 placeholder="Search users by name or email"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-11 w-full rounded-full border border-border/60 bg-background/60 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40"
+                className="h-11 w-full rounded-full border border-border bg-surface-2/60 pl-11 pr-4 text-sm outline-none transition focus:border-primary/40"
               />
             </div>
             <select
@@ -748,7 +748,7 @@ export const UserRoleManagement = () => {
                 setRoleFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="h-11 rounded-full border border-border/60 bg-background/60 px-4 text-sm outline-none focus:border-primary/40"
+              className="h-11 rounded-full border border-border bg-surface-2/60 px-4 text-sm outline-none focus:border-primary/40"
             >
               <option value="">All Roles</option>
               <option value="admin">Admin</option>
@@ -777,9 +777,9 @@ export const UserRoleManagement = () => {
         {/* Users Table */}
         {!isLoading && !error && (
           <>
-            <div className="mt-6 overflow-hidden rounded-2xl border border-border/60">
+            <div className="mt-6 overflow-hidden rounded-xl border border-border">
               <table className="min-w-full divide-y divide-border/60 text-sm">
-                <thead className="bg-primary/5 text-left text-xs uppercase tracking-wide text-foreground/60">
+                <thead className="bg-primary/5 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-6 py-3 font-medium">User</th>
                     <th className="px-6 py-3 font-medium">Role</th>
@@ -791,12 +791,12 @@ export const UserRoleManagement = () => {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/60 bg-background/50">
+                <tbody className="divide-y divide-border/60 bg-surface-2/60">
                   {filteredUsers.length === 0 ? (
                     <tr>
                       <td
                         colSpan={6}
-                        className="px-6 py-12 text-center text-foreground/60"
+                        className="px-6 py-12 text-center text-muted-foreground"
                       >
                         No users found
                       </td>
@@ -816,7 +816,7 @@ export const UserRoleManagement = () => {
                               <p className="font-semibold text-foreground">
                                 {user.name}
                               </p>
-                              <p className="text-xs text-foreground/60">
+                              <p className="text-xs text-muted-foreground">
                                 {user.email}
                               </p>
                             </div>
@@ -839,7 +839,7 @@ export const UserRoleManagement = () => {
                               onChange={(e) =>
                                 handleHospitalAssignment(user, e.target.value ? Number(e.target.value) : null)
                               }
-                              className="mt-2 block w-44 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs outline-none focus:border-primary/40"
+                              className="mt-2 block w-44 rounded-full border border-border bg-surface-2/60 px-3 py-1 text-xs outline-none focus:border-primary/40"
                             >
                               <option value="">No hospital</option>
                               {hospitals.map((h) => (
@@ -871,7 +871,7 @@ export const UserRoleManagement = () => {
                             {user.verification_status || "Unverified"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-foreground/60">
+                        <td className="px-6 py-4 text-muted-foreground">
                           {formatRelativeTime(user.created_at)}
                         </td>
                         <td className="px-6 py-4 text-right flex items-center justify-end gap-2">
@@ -914,14 +914,14 @@ export const UserRoleManagement = () => {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="mt-4 flex items-center justify-between">
-                <p className="text-sm text-foreground/60">
+                <p className="text-sm text-muted-foreground">
                   Page {currentPage} of {totalPages}
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="h-9 w-9 rounded-full border border-border/60 flex items-center justify-center hover:bg-primary/10 disabled:opacity-50"
+                    className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-primary/10 disabled:opacity-50"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </button>
@@ -930,7 +930,7 @@ export const UserRoleManagement = () => {
                       setCurrentPage((p) => Math.min(totalPages, p + 1))
                     }
                     disabled={currentPage === totalPages}
-                    className="h-9 w-9 rounded-full border border-border/60 flex items-center justify-center hover:bg-primary/10 disabled:opacity-50"
+                    className="h-9 w-9 rounded-full border border-border flex items-center justify-center hover:bg-primary/10 disabled:opacity-50"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </button>

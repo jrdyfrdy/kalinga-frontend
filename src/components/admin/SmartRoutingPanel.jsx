@@ -110,7 +110,7 @@ export const SmartRoutingPanel = ({
 
   if (loading && recommendations.length === 0) {
     return (
-      <div className={`rounded-xl border border-border/60 bg-card p-6 ${className}`}>
+      <div className={`rounded-xl border border-border bg-surface p-6 ${className}`}>
         <div className="flex items-center justify-center gap-3 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Analyzing responders...</span>
@@ -121,7 +121,7 @@ export const SmartRoutingPanel = ({
 
   if (error && recommendations.length === 0) {
     return (
-      <div className={`rounded-xl border border-border/60 bg-card p-6 ${className}`}>
+      <div className={`rounded-xl border border-border bg-surface p-6 ${className}`}>
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="text-rose-500">{error}</div>
           <button
@@ -137,9 +137,9 @@ export const SmartRoutingPanel = ({
   }
 
   return (
-    <div className={`rounded-xl border border-border/60 bg-card overflow-hidden ${className}`}>
+    <div className={`rounded-xl border border-border bg-surface overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/60 bg-gradient-to-r from-violet-500/10 to-blue-500/10 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-violet-500/10 to-blue-500/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-violet-500" />
           <h3 className="font-medium text-foreground">Smart Routing</h3>
@@ -153,7 +153,7 @@ export const SmartRoutingPanel = ({
           <button
             onClick={fetchRecommendations}
             disabled={loading}
-            className="p-1.5 rounded-lg hover:bg-background/80 transition-colors disabled:opacity-50"
+            className="p-1.5 rounded-lg hover:bg-surface-2/60 transition-colors disabled:opacity-50"
             title="Refresh recommendations"
           >
             <RefreshCcw className={`h-4 w-4 text-muted-foreground ${loading ? "animate-spin" : ""}`} />
@@ -163,7 +163,7 @@ export const SmartRoutingPanel = ({
 
       {/* AI Analysis Summary */}
       {aiAnalysis && (
-        <div className="border-b border-border/60 bg-violet-500/5 px-4 py-3">
+        <div className="border-b border-border bg-violet-500/5 px-4 py-3">
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <Sparkles className="h-4 w-4 text-violet-500" />
             <span className="text-sm font-medium text-foreground">AI Analysis</span>
@@ -193,7 +193,7 @@ export const SmartRoutingPanel = ({
 
       {/* Auto-assign Action */}
       {recommendations.length > 0 && (
-        <div className="border-b border-border/60 px-4 py-3">
+        <div className="border-b border-border px-4 py-3">
           <button
             onClick={handleAutoAssign}
             disabled={autoAssigning}
@@ -289,7 +289,7 @@ export const SmartRoutingPanel = ({
                   </div>
                   <button
                     onClick={() => toggleExpanded(rec.responder_id)}
-                    className="p-1 rounded hover:bg-background/80 transition-colors"
+                    className="p-1 rounded hover:bg-surface-2/60 transition-colors"
                   >
                     {expandedId === rec.responder_id ? (
                       <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -302,7 +302,7 @@ export const SmartRoutingPanel = ({
 
               {/* Expanded Details */}
               {expandedId === rec.responder_id && (
-                <div className="mt-3 pt-3 border-t border-border/60">
+                <div className="mt-3 pt-3 border-t border-border">
                   {/* Score Breakdown */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     {[
@@ -359,13 +359,13 @@ export const SmartRoutingPanel = ({
 
       {/* Footer Meta */}
       {meta && (
-        <div className="border-t border-border/60 bg-muted/30 px-4 py-2">
+        <div className="border-t border-border bg-muted/30 px-4 py-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
               {meta.total_available_responders || 0} responders available
             </span>
             {meta.incident_type && (
-              <span className="text-foreground/70">{meta.incident_type}</span>
+              <span className="text-muted-foreground">{meta.incident_type}</span>
             )}
           </div>
         </div>

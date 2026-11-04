@@ -88,7 +88,7 @@ export const ConnectivityMonitoring = () => {
         <button
           onClick={fetchStatus}
           disabled={loading}
-          className="inline-flex items-center gap-2 rounded-full border border-border/60 px-4 py-2 text-sm font-medium hover:border-primary/50 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium hover:border-primary/50 disabled:opacity-50"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -96,7 +96,7 @@ export const ConnectivityMonitoring = () => {
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+        <div className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -137,14 +137,14 @@ export const ConnectivityMonitoring = () => {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
           <h3 className="text-lg font-semibold text-foreground">Round-trip latency (ms)</h3>
-          <p className="text-sm text-foreground/60">
+          <p className="text-sm text-muted-foreground">
             Browser → API status check, sampled every {POLL_MS / 1000}s while this page is open.
           </p>
           <div className="mt-6 flex h-60 items-end gap-3">
             {history.length === 0 ? (
-              <p className="text-sm text-foreground/60">Waiting for samples…</p>
+              <p className="text-sm text-muted-foreground">Waiting for samples…</p>
             ) : (
               history.map((point, index) => (
                 <div key={`${point.time}-${index}`} className="flex flex-1 flex-col items-center justify-end gap-2">
@@ -152,7 +152,7 @@ export const ConnectivityMonitoring = () => {
                     className="w-full rounded-full bg-gradient-to-t from-primary/10 via-primary/30 to-primary/40"
                     style={{ height: `${Math.max(8, (point.latency / maxLatency) * 180)}px` }}
                   />
-                  <p className="text-xs font-medium text-foreground/60">{point.time}</p>
+                  <p className="text-xs font-medium text-muted-foreground">{point.time}</p>
                   <p className="text-xs font-semibold text-foreground">{point.latency} ms</p>
                 </div>
               ))
@@ -160,18 +160,18 @@ export const ConnectivityMonitoring = () => {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
           <h3 className="text-lg font-semibold text-foreground">Service status</h3>
           <div className="mt-4 space-y-3 text-sm">
-            {services.length === 0 && <p className="text-foreground/60">No data yet.</p>}
+            {services.length === 0 && <p className="text-muted-foreground">No data yet.</p>}
             {services.map((service) => (
               <div
                 key={service.name}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-background/60 px-4 py-3"
+                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface-2/60 px-4 py-3"
               >
                 <div>
                   <p className="font-semibold text-foreground">{service.name}</p>
-                  <p className="text-xs text-foreground/60">
+                  <p className="text-xs text-muted-foreground">
                     {service.latency_ms} ms{service.error ? ` · ${service.error}` : ""}
                   </p>
                 </div>

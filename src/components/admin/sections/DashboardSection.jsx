@@ -178,63 +178,29 @@ export const DashboardSection = () => {
 
     if (dispatchedIncs.length === 0) return null;
 
+    // Minutes from report to the latest status change; skip malformed dates.
     const times = dispatchedIncs
       .map((i) => {
         const start = new Date(i.created_at).getTime();
         const end = new Date(i.updated_at || i.created_at).getTime();
-        return Math.max((end - start) / 60000, 1); // diff in minutes, minimum 1
+        return (end - start) / 60000;
       })
+      .filter((m) => Number.isFinite(m) && m >= 0)
       .sort((a, b) => a - b);
 
-    const median = times[Math.floor(times.length / 2)];
+    if (times.length === 0) return null;
+
+    const mid = Math.floor(times.length / 2);
+    const median = times.length % 2 ? times[mid] : (times[mid - 1] + times[mid]) / 2;
 
     return {
-      median: Math.round(median),
-      urban: Math.round(median * 0.8),
-      coastal: Math.round(median * 1.2),
-      mountain: Math.round(median * 1.5),
+      median: Math.max(1, Math.round(median)),
+      fastest: Math.max(1, Math.round(times[0])),
+      slowest: Math.max(1, Math.round(times[times.length - 1])),
+      sample: times.length,
     };
   }, [backendIncidents]);
 
-  // Next operations sync
-  const nextOpsSync = useMemo(() => {
-    if (!backendIncidents || backendIncidents.length === 0) return null;
-    const criticalIncs = backendIncidents.filter(
-      (i) =>
-        ["high", "critical", "severe"].includes(i.priority?.toLowerCase()) ||
-        ["high", "critical", "severe"].includes(i.severity?.toLowerCase()),
-    );
-
-    if (criticalIncs.length > 0) {
-      const now = new Date();
-      now.setHours(now.getHours() + 1);
-      now.setMinutes(0);
-      return {
-        time:
-          now.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          }) + "H",
-        location: "EOC Briefing Room",
-        agenda: [
-          "Critical incident status update",
-          "Resource allocation review",
-          "Public advisory alignment",
-        ],
-      };
-    }
-
-    return {
-      time: "0900H", // standard next morning
-      location: "Command Center",
-      agenda: [
-        "Daily routine check",
-        "Logistics inventory alignment",
-        "Staffing rotation assignments",
-      ],
-    };
-  }, [backendIncidents]);
 
   // Initial fetch and periodic refresh of backend data
   useEffect(() => {
@@ -408,14 +374,14 @@ export const DashboardSection = () => {
             <button
               onClick={fetchDashboardStats}
               disabled={statsLoading}
-              className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs text-foreground/60 hover:bg-primary/10 transition"
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2/60 px-3 py-1 text-xs text-muted-foreground hover:bg-primary/10 transition"
             >
               <RefreshCw
                 className={`h-3.5 w-3.5 ${statsLoading ? "animate-spin" : ""}`}
               />
               Refresh
             </button>
-            <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs text-foreground/60">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2/60 px-3 py-1 text-xs text-muted-foreground">
               <Clock3 className="h-3.5 w-3.5" />
               {updatedLabel}
             </span>
@@ -496,7 +462,7 @@ export const DashboardSection = () => {
       {/* Secondary Stats Row */}
       {dashboardStats && (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-500/10">
               <UserCheck className="h-6 w-6 text-sky-500" />
             </div>
@@ -504,10 +470,10 @@ export const DashboardSection = () => {
               <p className="text-2xl font-bold text-foreground">
                 {dashboardStats.responders?.total ?? 0}
               </p>
-              <p className="text-sm text-foreground/60">Total Responders</p>
+              <p className="text-sm text-muted-foreground">Total Responders</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-500/10">
               <Users className="h-6 w-6 text-purple-500" />
             </div>
@@ -515,10 +481,10 @@ export const DashboardSection = () => {
               <p className="text-2xl font-bold text-foreground">
                 {dashboardStats.users?.byRole?.patient ?? 0}
               </p>
-              <p className="text-sm text-foreground/60">Registered Patients</p>
+              <p className="text-sm text-muted-foreground">Registered Patients</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10">
               <Truck className="h-6 w-6 text-amber-500" />
             </div>
@@ -526,10 +492,10 @@ export const DashboardSection = () => {
               <p className="text-2xl font-bold text-foreground">
                 {dashboardStats.users?.byRole?.logistics ?? 0}
               </p>
-              <p className="text-sm text-foreground/60">Logistics Staff</p>
+              <p className="text-sm text-muted-foreground">Logistics Staff</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 rounded-2xl border border-border/60 bg-card/80 p-4">
+          <div className="flex items-center gap-4 rounded-xl border border-border bg-surface p-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10">
               <Package className="h-6 w-6 text-emerald-500" />
             </div>
@@ -537,20 +503,20 @@ export const DashboardSection = () => {
               <p className="text-2xl font-bold text-foreground">
                 {dashboardStats.resources?.total ?? 0}
               </p>
-              <p className="text-sm text-foreground/60">Total Resources</p>
+              <p className="text-sm text-muted-foreground">Total Resources</p>
             </div>
           </div>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="rounded-3xl border border-border/60 bg-card/70 p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between pb-4">
             <div>
               <h3 className="text-lg font-semibold text-foreground">
                 Incident Signal Trend
               </h3>
-              <p className="text-sm text-foreground/60">
+              <p className="text-sm text-muted-foreground">
                 Alert frequency in the past 24 hours across major hazard
                 categories.
               </p>
@@ -568,7 +534,7 @@ export const DashboardSection = () => {
                   className="flex h-full flex-1 flex-col items-center justify-end gap-3"
                 >
                   <div
-                    className="flex w-full flex-col items-center justify-end gap-2 rounded-2xl bg-gradient-to-t from-primary/10 via-primary/20 to-primary/30 p-2"
+                    className="flex w-full flex-col items-center justify-end gap-2 rounded-xl bg-gradient-to-t from-primary/10 via-primary/20 to-primary/30 p-2"
                     style={{
                       height: `${item.percent || Math.max(item.value, 25)}%`,
                     }}
@@ -577,13 +543,13 @@ export const DashboardSection = () => {
                       {item.value}
                     </span>
                   </div>
-                  <p className="text-xs font-medium text-foreground/70 uppercase tracking-wide">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     {item.label}
                   </p>
                 </div>
               ))
             ) : (
-              <div className="flex h-full w-full flex-col items-center justify-center text-center text-foreground/50">
+              <div className="flex h-full w-full flex-col items-center justify-center text-center text-muted-foreground">
                 <Activity className="mb-2 h-8 w-8 opacity-20" />
                 <p className="text-sm font-medium">No recent incidents</p>
                 <p className="text-xs">Incident trend data will appear here.</p>
@@ -593,98 +559,43 @@ export const DashboardSection = () => {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground/70">
-                  Response SLA
-                </p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">
-                  {dynamicSlaStats ? `${dynamicSlaStats.median}m` : "N/A"}
-                </p>
-                <p className="mt-2 text-xs text-foreground/60">
-                  Median dispatch time from alert confirmation to team
-                  deployment.
-                </p>
-              </div>
-              <div
-                className={`rounded-full px-4 py-1 text-xs font-semibold ${
-                  dynamicSlaStats
-                    ? "bg-emerald-500/10 text-emerald-500"
-                    : "bg-background/80 text-foreground/50 border border-border/50"
-                }`}
-              >
-                {dynamicSlaStats ? "On Target" : "No Data"}
-              </div>
-            </div>
-            <div className="mt-6 space-y-3 text-sm text-foreground/70">
-              {dynamicSlaStats ? (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span>Urban barangays</span>
-                    <span className="font-semibold text-foreground">
-                      {dynamicSlaStats.urban}m
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Coastal barangays</span>
-                    <span className="font-semibold text-foreground">
-                      {dynamicSlaStats.coastal}m
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Mountain barangays</span>
-                    <span className="font-semibold text-foreground">
-                      {dynamicSlaStats.mountain}m
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="flex items-center justify-center py-2 text-xs text-foreground/40">
-                  Insufficient dispatch data for SLA calculation.
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
+            <p className="text-sm font-medium text-muted-foreground">Median response time</p>
+            <p className="tabular mt-2 text-3xl font-bold text-foreground">
+              {dynamicSlaStats ? `${dynamicSlaStats.median} min` : "—"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              From report to the latest dispatch update
+              {dynamicSlaStats ? `, across ${dynamicSlaStats.sample} dispatched incident${dynamicSlaStats.sample === 1 ? "" : "s"}.` : "."}
+            </p>
+            {dynamicSlaStats ? (
+              <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg bg-surface-2/60 p-3">
+                  <dt className="text-xs text-muted-foreground">Fastest</dt>
+                  <dd className="tabular mt-0.5 font-semibold">{dynamicSlaStats.fastest} min</dd>
                 </div>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <Clock3
-                className={`h-9 w-9 ${nextOpsSync ? "text-primary" : "text-foreground/20"}`}
-              />
-              <div>
-                <p className="text-sm font-medium text-foreground/70">
-                  Next operations sync
-                </p>
-                <p className="text-base font-semibold text-foreground">
-                  {nextOpsSync
-                    ? `${nextOpsSync.time} - ${nextOpsSync.location}`
-                    : "Not Scheduled"}
-                </p>
-              </div>
-            </div>
-            {nextOpsSync && nextOpsSync.agenda ? (
-              <ul className="mt-4 space-y-3 text-sm text-foreground/70">
-                {nextOpsSync.agenda.map((item, idx) => (
-                  <li key={idx}>&bull; {item}</li>
-                ))}
-              </ul>
+                <div className="rounded-lg bg-surface-2/60 p-3">
+                  <dt className="text-xs text-muted-foreground">Slowest</dt>
+                  <dd className="tabular mt-0.5 font-semibold">{dynamicSlaStats.slowest} min</dd>
+                </div>
+              </dl>
             ) : (
-              <p className="mt-4 text-xs text-foreground/50">
-                No sync activities planned at this time.
+              <p className="mt-4 rounded-lg bg-surface-2/60 p-3 text-xs text-muted-foreground">
+                Not enough dispatched incidents yet to measure response time.
               </p>
             )}
           </div>
+
         </div>
       </div>
 
-      <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-foreground">
               System Incidents
             </h3>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-muted-foreground">
               Active incidents from the Kalinga system database.
             </p>
           </div>
@@ -697,7 +608,7 @@ export const DashboardSection = () => {
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : backendIncidents.length === 0 ? (
-          <div className="mt-6 py-8 text-center text-sm text-foreground/60">
+          <div className="mt-6 py-8 text-center text-sm text-muted-foreground">
             No active incidents in the system
           </div>
         ) : (
@@ -729,19 +640,19 @@ export const DashboardSection = () => {
                     <p className="font-semibold text-foreground">
                       {incident.type || "Emergency Incident"}
                     </p>
-                    <p className="text-xs text-foreground/60">
+                    <p className="text-xs text-muted-foreground">
                       INC-{incident.id} •{" "}
                       {incident.location || "Location pending"}
                     </p>
                   </div>
-                  <div className="flex flex-col justify-between gap-2 text-xs text-foreground/60 md:flex-row md:items-center md:gap-6">
+                  <div className="flex flex-col justify-between gap-2 text-xs text-muted-foreground md:flex-row md:items-center md:gap-6">
                     <div className="flex items-center gap-2">
                       <Users className="h-3.5 w-3.5" />
                       {incident.assignments?.length || 0} responder
                       {incident.assignments?.length !== 1 ? "s" : ""} assigned
                     </div>
                     {incident.latest_status_update && (
-                      <span className="flex items-center gap-2 text-foreground/70">
+                      <span className="flex items-center gap-2 text-muted-foreground">
                         Last update by{" "}
                         {incident.latest_status_update.user?.name || "System"}
                       </span>
@@ -753,7 +664,7 @@ export const DashboardSection = () => {
                     >
                       {incident.status?.replace("_", " ")}
                     </span>
-                    <span className="text-xs text-foreground/50">
+                    <span className="text-xs text-muted-foreground">
                       {formatRelativeTime(new Date(incident.created_at))}
                     </span>
                   </div>
@@ -763,19 +674,19 @@ export const DashboardSection = () => {
           </div>
         )}
         {backendIncidents.length > 5 && (
-          <p className="mt-4 text-xs text-foreground/50">
+          <p className="mt-4 text-xs text-muted-foreground">
             Showing 5 of {backendIncidents.length} active incidents
           </p>
         )}
       </div>
 
-      <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-foreground">
               External Seismic Feed
             </h3>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-muted-foreground">
               Live earthquake data from USGS for situational awareness.
             </p>
           </div>
@@ -796,11 +707,11 @@ export const DashboardSection = () => {
                   <p className="font-semibold text-foreground">
                     {incident.type}
                   </p>
-                  <p className="text-xs text-foreground/60">
+                  <p className="text-xs text-muted-foreground">
                     {incident.id} • {incident.barangay}
                   </p>
                 </div>
-                <div className="flex flex-col justify-between gap-2 text-xs text-foreground/60 md:flex-row md:items-center md:gap-6">
+                <div className="flex flex-col justify-between gap-2 text-xs text-muted-foreground md:flex-row md:items-center md:gap-6">
                   <div className="flex items-center gap-2">
                     <Users className="h-3.5 w-3.5" /> {incident.teams} teams
                     on-site
@@ -808,7 +719,7 @@ export const DashboardSection = () => {
                   <span className="flex items-center gap-2">
                     <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                     Severity:{" "}
-                    <span className="font-semibold text-foreground/80">
+                    <span className="font-semibold text-muted-foreground">
                       {incident.severity}
                     </span>
                   </span>
@@ -819,7 +730,7 @@ export const DashboardSection = () => {
                   >
                     {incident.status}
                   </span>
-                  <span className="text-xs text-foreground/50">
+                  <span className="text-xs text-muted-foreground">
                     {incident.timeAgo}
                   </span>
                 </div>
@@ -827,46 +738,43 @@ export const DashboardSection = () => {
             );
           })}
         </div>
-        <p className="mt-4 text-xs text-foreground/50">
+        <p className="mt-4 text-xs text-muted-foreground">
           Data source: USGS Earthquake Hazards Program.
         </p>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-        <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-foreground">
                 Operations timeline
               </h3>
-              <p className="text-sm text-foreground/60">
+              <p className="text-sm text-muted-foreground">
                 Key actions logged within the selected window.
               </p>
             </div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              <CheckCircle2 className="h-3.5 w-3.5" /> Reviewed by Ops
-            </span>
           </div>
 
           <div className="mt-6 space-y-4">
             {dynamicTimeline && dynamicTimeline.length > 0 ? (
               dynamicTimeline.map((event, i) => (
                 <div key={i} className="flex gap-4">
-                  <div className="flex-1 rounded-2xl border border-border/60 bg-background/60 p-4">
+                  <div className="flex-1 rounded-xl border border-border bg-surface-2/60 p-4">
                     <p className="text-sm font-semibold text-foreground">
                       {event.title}
                     </p>
-                    <p className="mt-1 text-xs text-foreground/60">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {event.by}
                     </p>
-                    <p className="mt-2 text-xs text-foreground/70">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {event.status}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border/60 bg-background/30 text-sm text-foreground/60">
+              <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border bg-surface-2/60 text-sm text-muted-foreground">
                 No recent operations
               </div>
             )}
@@ -874,11 +782,11 @@ export const DashboardSection = () => {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <h3 className="text-lg font-semibold text-foreground">
               Team readiness
             </h3>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-muted-foreground">
               Availability & standby strength.
             </p>
             <div className="mt-4 space-y-3 text-sm">
@@ -886,9 +794,9 @@ export const DashboardSection = () => {
                 dynamicTeamReadiness.map((team) => (
                   <div
                     key={team.label}
-                    className="space-y-2 rounded-2xl border border-border/60 bg-background/60 p-4"
+                    className="space-y-2 rounded-xl border border-border bg-surface-2/60 p-4"
                   >
-                    <div className="flex items-center justify-between text-xs text-foreground/60">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="font-semibold text-foreground">
                         {team.label}
                       </span>
@@ -906,18 +814,18 @@ export const DashboardSection = () => {
                   </div>
                 ))
               ) : (
-                <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border/60 bg-background/30 text-sm text-foreground/60">
+                <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border bg-surface-2/60 text-sm text-muted-foreground">
                   No readiness data available
                 </div>
               )}
             </div>
           </div>
 
-          <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm">
+          <div className="rounded-xl border border-border bg-surface p-6 shadow-xs">
             <h3 className="text-lg font-semibold text-foreground">
               Comms & dispatch
             </h3>
-            <p className="text-sm text-foreground/60">
+            <p className="text-sm text-muted-foreground">
               Recent Broadcasts & Advisories.
             </p>
             <div className="mt-4 space-y-3 text-sm">
@@ -925,7 +833,7 @@ export const DashboardSection = () => {
                 dynamicDispatchQueue.map((entry, i) => (
                   <div
                     key={i}
-                    className="flex items-start gap-3 rounded-2xl border border-border/60 bg-background/60 p-4"
+                    className="flex items-start gap-3 rounded-xl border border-border bg-surface-2/60 p-4"
                   >
                     <span className="mt-1 inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
                       <Radio className="h-4 w-4" />
@@ -934,23 +842,20 @@ export const DashboardSection = () => {
                       <p className="font-semibold text-foreground">
                         {entry.channel}
                       </p>
-                      <p className="text-xs text-foreground/60">
+                      <p className="text-xs text-muted-foreground">
                         Status: {entry.status}
                       </p>
-                      <p className="mt-1 text-xs text-foreground/70">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         {entry.note}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border/60 bg-background/30 text-sm text-foreground/60">
+                <div className="flex h-32 items-center justify-center rounded-xl border border-dashed border-border bg-surface-2/60 text-sm text-muted-foreground">
                   No recent communications
                 </div>
               )}
-            </div>
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs text-foreground/60">
-              <Headphones className="h-4 w-4" /> Duty desk staffed 24/7
             </div>
           </div>
         </div>
