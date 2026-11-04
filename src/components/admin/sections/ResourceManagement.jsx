@@ -215,7 +215,7 @@ export const ResourceManagement = () => {
               Refresh
             </button>
             <button
-              onClick={() => navigate("/admin", { state: { adminSection: "logistics" } })}
+              onClick={() => navigate("/admin/logistics")}
               className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition hover:shadow-md"
             >
               <Truck className="h-4 w-4" />

@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "../../layouts/Layout";
-import Footer from "../../components/responder/Footer";
 import "../../styles/lessonDetails.css";
 import { getCourse, markContentComplete } from "@/services/trainingService";
 import { useAuth } from "@/context/AuthContext";
@@ -61,7 +60,6 @@ export default function ContentViewer() {
         <div className="lesson-center">
           <p>Loading...</p>
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -76,7 +74,6 @@ export default function ContentViewer() {
             Back to Modules
           </Link>
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -91,7 +88,6 @@ export default function ContentViewer() {
             Back to Course
           </Link>
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -167,7 +163,6 @@ export default function ContentViewer() {
           </div>
         </div>
       </div>
-      <Footer />
     </Layout>
   );
 }

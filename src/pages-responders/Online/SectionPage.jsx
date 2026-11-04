@@ -2,7 +2,6 @@
 import { useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "../../layouts/Layout";
-import Footer from "../../components/responder/Footer";
 import courseContent from "../../data/courseContent"; // your existing data file
 import { markViewed, getProgress } from "../../lib/progress";
 
@@ -61,7 +60,6 @@ export default function SectionPage() {
     return (
       <Layout>
         <div className="p-6 text-red-500">Course not found.</div>
-        <Footer />
       </Layout>
     );
 
@@ -69,7 +67,6 @@ export default function SectionPage() {
     return (
       <Layout>
         <div className="p-6 text-red-500">Section not found.</div>
-        <Footer />
       </Layout>
     );
 
@@ -119,7 +116,6 @@ export default function SectionPage() {
           )}
         </div>
       </div>
-      <Footer />
     </Layout>
   );
 }

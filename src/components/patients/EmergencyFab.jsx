@@ -180,15 +180,14 @@ export default function EmergencyFab({
         />
       ) : (
         <button
+          type="button"
           onClick={() => setShowPopup(true)}
-          className={`fixed bottom-6 right-6 z-50 bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-lg transition-transform transform hover:scale-110 flex items-center justify-center group duration-200 ease-out ${swapAnimationClass}`}
+          className={`fixed bottom-24 right-4 z-50 flex h-14 items-center gap-2 rounded-full bg-critical px-4 font-semibold text-critical-foreground shadow-lg ring-4 ring-critical/20 transition-[transform,filter] hover:brightness-110 active:scale-95 lg:bottom-6 lg:right-6 lg:px-5 duration-200 ease-out ${swapAnimationClass}`}
           style={{ transitionProperty: "opacity, transform" }}
-          title="Emergency SOS"
+          aria-label="Emergency SOS"
         >
-          <AlertCircle size={32} className="animate-pulse" />
-          <span className="absolute right-full mr-3 bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Emergency SOS
-          </span>
+          <AlertCircle className="size-6" aria-hidden="true" />
+          <span className="text-sm tracking-wide">SOS</span>
         </button>
       )}
 

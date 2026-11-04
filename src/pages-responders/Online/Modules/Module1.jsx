@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Layout from "../../../layouts/Layout";
-import Footer from "../../../components/responder/Footer";
 import "../../../styles/Modules/module1.css";
 
 export default function Module() {
@@ -175,7 +174,6 @@ export default function Module() {
         </aside>
 
       </div>
-      <Footer />
     </Layout>
   );
 }

@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../layouts/Layout";
-import Footer from "../components/responder/Footer";
 import "../styles/emergency-sos.css";
 import {
   MapContainer,
@@ -931,7 +930,6 @@ const EmergencySOS = () => {
         </AnimatePresence>
       </div>
 
-      <Footer />
     </Layout>
   );
 };

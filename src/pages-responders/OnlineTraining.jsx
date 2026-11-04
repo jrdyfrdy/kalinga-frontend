@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../layouts/Layout";
-import Footer from "../components/responder/Footer";
 import "../styles/online-training.css";
 import Courses from "../components/responder/Courses";
 import { ROUTES } from "../config/routes";
@@ -393,7 +392,6 @@ const OnlineTraining = () => {
           </div>
         </motion.section>
 
-        <Footer />
       </div>
     </Layout>
   );

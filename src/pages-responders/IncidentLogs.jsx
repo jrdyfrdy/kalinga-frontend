@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Layout from "../layouts/Layout";
-import Footer from "../components/responder/Footer";
 import nodeApi from "../services/nodeApi";
 import "../styles/incident-logs.css";
 
@@ -164,7 +163,6 @@ const IncidentLogs = () => {
           </div>
         )}
       </div>
-      <Footer />
     </Layout>
   );
 };

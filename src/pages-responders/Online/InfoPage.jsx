@@ -2,7 +2,6 @@
 import React, { useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "../../layouts/Layout";
-import Footer from "../../components/responder/Footer";
 import "../../styles/infoPage.css";
 
 export default function InfoPage() {
@@ -259,7 +258,6 @@ export default function InfoPage() {
           </button>
         </div>
       </div>
-      <Footer />
     </Layout>
   );
 }

@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { AlertTriangle, ChevronDown, ChevronUp, ShieldCheck, FileSignature, XCircle } from "lucide-react";
 import Layout from "../layouts/Layout";
-import Footer from "../components/responder/Footer";
 import ToggleChipGroup from "../components/responder/pcr/ToggleChipGroup";
 import StickyVitalsBar from "../components/responder/pcr/StickyVitalsBar";
 import SignaturePadField from "../components/responder/pcr/SignaturePadField";
@@ -1025,7 +1024,6 @@ export default function PatientCareReport() {
           </form>
         </div>
       </div>
-      <Footer />
     </Layout>
   );
 }

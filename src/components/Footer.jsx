@@ -1,119 +1,62 @@
-import {
-  Mail,
-  Smartphone,
-  Phone,
-  Facebook,
-  Linkedin,
-  Twitter,
-} from "lucide-react";
-import { Link } from "react-router-dom"; 
-import { ROUTES } from "../config/routes"; 
+import { Mail, Phone, Smartphone } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ROUTES } from "../config/routes";
+import logo from "../assets/kalinga-logo.png";
 
-export const Footer = () => {
-  return (
-    <footer className="py-10 px-6 bg-[#f5fbf7]">
-      <div className="container mx-auto max-w-6xl">
-        <div className="flex flex-col md:flex-row md:justify-between gap-10">
-          {/* Columns 1 & 2 Wrapper */}
-          <div className="flex flex-row gap-10 justify-center text-center md:justify-start md:text-left w-full md:w-auto">
-            {/* Column 1: Contact Us */}
-            <div>
-              <h3 className="text-xl font-extrabold mb-3">Contact Us</h3>
-              <div className="flex flex-col space-y-2 text-sm">
-                <div className="flex items-center justify-center md:justify-start gap-2 text-xs">
-                  <Smartphone className="h-4 w-4 text-primary" />
-                  <a
-                    href="tel:+639196013527"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    (+63) 919 601 3527
-                  </a>
-                </div>
-                <div className="flex items-center justify-center md:justify-start gap-2 text-xs">
-                  <Phone className="h-4 w-4 text-primary" />
-                  <a
-                    href="tel:+829876543"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    (82) 876-543
-                  </a>
-                </div>
-                <div className="flex items-center justify-center md:justify-start gap-2 text-xs">
-                  <Mail className="h-4 w-4 text-primary" />
-                  <a
-                    href="mailto:kalinga.tup@gmail.com"
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    kalinga.tup@gmail.com
-                  </a>
-                </div>
-              </div>
-            </div>
+const CONTACTS = [
+  { icon: Smartphone, label: "(+63) 919 601 3527", href: "tel:+639196013527" },
+  { icon: Phone, label: "(82) 876-543", href: "tel:+82876543" },
+  { icon: Mail, label: "kalinga.tup@gmail.com", href: "mailto:kalinga.tup@gmail.com" },
+];
 
-            {/* Column 2: Quick Links */}
-            <div>
-              <h3 className="text-xl font-extrabold mb-3">Quick Links</h3>
-              <div className="flex flex-col space-y-2 text-sm">
-                <Link
-                  to={ROUTES.PRIVACY_POLICY}
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Privacy Policy
-                </Link>
-                <Link
-                  to={ROUTES.TERMS_AND_CONDITIONS}
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Terms and Conditions
-                </Link>
-                <Link
-                  to={ROUTES.FAQS}
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                >
-                  FAQs
-                </Link>
-              </div>
-            </div>
-          </div>
+const LINKS = [
+  { label: "Privacy policy", to: ROUTES.PRIVACY_POLICY },
+  { label: "Terms and conditions", to: ROUTES.TERMS_AND_CONDITIONS },
+  { label: "FAQs", to: ROUTES.FAQS },
+];
 
-          {/* Column 3: Name + Socials */}
-          <div className="flex flex-col items-center md:items-end space-y-3">
-            <h1 className="text-5xl font-extrabold bg-gradient-to-r from-yellow-300 to-green-700 bg-clip-text text-transparent">
-              KALINGA
-            </h1>
-            <div className="flex flex-row gap-4">
-              <a
-                href="#"
-                target="_blank"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Facebook size={28} />
-              </a>
-              <a
-                href="#"
-                target="_blank"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Linkedin size={28} />
-              </a>
-              <a
-                href="#"
-                target="_blank"
-                className="text-muted-foreground hover:text-primary transition-colors"
-              >
-                <Twitter size={28} />
-              </a>
-            </div>
-          </div>
+/** Public site footer. */
+export const Footer = () => (
+  <footer className="border-t border-border bg-surface">
+    <div className="container grid gap-10 py-12 md:grid-cols-[1.5fr_1fr_1fr]">
+      <div className="space-y-3">
+        <div className="flex items-center gap-2.5">
+          <img src={logo} alt="" className="size-9 object-contain" />
+          <span className="text-xl font-bold tracking-tight">Kalinga</span>
         </div>
-
-        {/* Footer Bottom */}
-        <div className="mt-8 flex flex-wrap justify-center md:justify-between items-center border-t border-border pt-4 text-center md:text-left">
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Kalinga. All rights reserved.
-          </p>
-        </div>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Alisto sa bawat sakuna, tatag sa bawat pagbangon. Emergency response, care coordination and logistics for
+          every Filipino community.
+        </p>
       </div>
-    </footer>
-  );
-};
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold">Contact us</h2>
+        <ul className="space-y-2">
+          {CONTACTS.map(({ icon: Icon, label, href }) => (
+            <li key={href}>
+              <a href={href} className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary">
+                <Icon className="size-4 text-primary" aria-hidden="true" />
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold">Quick links</h2>
+        <ul className="space-y-2">
+          {LINKS.map(({ label, to }) => (
+            <li key={to}>
+              <Link to={to} className="text-sm text-muted-foreground transition-colors hover:text-primary">
+                {label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+    <div className="border-t border-border">
+      <p className="container py-4 text-xs text-muted-foreground">© {new Date().getFullYear()} Kalinga. All rights reserved.</p>
+    </div>
+  </footer>
+);

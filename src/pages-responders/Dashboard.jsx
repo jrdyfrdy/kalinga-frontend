@@ -7,7 +7,6 @@ import Reports from "../components/responder/Reports";
 import MapCard from "../components/responder/MapCard";
 import ResourcesCard from "../components/responder/ResourcesCard";
 import TriageCard from "../components/responder/TriageCard";
-import Footer from "../components/responder/Footer";
 import "../styles/personnel-style.css";
 import "../styles/responder-dashboard-polish.css";
 
@@ -40,7 +39,6 @@ const Dashboard = () => {
           <ResourcesCard />
 
           {/* Footer */}
-          <Footer />
         </div>
       </div>
     </Layout>

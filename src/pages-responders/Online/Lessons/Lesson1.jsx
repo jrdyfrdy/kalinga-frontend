@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import Layout from "../../../layouts/Layout";
-import Footer from "../../../components/responder/Footer";
 import "../../../styles/Modules/module1.css";
 
 export default function Lesson1() {
@@ -199,7 +198,6 @@ export default function Lesson1() {
         </aside>
       </div>
 
-      <Footer />
     </Layout>
   );
 }

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Layout from "../../layouts/Layout";
-import Footer from "../../components/responder/Footer";
 import courseContent from "../../data/courseContent";
 import "../../styles/assessment.css";
 import {
@@ -393,7 +392,6 @@ export default function AssessmentPage() {
             <p className="text-sm text-red-600 mt-2">{progressError}</p>
           )}
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -408,7 +406,6 @@ export default function AssessmentPage() {
         >
           Back to Modules
         </button>
-        <Footer />
       </Layout>
     );
   }
@@ -486,7 +483,6 @@ export default function AssessmentPage() {
             </div>
           )}
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -642,7 +638,6 @@ export default function AssessmentPage() {
             </div>
           )}
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -662,7 +657,6 @@ export default function AssessmentPage() {
             Back to Course
           </button>
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -834,7 +828,6 @@ export default function AssessmentPage() {
           </div>
         )}
       </div>
-      <Footer />
     </Layout>
   );
 }

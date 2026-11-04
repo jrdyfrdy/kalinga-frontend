@@ -9,11 +9,10 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { AlertTriangle, Loader2, Navigation2 } from "lucide-react";
+import { Navigation2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { NavbarB } from "../components/Navbar_2";
-import PatientSidebar from "../components/patients/Sidebar";
-import EmergencyFab from "../components/patients/EmergencyFab";
+import AppShell from "@/layouts/AppShell";
+import { Button, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import RescueDetailPanel, {
   formatETA,
   formatDistance,
@@ -152,7 +151,6 @@ const MapController = ({
 };
 
 export const RescueTracker = () => {
-  const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -380,39 +378,19 @@ export const RescueTracker = () => {
     return createResponderIcon(responderLocation?.heading || 0);
   }, [responderLocation?.heading]);
 
-  // No active rescue — show the default EmergencyFab (not the Chat FAB)
+  // No active rescue: the shell's EmergencyFab stays the SOS entry point.
   if (!loading && !rescueData) {
     return (
-      <div className="h-screen flex bg-background text-foreground overflow-hidden">
-        <PatientSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-        <div className="flex flex-col flex-1 transition-all duration-300">
-          <div className="sticky z-10 bg-background">
-            <NavbarB />
-          </div>
-          <main className="flex-1 flex items-center justify-center p-6">
-            <div className="text-center max-w-md">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Navigation2 className="h-10 w-10 text-gray-400" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                No Active Rescue
-              </h2>
-              <p className="text-gray-600 mb-6">
-                You don&apos;t have any active emergency responses at the
-                moment. If you need help, please use the Emergency SOS button.
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate("/patient/messages")}
-                className="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary/90 transition-colors"
-              >
-                Go to Messages
-              </button>
-            </div>
-          </main>
+      <AppShell role="patient">
+        <div className="flex min-h-full items-center justify-center p-6">
+          <EmptyState
+            icon={Navigation2}
+            title="No active rescue"
+            description="You don't have an emergency response in progress. If you need help, use the Emergency SOS button."
+            action={<Button onClick={() => navigate("/patient/messages")}>Go to messages</Button>}
+          />
         </div>
-        <EmergencyFab />
-      </div>
+      </AppShell>
     );
   }
 
@@ -429,33 +407,12 @@ export const RescueTracker = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-background text-foreground overflow-hidden">
-      <PatientSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-
-      <div className="flex flex-col flex-1 min-w-0 transition-all duration-300">
-        <div className="sticky z-10 bg-background">
-          <NavbarB />
-        </div>
-
-        <main className="flex-1 flex relative overflow-hidden">
+    <AppShell role="patient" variant="fullscreen">
+        <div className="flex h-full relative overflow-hidden">
           {loading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 text-primary animate-spin" />
-            </div>
+            <LoadingState className="flex-1" label="Loading rescue status…" />
           ) : error ? (
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center">
-                <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-3" />
-                <p className="text-gray-600 mb-4">{error}</p>
-                <button
-                  type="button"
-                  onClick={() => fetchRescueStatus()}
-                  className="px-4 py-2 bg-primary text-white rounded-lg"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
+            <ErrorState className="flex-1" title="Couldn't load rescue status" description={error} onRetry={() => fetchRescueStatus()} />
           ) : (
             <>
               {/* RescueDetailPanel renders:
@@ -538,12 +495,8 @@ export const RescueTracker = () => {
               </div>
             </>
           )}
-        </main>
-      </div>
-
-      {/* EmergencyFab auto-detects active rescue and swaps to Chat FAB */}
-      <EmergencyFab activeIncidentId={rescueData?.incident?.id} />
-    </div>
+        </div>
+    </AppShell>
   );
 };
 

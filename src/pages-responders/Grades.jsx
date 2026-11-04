@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Layout from "../layouts/Layout";
-import Footer from "../components/responder/Footer";
 import "../styles/grades.css";
 import { useAuth } from "@/context/AuthContext";
 import { getUserProgress, listCourses } from "@/services/trainingService";
@@ -318,7 +317,6 @@ const Grades = () => {
             </>
           )}
         </div>
-        <Footer />
       </div>
     </Layout>
   );

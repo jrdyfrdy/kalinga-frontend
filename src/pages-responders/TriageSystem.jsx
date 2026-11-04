@@ -18,7 +18,6 @@ import {
 } from "recharts";
 import Layout from "../layouts/Layout";
 import "../styles/triage-system.css";
-import Footer from "../components/responder/Footer";
 import nodeApi from "../services/nodeApi";
 
 // Severity color map
@@ -253,7 +252,6 @@ const TriageSystem = () => {
         <div className="triage-fullpage">
           <p style={{ padding: "2rem", textAlign: "center" }}>Loading triage data…</p>
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -633,7 +631,6 @@ const TriageSystem = () => {
         </AnimatePresence>
       </div>
 
-      <Footer />
     </Layout>
   );
 };

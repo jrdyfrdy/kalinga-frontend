@@ -14,13 +14,16 @@ const adminRoles = [ROLES.ADMIN];
 
 export const AdminRoutes = () => (
   <>
-    <Route
-      path={ROUTES.ADMIN.ROOT}
-      element={
-        <ProtectedRoute allowedRoles={adminRoles}>
-          <AdminPortal />
-        </ProtectedRoute>
-      }
-    />
+    {[ROUTES.ADMIN.ROOT, `${ROUTES.ADMIN.ROOT}/:section`].map((path) => (
+      <Route
+        key={path}
+        path={path}
+        element={
+          <ProtectedRoute allowedRoles={adminRoles}>
+            <AdminPortal />
+          </ProtectedRoute>
+        }
+      />
+    ))}
   </>
 );

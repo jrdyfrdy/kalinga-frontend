@@ -1,272 +1,170 @@
-import { cn } from "@/lib/utils";
-import { Menu, X, UserCircle, LogOut } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { HashLink } from "react-router-hash-link";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { LayoutDashboard, LogOut, Menu, ShieldCheck } from "lucide-react";
 import logo from "../assets/kalinga-logo.png";
 import { useAuth } from "../context/AuthContext";
 import { getDefaultRouteForRole } from "../utils/roleRouting";
+import { cn } from "@/lib/utils";
+import {
+  Avatar,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Sheet,
+  SheetContent,
+  ThemeToggle,
+} from "@/components/ui";
 
-const navItems = [
-  { name: "Home", href: "#hero" },
-  { name: "About", href: "#about" },
-  { name: "Our Doctors", href: "#doctors" },
-  { name: "Contact Us", href: "#contact" },
+const NAV_ITEMS = [
+  { name: "Home", href: "/#hero" },
+  { name: "About", href: "/#about" },
+  { name: "Mission", href: "/#mission" },
+  { name: "Contact", href: "/#contact" },
 ];
 
+/** Public site navigation (landing, auth and information pages). */
 export const NavbarA = () => {
   const { isAuthenticated, user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const profileRef = useRef(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (isMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-  }, [isMenuOpen]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close profile dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setIsProfileOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const verified = user?.verification_status === "verified";
+  const accountTarget = verified ? getDefaultRouteForRole(user?.role, user) : "/verification-pending";
+  const accountLabel = verified ? "Go to dashboard" : "Verification status";
 
   const handleLogout = async () => {
     try {
       await logout();
-      setIsProfileOpen(false);
-      window.location.assign("/#hero");
-    } catch (error) {
-      console.error("Logout failed:", error);
+    } finally {
       window.location.assign("/#hero");
     }
   };
 
   return (
-    <>
-      <nav
-        className={cn(
-          "fixed w-full z-50 transition-all duration-300 border-b border-gray-200",
-          isScrolled
-            ? "py-3 bg-background backdrop-blur-md shadow-xs"
-            : "py-5 bg-background",
-        )}
-      >
-        <div className="container flex items-center justify-between">
-          {/* Logo */}
-          <HashLink
-            smooth
-            to="/#hero"
-            className="flex items-center space-x-2 text-xl font-bold text-primary"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            <img src={logo} alt="Kalinga Logo" className="h-10 w-auto" />
-            <span className="relative z-10">
-              <span className="text-2xl font-bold bg-gradient-to-r from-lime-400 to-green-950 bg-clip-text text-transparent">
-                KALINGA
-              </span>
-            </span>
-          </HashLink>
+    <header
+      className={cn(
+        "fixed inset-x-0 top-0 z-50 border-b transition-colors",
+        scrolled ? "border-border bg-surface/90 shadow-xs backdrop-blur" : "border-transparent bg-background/80 backdrop-blur",
+      )}
+    >
+      <div className="container flex h-16 items-center justify-between gap-4">
+        <HashLink smooth to="/#hero" className="flex items-center gap-2.5" aria-label="Kalinga home">
+          <img src={logo} alt="" className="size-9 object-contain" />
+          <span className="text-xl font-bold tracking-tight text-foreground">Kalinga</span>
+        </HashLink>
 
-          {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item, key) => (
-              <HashLink
-                key={key}
-                smooth
-                to={`/${item.href}`}
-                className="text-foreground/80 hover:text-primary transition-colors duration-300"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {item.name}
-              </HashLink>
-            ))}
-
-            {/* User Profile or Sign In Button */}
-            {isAuthenticated ? (
-              <div className="relative ml-4" ref={profileRef}>
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors duration-300"
-                >
-                  <UserCircle className="w-5 h-5 text-primary" />
-                  <span className="text-sm font-medium text-foreground">
-                    {user?.name || "User"}
-                  </span>
-                </button>
-
-                {/* Profile Dropdown */}
-                {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50">
-                    <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-                      <p className="text-sm font-semibold text-foreground">
-                        {user?.name}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {user?.email}
-                      </p>
-                      {user?.role && (
-                        <span className="inline-block mt-2 px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded">
-                          {user.role.charAt(0).toUpperCase() +
-                            user.role.slice(1)}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Dashboard/Verification Button */}
-                    {user?.verification_status === "verified" ? (
-                      <Link
-                        to={getDefaultRouteForRole(user?.role, user)}
-                        onClick={() => setIsProfileOpen(false)}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors border-b border-gray-200"
-                      >
-                        <span>Go to Dashboard</span>
-                      </Link>
-                    ) : (
-                      <Link
-                        to="/verification-pending"
-                        onClick={() => setIsProfileOpen(false)}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-primary hover:bg-primary/5 transition-colors border-b border-gray-200"
-                      >
-                        <span>View Verification Status</span>
-                      </Link>
-                    )}
-
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                className="ml-4 px-4 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/80 transition-colors duration-300"
-              >
-                Sign In
-              </Link>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMenuOpen((prev) => !prev)}
-            className="md:hidden p-2 text-foreground z-50 relative"
-            aria-label={isMenuOpen ? "Close Menu" : "Open Menu"}
-          >
-            {isMenuOpen ? <X size={28} /> : <Menu size={28} />}
-          </button>
-        </div>
-      </nav>
-
-      {/* Mobile Nav Overlay */}
-      {isMenuOpen && (
-        <div className="fixed inset-0 bg-white z-[999] flex flex-col items-center justify-center space-y-8">
-          {/* Close Button */}
-          <button
-            onClick={() => setIsMenuOpen(false)}
-            className="absolute top-5 right-5 text-foreground"
-            aria-label="Close Menu"
-          >
-            <X size={32} />
-          </button>
-
-          {/* Menu Items */}
-          {navItems.map((item, key) => (
+        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
+          {NAV_ITEMS.map((item) => (
             <HashLink
-              key={key}
+              key={item.name}
               smooth
-              to={`/${item.href}`}
-              className="text-2xl font-medium text-foreground hover:text-primary transition-colors duration-300"
-              onClick={() => setIsMenuOpen(false)}
+              to={item.href}
+              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
             >
               {item.name}
             </HashLink>
           ))}
+        </nav>
 
-          {/* User Profile or Sign In Button */}
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
           {isAuthenticated ? (
-            <div className="flex flex-col items-center gap-4 mt-4">
-              {/* User Info Card */}
-              <div className="bg-primary/5 border border-primary/30 rounded-lg px-6 py-4 text-center">
-                <UserCircle className="w-16 h-16 text-primary mx-auto mb-2" />
-                <p className="text-lg font-semibold text-foreground">
-                  {user?.name}
-                </p>
-                <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
-                {user?.role && (
-                  <span className="inline-block mt-2 px-3 py-1 text-sm font-medium bg-primary/10 text-primary rounded">
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                  </span>
-                )}
-              </div>
-
-              {/* Dashboard/Verification Button */}
-              {user?.verification_status === "verified" ? (
-                <Link
-                  to={getDefaultRouteForRole(user?.role, user)}
-                  onClick={() => setIsMenuOpen(false)}
-                  className="w-full px-6 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/80 transition-colors duration-300 text-lg text-center"
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="hidden items-center gap-2 rounded-lg p-1 pr-2 transition-colors hover:bg-surface-2 md:flex"
+                  aria-label={`Account menu for ${user?.name || "you"}`}
                 >
-                  Go to Dashboard
-                </Link>
-              ) : (
-                <Link
-                  to="/verification-pending"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="w-full px-6 py-2 rounded-lg border border-primary bg-primary/5 text-primary font-medium hover:bg-primary/10 transition-colors duration-300 text-lg text-center"
-                >
-                  View Verification Status
-                </Link>
-              )}
-
-              {/* Logout Button */}
-              <button
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handleLogout();
-                }}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition-colors duration-300 text-lg"
-              >
-                <LogOut className="w-5 h-5" />
-                <span>Logout</span>
-              </button>
-            </div>
+                  <Avatar name={user?.name || "User"} size="sm" />
+                  <span className="max-w-32 truncate text-sm font-medium">{user?.name || "Account"}</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-60">
+                <DropdownMenuLabel className="space-y-0.5">
+                  <span className="block truncate text-sm font-semibold text-foreground">{user?.name}</span>
+                  <span className="block truncate font-normal">{user?.email}</span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to={accountTarget}>
+                    {verified ? <LayoutDashboard aria-hidden="true" /> : <ShieldCheck aria-hidden="true" />}
+                    {accountLabel}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem tone="critical" onSelect={handleLogout}>
+                  <LogOut aria-hidden="true" /> Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
-            <Link
-              to="/login"
-              className="px-6 py-2 rounded-lg bg-primary text-white font-medium hover:bg-primary/80 transition-colors duration-300 text-lg"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Sign In
-            </Link>
+            <Button asChild size="sm" className="hidden md:inline-flex">
+              <Link to="/login">Sign in</Link>
+            </Button>
           )}
+          <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
+            <Menu />
+          </Button>
         </div>
-      )}
-    </>
+      </div>
+
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent side="right" title="Menu">
+          <nav aria-label="Main" className="flex flex-col gap-1 p-3">
+            {NAV_ITEMS.map((item) => (
+              <HashLink
+                key={item.name}
+                smooth
+                to={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-lg px-3 py-3 text-base font-medium text-foreground hover:bg-surface-2"
+              >
+                {item.name}
+              </HashLink>
+            ))}
+          </nav>
+          <div className="space-y-2 border-t border-border p-4">
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center gap-3 pb-2">
+                  <Avatar name={user?.name || "User"} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{user?.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                  </div>
+                </div>
+                <Button asChild className="w-full" onClick={() => setMenuOpen(false)}>
+                  <Link to={accountTarget}>{accountLabel}</Link>
+                </Button>
+                <Button variant="outline" className="w-full" onClick={handleLogout}>
+                  <LogOut aria-hidden="true" /> Log out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild className="w-full" onClick={() => setMenuOpen(false)}>
+                  <Link to="/login">Sign in</Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full" onClick={() => setMenuOpen(false)}>
+                  <Link to="/create-acc">Create an account</Link>
+                </Button>
+              </>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </header>
   );
 };

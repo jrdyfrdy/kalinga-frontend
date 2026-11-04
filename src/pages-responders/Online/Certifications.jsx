@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import nodeApi from "../../services/nodeApi";
 import Layout from "../../layouts/Layout";
-import Footer from "../../components/responder/Footer";
 import "../../styles/personnel-style.css";
 import {
   FaDownload,
@@ -122,7 +121,6 @@ const Certifications = () => {
           </table>
         </div>
       </div>
-      <Footer />
     </Layout>
   );
 };

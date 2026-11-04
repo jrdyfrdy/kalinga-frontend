@@ -71,18 +71,16 @@ export default function RescueChatFab({ incidentId, className = "", style }) {
       type="button"
       onClick={openChat}
       disabled={loading}
-      className={`fixed bottom-6 right-6 z-50 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white p-4 rounded-full shadow-lg transition-transform transform hover:scale-110 active:scale-95 flex items-center justify-center group ${className}`}
+      className={`fixed bottom-24 right-4 z-50 flex h-14 items-center gap-2 rounded-full bg-info px-4 font-semibold text-info-foreground shadow-lg ring-4 ring-info/20 transition-[transform,filter] hover:brightness-110 active:scale-95 disabled:opacity-70 lg:bottom-6 lg:right-6 lg:px-5 ${className}`}
       style={style}
-      title="Chat with Responder"
+      aria-label="Chat with your responder"
     >
       {loading ? (
-        <Loader2 size={28} className="animate-spin" />
+        <Loader2 className="size-6 animate-spin motion-reduce:animate-none" aria-hidden="true" />
       ) : (
-        <MessageCircle size={28} />
+        <MessageCircle className="size-6" aria-hidden="true" />
       )}
-      <span className="absolute right-full mr-3 bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-        Chat with Responder
-      </span>
+      <span className="text-sm">Chat with responder</span>
     </button>
   );
 }

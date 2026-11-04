@@ -1,19 +1,10 @@
-import { useState } from "react";
-import PatientSidebar from "@/components/patients/Sidebar";
-import { NavbarB } from "@/components/Navbar_2";
+import AppShell from "@/layouts/AppShell";
 import HospitalNavigatorMap from "@/components/patients/HospitalNavigatorMap";
 
 export const PatientHospitalNavigator = () => {
-  const [collapsed, setCollapsed] = useState(false);
-
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground">
-      <PatientSidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      <div className="flex flex-1 flex-col transition-all duration-300 ml-0">
-        <div className="sticky top-0 z-10 bg-background shadow-sm">
-          <NavbarB />
-        </div>
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+    <AppShell role="patient">
+      <div className="p-4 lg:p-6">
           <div className="mx-auto max-w-7xl space-y-4">
             <div className="flex items-center justify-between">
               <div>
@@ -31,10 +22,10 @@ export const PatientHospitalNavigator = () => {
             </div>
             <HospitalNavigatorMap />
           </div>
-        </main>
       </div>
-    </div>
+    </AppShell>
   );
 };
+
 
 export default PatientHospitalNavigator;

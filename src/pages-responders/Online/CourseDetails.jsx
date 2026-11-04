@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Layout from "../../layouts/Layout";
-import Footer from "../../components/responder/Footer";
 import {
   FaInfoCircle,
   FaBook,
@@ -102,7 +101,6 @@ export default function CourseDetails() {
             Browse Modules
           </Link>
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -113,7 +111,6 @@ export default function CourseDetails() {
         <div className="course-wrapper flex justify-center items-center py-12">
           <FaSpinner className="h-8 w-8 animate-spin text-green-700" />
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -127,7 +124,6 @@ export default function CourseDetails() {
             Back to Modules
           </Link>
         </div>
-        <Footer />
       </Layout>
     );
   }
@@ -284,7 +280,6 @@ export default function CourseDetails() {
           )}
         </div>
       </div>
-      <Footer />
     </Layout>
   );
 }
