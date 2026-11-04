@@ -1,886 +1,459 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
 import {
-  Calendar,
-  ChevronDown,
-  Sun,
-  CloudSun,
-  Cloud,
-  CloudFog,
-  CloudDrizzle,
-  CloudRain,
-  CloudLightning,
-  Loader2,
+  Activity,
+  ArrowRight,
+  Bell,
+  CalendarDays,
   Clock,
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudLightning,
+  CloudRain,
+  CloudSun,
+  FlaskConical,
+  MapPin,
+  MessageSquare,
+  Navigation,
+  Siren,
+  Sun,
 } from "lucide-react";
 import api from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { formatDistanceToNow } from "date-fns";
-import { useNavigate } from "react-router-dom";
 import { useNotifications } from "../../hooks/useNotifications";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  ErrorState,
+  Page,
+  Skeleton,
+  StatusBadge,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
 
-// --- Weather Helper Functions ---
-const describeWeatherCode = (code) => {
-  const codes = {
-    0: { label: "Clear sky", variant: "clear" },
-    1: { label: "Mainly clear", variant: "partly" },
-    2: { label: "Partly cloudy", variant: "partly" },
-    3: { label: "Overcast", variant: "cloudy" },
-    45: { label: "Fog", variant: "fog" },
-    48: { label: "Depositing rime fog", variant: "fog" },
-    51: { label: "Light drizzle", variant: "drizzle" },
-    53: { label: "Drizzle", variant: "drizzle" },
-    55: { label: "Dense drizzle", variant: "drizzle" },
-    61: { label: "Slight rain", variant: "rain" },
-    63: { label: "Rain", variant: "rain" },
-    65: { label: "Heavy rain", variant: "rain" },
-    80: { label: "Slight rain showers", variant: "rain" },
-    81: { label: "Rain showers", variant: "rain" },
-    82: { label: "Violent rain showers", variant: "rain" },
-    95: { label: "Thunderstorm", variant: "thunder" },
-    96: { label: "Thunderstorm + hail", variant: "thunder" },
-    99: { label: "Thunderstorm + heavy hail", variant: "thunder" },
-  };
-  return codes[code] || { label: "Cloudy", variant: "cloudy" };
+const WEATHER_CODES = {
+  0: ["Clear sky", Sun],
+  1: ["Mainly clear", CloudSun],
+  2: ["Partly cloudy", CloudSun],
+  3: ["Overcast", Cloud],
+  45: ["Fog", CloudFog],
+  48: ["Rime fog", CloudFog],
+  51: ["Light drizzle", CloudDrizzle],
+  53: ["Drizzle", CloudDrizzle],
+  55: ["Dense drizzle", CloudDrizzle],
+  61: ["Slight rain", CloudRain],
+  63: ["Rain", CloudRain],
+  65: ["Heavy rain", CloudRain],
+  80: ["Rain showers", CloudRain],
+  81: ["Rain showers", CloudRain],
+  82: ["Violent rain showers", CloudRain],
+  95: ["Thunderstorm", CloudLightning],
+  96: ["Thunderstorm with hail", CloudLightning],
+  99: ["Severe thunderstorm", CloudLightning],
 };
 
-const iconForVariant = (variant) => {
-  switch (variant) {
-    case "clear":
-      return Sun;
-    case "partly":
-      return CloudSun;
-    case "cloudy":
-      return Cloud;
-    case "fog":
-      return CloudFog;
-    case "drizzle":
-      return CloudDrizzle;
-    case "rain":
-      return CloudRain;
-    case "thunder":
-      return CloudLightning;
-    default:
-      return Cloud;
-  }
+const dateLabel = (value, opts = { month: "short", day: "numeric", year: "numeric" }) => {
+  const d = value ? new Date(value) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.toLocaleDateString("en-PH", opts) : "—";
 };
 
-const formatTemperature = (value, unit) => {
-  if (typeof value !== "number" || Number.isNaN(value)) return "–";
-  return `${Math.round(value)}°${unit.toUpperCase()}`;
-};
+const greetingFor = (hour) => (hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening");
 
-// --- Weather Widget Component ---
-const WeatherWidget = () => {
-  const [weather, setWeather] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+/* ---------------------------------------------------------------- widgets */
+
+function WeatherCard() {
+  const [state, setState] = useState({ status: "loading", data: null });
 
   useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        setLoading(true);
-        setError(false);
-        const response = await fetch(
-          "https://api.open-meteo.com/v1/forecast?latitude=14.5995&longitude=120.9842&current=temperature_2m,weathercode&timezone=Asia%2FManila",
-        );
-        if (!response.ok) throw new Error("Failed to fetch");
-        const data = await response.json();
-        setWeather(data.current);
-      } catch (err) {
-        setError(true);
-        console.error("Failed to fetch weather", err);
-      } finally {
-        setLoading(false);
-      }
+    let cancelled = false;
+    fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=14.5995&longitude=120.9842&current=temperature_2m,weathercode&timezone=Asia%2FManila",
+    )
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then((json) => !cancelled && setState({ status: "ready", data: json.current }))
+      .catch(() => !cancelled && setState({ status: "error", data: null }));
+    return () => {
+      cancelled = true;
     };
-    fetchWeather();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-24">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-      </div>
-    );
-  }
-
-  if (error || !weather) {
-    return (
-      <div className="text-center text-red-500">
-        <p>Weather data unavailable.</p>
-      </div>
-    );
-  }
-
-  const weatherInfo = describeWeatherCode(weather.weathercode);
-  const Icon = iconForVariant(weatherInfo.variant);
+  const [label, Icon] = WEATHER_CODES[state.data?.weathercode] || ["Cloudy", Cloud];
 
   return (
-    <div className="flex items-center gap-4">
-      <Icon size={48} className="text-primary" />
-      <div className="text-left">
-        <p className="text-3xl font-bold text-primary">
-          {formatTemperature(weather.temperature_2m, "C")}
-        </p>
-        <p className="text-sm text-primary">{weatherInfo.label}</p>
-      </div>
-    </div>
-  );
-};
-
-// --- Notification Widget Component ---
-const NotificationWidget = () => {
-  // Use real-time notifications hook
-  const { notifications: allNotifications, loading } = useNotifications({
-    limit: 5,
-  });
-
-  // Get only the first 3 notifications
-  const notifications = useMemo(
-    () => allNotifications.slice(0, 3),
-    [allNotifications],
-  );
-
-  if (loading) {
-    return <div className="text-center text-sm text-gray-500">Loading...</div>;
-  }
-
-  if (notifications.length === 0) {
-    return (
-      <div className="text-center text-sm text-gray-500">
-        No new notifications.
-      </div>
-    );
-  }
-
-  return (
-    <ul className="space-y-3 text-left">
-      {notifications.map((notif) => (
-        <li
-          key={notif.id}
-          className={`flex gap-3 p-3 rounded-lg text-primary text-sm ${
-            !notif.read_at ? "bg-green-50" : "bg-gray-50"
-          }`}
-        >
-          <span
-            className={`flex-shrink-0 w-2 h-2 mt-1.5 rounded-full ${
-              !notif.read_at ? "bg-green-700 animate-pulse" : "bg-green-700"
-            }`}
-          ></span>
-          <div className="flex-1">
-            <p className="font-semibold">{notif.title}</p>
-            <p className="text-xs text-gray-600">{notif.description}</p>
-            <p className="text-xs text-gray-500 mt-1">
-              {formatDistanceToNow(new Date(notif.created_at), {
-                addSuffix: true,
-              })}
-            </p>
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
-// --- Upcoming Appointment Widget ---
-const AppointmentWidget = () => {
-  const [appointment, setAppointment] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchNextAppointment = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get("/appointments");
-
-        // Filter for upcoming only and sort by date ascending (soonest first)
-        const upcoming = response.data
-          .filter((app) => app.status.toLowerCase() === "upcoming")
-          .map((app) => ({
-            ...app,
-            dateObj: new Date(app.appointment_at),
-          }))
-          .sort((a, b) => a.dateObj - b.dateObj);
-
-        // Take the very first one
-        if (upcoming.length > 0) {
-          setAppointment(upcoming[0]);
+    <Card>
+      <CardHeader
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/patient/weather">Details</Link>
+          </Button>
         }
-      } catch (err) {
-        console.error("Failed to fetch appointment widget", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchNextAppointment();
-  }, []);
+      >
+        <CardTitle>Weather · Manila</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {state.status === "loading" ? (
+          <Skeleton className="h-14" />
+        ) : state.status === "error" ? (
+          <p className="text-sm text-muted-foreground">Weather is unavailable right now.</p>
+        ) : (
+          <div className="flex items-center gap-4">
+            <span className="flex size-12 items-center justify-center rounded-xl bg-info-subtle text-info">
+              <Icon className="size-6" aria-hidden="true" />
+            </span>
+            <div>
+              <p className="tabular text-2xl font-bold">{Math.round(state.data.temperature_2m)}°C</p>
+              <p className="text-sm text-muted-foreground">{label}</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
-  if (loading)
-    return <div className="text-center text-sm text-gray-500">Loading...</div>;
-
-  if (!appointment) {
-    return (
-      <div className="text-center p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-        <p className="text-sm text-gray-500">No upcoming appointments.</p>
-        <p className="text-xs text-green-600 font-semibold mt-1">
-          Book a visit now
-        </p>
-      </div>
-    );
-  }
-
-  const date = new Date(appointment.appointment_at);
-  const dateStr = date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-  const timeStr = date.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function NotificationsCard() {
+  const { notifications, loading } = useNotifications({ limit: 5 });
+  const recent = useMemo(() => notifications.slice(0, 3), [notifications]);
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex flex-col gap-2">
-      <div className="flex items-start gap-3">
-        <div className="bg-white p-2 rounded-md shadow-sm text-center min-w-[3.5rem]">
-          <p className="text-xs text-green-800 font-bold uppercase">
-            {date.toLocaleDateString("en-US", { month: "short" })}
-          </p>
-          <p className="text-xl font-extrabold text-green-700">
-            {date.getDate()}
-          </p>
-        </div>
-        <div className="flex-1">
-          <p className="font-bold text-primary text-sm line-clamp-1">
-            {appointment.hospital}
-          </p>
-          <p className="text-xs text-green-700 font-medium mb-1">
-            {appointment.service}
-          </p>
-          <div className="flex items-center gap-1 text-xs text-gray-600">
-            <Clock size={12} />
-            {timeStr}
+    <Card>
+      <CardHeader
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/patient/notifications">See all</Link>
+          </Button>
+        }
+      >
+        <CardTitle>Notifications</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading && recent.length === 0 ? (
+          <div className="space-y-2">
+            <Skeleton className="h-12" />
+            <Skeleton className="h-12" />
           </div>
-        </div>
-      </div>
-    </div>
+        ) : recent.length === 0 ? (
+          <EmptyState compact icon={Bell} title="You're all caught up" />
+        ) : (
+          <ul className="space-y-1">
+            {recent.map((n) => (
+              <li key={n.id} className="flex gap-3 rounded-lg p-2">
+                <span
+                  className={cn("mt-1.5 size-2 shrink-0 rounded-full", n.read_at ? "bg-border" : "bg-primary")}
+                  aria-hidden="true"
+                />
+                <div className="min-w-0">
+                  <p className={cn("truncate text-sm", n.read_at ? "font-medium" : "font-semibold")}>{n.title}</p>
+                  {n.description && <p className="line-clamp-2 text-sm text-muted-foreground">{n.description}</p>}
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
-};
+}
 
-const DARK = {
-  bg: "bg-background",
-  card: "bg-white",
-  header: "bg-primary",
-  textLight: "text-primary",
-  textMuted: "text-primary",
-  accent: "bg-brand-600 hover:bg-brand-600 text-white",
-  inputBorder: "border-primary",
-};
+function AppointmentCard() {
+  const [state, setState] = useState({ status: "loading", next: null });
 
-const DOWNLOAD_ICON_SVG = (
-  <svg
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="h-6 w-6 text-green-50 group-hover:text-white transition"
-  >
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-    <polyline points="14 2 14 8 20 8"></polyline>
-    <line x1="12" y1="12" x2="12" y2="18"></line>
-    <polyline points="9 15 12 18 15 15"></polyline>
-  </svg>
-);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get("/appointments")
+      .then((res) => {
+        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        const next = list
+          .filter((a) => String(a.status).toLowerCase() === "upcoming")
+          .sort((a, b) => new Date(a.appointment_at) - new Date(b.appointment_at))[0];
+        if (!cancelled) setState({ status: "ready", next: next || null });
+      })
+      .catch(() => !cancelled && setState({ status: "error", next: null }));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
-// --- Vitals Mock Data ---
-// --- Main Component ---
+  const date = state.next ? new Date(state.next.appointment_at) : null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Next appointment</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {state.status === "loading" ? (
+          <Skeleton className="h-16" />
+        ) : !state.next ? (
+          <EmptyState
+            compact
+            icon={CalendarDays}
+            title="No upcoming appointments"
+            action={
+              <Button asChild size="sm" variant="outline">
+                <Link to="/patient/appointments">Book a visit</Link>
+              </Button>
+            }
+          />
+        ) : (
+          <Link
+            to="/patient/appointments"
+            className="flex items-start gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-surface-2"
+          >
+            <span className="flex w-14 shrink-0 flex-col items-center rounded-lg bg-primary-subtle py-1.5 text-primary">
+              <span className="text-xs font-semibold uppercase">{date.toLocaleDateString("en-PH", { month: "short" })}</span>
+              <span className="tabular text-xl font-bold leading-none">{date.getDate()}</span>
+            </span>
+            <span className="min-w-0 space-y-0.5">
+              <span className="block truncate text-sm font-semibold">{state.next.hospital}</span>
+              <span className="block truncate text-sm text-muted-foreground">{state.next.service}</span>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="size-3.5" aria-hidden="true" />
+                {date.toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" })}
+              </span>
+            </span>
+          </Link>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function CareReportsCard() {
+  const [state, setState] = useState({ status: "loading", rows: [] });
+
+  const load = () => {
+    setState((s) => ({ ...s, status: "loading" }));
+    api
+      .get("/my-patient-care-reports")
+      .then((res) => {
+        const rows = (res.data?.data || []).slice(0, 5).map((report) => {
+          const vital = report.vitals_entries?.[0] || {};
+          const gcs = report.gcs_entries?.[0] || {};
+          let mental = report.physiological_status?.mentalStatus;
+          if (!mental && gcs.eyes) {
+            mental = `GCS ${parseInt(gcs.eyes) + parseInt(gcs.verbal || 0) + parseInt(gcs.motor || 0)}`;
+          }
+          return {
+            id: report.case_no || `PCR-${report.id}`,
+            date: report.dispatch_date || report.submitted_at || report.created_at,
+            complaint: report.noi_moi?.chiefComplaint || "—",
+            vitals: [vital.temp && `${vital.temp}°C`, vital.pulse && `${vital.pulse} bpm`, vital.spo2 && `SpO₂ ${vital.spo2}%`]
+              .filter(Boolean)
+              .join(" · "),
+            mental: mental || "—",
+            level: report.patient_details?.priorityLevel,
+            responder: report.user?.name || "Responder",
+          };
+        });
+        setState({ status: "ready", rows });
+      })
+      .catch(() => setState({ status: "error", rows: [] }));
+  };
+
+  useEffect(load, []);
+
+  return (
+    <Card>
+      <CardHeader
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/patient/health-records">View records</Link>
+          </Button>
+        }
+      >
+        <CardTitle>Recent care reports</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {state.status === "loading" ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10" />
+            <Skeleton className="h-10" />
+          </div>
+        ) : state.status === "error" ? (
+          <ErrorState compact title="Couldn't load your care reports" onRetry={load} />
+        ) : state.rows.length === 0 ? (
+          <EmptyState
+            compact
+            icon={Activity}
+            title="No care reports yet"
+            description="When a responder treats you, their report appears here."
+          />
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <TH>Case</TH>
+                <TH>Complaint</TH>
+                <TH className="hidden md:table-cell">Vitals</TH>
+                <TH>Priority</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {state.rows.map((row) => (
+                <TR key={row.id}>
+                  <TD>
+                    <p className="font-medium">{row.id}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {dateLabel(row.date)} · {row.responder}
+                    </p>
+                  </TD>
+                  <TD className="max-w-48 truncate">{row.complaint}</TD>
+                  <TD className="tabular hidden text-muted-foreground md:table-cell">{row.vitals || "—"}</TD>
+                  <TD>{row.level ? <StatusBadge status={row.level} /> : "—"}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LabResultsCard() {
+  const [state, setState] = useState({ status: "loading", rows: [] });
+
+  const load = () => {
+    setState((s) => ({ ...s, status: "loading" }));
+    api
+      .get("/lab-results", { params: { sort_by: "Descending" } })
+      .then((res) => setState({ status: "ready", rows: (Array.isArray(res.data) ? res.data : []).slice(0, 5) }))
+      .catch(() => setState({ status: "error", rows: [] }));
+  };
+
+  useEffect(load, []);
+
+  return (
+    <Card>
+      <CardHeader
+        actions={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/patient/health-records">All results</Link>
+          </Button>
+        }
+      >
+        <CardTitle>Latest lab results</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {state.status === "loading" ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10" />
+            <Skeleton className="h-10" />
+          </div>
+        ) : state.status === "error" ? (
+          <ErrorState compact title="Couldn't load lab results" onRetry={load} />
+        ) : state.rows.length === 0 ? (
+          <EmptyState compact icon={FlaskConical} title="No lab results yet" />
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <TH>Lab no.</TH>
+                <TH>Type</TH>
+                <TH className="hidden sm:table-cell">Branch</TH>
+                <TH className="text-right">Ordered</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {state.rows.map((r) => (
+                <TR key={r.id ?? r.lab_no}>
+                  <TD className="font-medium">{r.lab_no}</TD>
+                  <TD>
+                    <Badge tone="info">{r.type || "Lab"}</Badge>
+                  </TD>
+                  <TD className="hidden text-muted-foreground sm:table-cell">{r.branch || "—"}</TD>
+                  <TD className="tabular text-right text-muted-foreground">{dateLabel(r.order_date)}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* --------------------------------------------------------------- page */
+
+const QUICK_ACTIONS = [
+  { to: "/patient/report-emergency", label: "Report an emergency", hint: "Request a responder now", icon: Siren, tone: "critical" },
+  { to: "/patient/hospital-navigator", label: "Find a hospital", hint: "Nearest open facilities", icon: Navigation },
+  { to: "/patient/messages", label: "Messages", hint: "Chat with your care team", icon: MessageSquare },
+  { to: "/patient/evacuation-center", label: "Evacuation centers", hint: "Shelters near you", icon: MapPin },
+];
 
 export default function PatientDash() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [results, setResults] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [vitalsData, setVitalsData] = useState([]);
-  const [isVitalsLoading, setIsVitalsLoading] = useState(true);
-  const [vitalsError, setVitalsError] = useState(null);
-
-  const [dateFrom, setDateFrom] = useState("2024-01-01");
-  const [dateTo, setDateTo] = useState("2025-07-10");
-  const [sortBy, setSortBy] = useState("Descending");
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const resultsPerPage = 5;
-
-  let greeting = "Good morning";
-  const currentHour = new Date().getHours();
-  if (currentHour >= 12 && currentHour < 18) {
-    greeting = "Good afternoon";
-  } else if (currentHour >= 18) {
-    greeting = "Good evening";
-  }
-
-  const fetchResults = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await api.get("/lab-results", {
-        params: {
-          date_from: dateFrom,
-          date_to: dateTo,
-          sort_by: sortBy,
-        },
-      });
-      setResults(response.data);
-    } catch (err) {
-      setError("Failed to fetch lab results. Please try again later.");
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchVitals = async () => {
-    setIsVitalsLoading(true);
-    setVitalsError(null);
-    try {
-      const response = await api.get("/my-patient-care-reports");
-      // Mapping the response data to match the expected structure
-      const mappedData = response.data.data.map((report) => {
-        const firstVital =
-          report.vitals_entries && report.vitals_entries.length > 0
-            ? report.vitals_entries[0]
-            : {};
-        const gcs =
-          report.gcs_entries && report.gcs_entries.length > 0
-            ? report.gcs_entries[0]
-            : {};
-
-        let mentalStatus = report.physiological_status?.mentalStatus || "-";
-        if (mentalStatus === "-" && gcs.eyes) {
-          mentalStatus = `GCS: ${parseInt(gcs.eyes) + parseInt(gcs.verbal || 0) + parseInt(gcs.motor || 0)}`;
-        }
-
-        const rDate =
-          report.dispatch_date || report.submitted_at || report.created_at;
-
-        return {
-          id: report.case_no || `PCR-${report.id}`,
-          date: rDate ? new Date(rDate).toLocaleDateString("en-US") : "-",
-          temp: firstVital.temp || "-",
-          hr: firstVital.pulse || "-",
-          spo2: firstVital.spo2 || "-",
-          complaint: report.noi_moi?.chiefComplaint || "-",
-          mental: mentalStatus,
-          level: report.patient_details?.priorityLevel || "medium",
-          doctor: report.user?.name || "Responder",
-        };
-      });
-      setVitalsData(mappedData);
-    } catch (err) {
-      setVitalsError("Failed to fetch triage history.");
-      console.error("fetchVitals Error:", err);
-    } finally {
-      setIsVitalsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchResults();
-    fetchVitals();
-  }, []);
-
-  const handleGoClick = () => {
-    setCurrentPage(1);
-    fetchResults();
-  };
-
-  const handleDownload = (labNo) => {
-    console.log(`Downloading result file for Lab No: ${labNo}`);
-  };
-
-  const totalPages = Math.ceil(results.length / resultsPerPage);
-  const paginatedResults = results.slice(
-    (currentPage - 1) * resultsPerPage,
-    currentPage * resultsPerPage,
-  );
-
-  const formattedResults = paginatedResults.map((result) => ({
-    labNo: result.lab_no,
-    branch: result.branch,
-    orderDate: new Date(result.order_date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-    }),
-    patientID: result.patient_id_text,
-    account: result.account,
-    type: result.type,
-  }));
-
-  const PageIndicator = ({ number, isCurrent }) => (
-    <button
-      onClick={() => setCurrentPage(number)}
-      className={`h-8 w-8 rounded font-bold transition ${
-        isCurrent
-          ? "bg-green-700 text-white"
-          : `bg-gray-200 text-gray-700 hover:bg-gray-300`
-      }`}
-    >
-      {number}
-    </button>
-  );
-
-  const Pagination = () => (
-    <div className="flex justify-start items-center gap-2 mt-4">
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
-        <PageIndicator
-          key={pageNumber}
-          number={pageNumber}
-          isCurrent={currentPage === pageNumber}
-        />
-      ))}
-    </div>
-  );
-
-  const tableHeaders = [
-    { key: "labNo", name: "Lab No." },
-    { key: "branch", name: "Branch" },
-    { key: "orderDate", name: "Order Date" },
-    { key: "patientID", name: "Patient ID" },
-    { key: "account", name: "Account" },
-    { key: "type", name: "Type" },
-    { key: "download", name: "Download" },
-  ];
-
-  const MobileResultCard = ({ result }) => (
-    <div
-      className={`p-4 mb-3 border-b-2 border-gray-100 last:border-b-0 flex justify-between items-start`}
-    >
-      <div className="flex flex-col text-left space-y-1">
-        <p className={`text-xs ${DARK.textMuted}`}>
-          Lab No:{" "}
-          <span className="font-medium text-green-700">{result.labNo}</span>
-        </p>
-
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs mt-1">
-          <span
-            className={`font-medium text-green-600 px-2 py-0.5 rounded-full bg-green-50`}
-          >
-            {result.type}
-          </span>
-          <span className={`font-medium ${DARK.textMuted}`}>
-            {result.orderDate}
-          </span>
-          <span className={`font-medium ${DARK.textMuted}`}>
-            {result.branch}
-          </span>
-        </div>
-
-        <div className="text-xs mt-2 space-y-0.5 pt-1 border-t border-dashed border-gray-200">
-          <p className={DARK.textMuted}>
-            <span className="font-semibold">Patient ID:</span>{" "}
-            {result.patientID}
-          </p>
-          <p className={DARK.textMMuted}>
-            <span className="font-semibold">Account:</span> {result.account}
-          </p>
-        </div>
-      </div>
-
-      <button
-        onClick={() => handleDownload(result.labNo)}
-        className="group p-2 rounded-full bg-green-700 hover:bg-green-800 transition shadow-md shrink-0"
-        title="Download Result"
-      >
-        {DOWNLOAD_ICON_SVG}
-      </button>
-    </div>
-  );
-
-  // --- Mobile Card for Vitals ---
-  const MobileVitalsCard = ({ item }) => (
-    <div className="p-4 mb-3 bg-white border border-gray-200 rounded-lg shadow-sm text-left">
-      <div className="flex justify-between items-start mb-2">
-        <span className="text-xs font-bold text-gray-800 break-words w-2/3">
-          {item.id}
-        </span>
-        <span className="text-xs text-gray-500">{item.date}</span>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 mb-3 bg-gray-50 p-2 rounded">
-        <div className="text-center">
-          <p className="text-[10px] text-gray-500 uppercase">Temp</p>
-          <p className="font-bold text-gray-800">{item.temp}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] text-gray-500 uppercase">HR</p>
-          <p className="font-bold text-gray-800">{item.hr}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-[10px] text-gray-500 uppercase">SpO2</p>
-          <p className="font-bold text-gray-800">{item.spo2}</p>
-        </div>
-      </div>
-
-      <div className="space-y-1 text-xs text-gray-700">
-        <p>
-          <span className="font-semibold">Complaint:</span> {item.complaint}
-        </p>
-        <p>
-          <span className="font-semibold">Mental:</span> {item.mental}
-        </p>
-        <p>
-          <span className="font-semibold">Doctor:</span> {item.doctor}
-        </p>
-      </div>
-
-      <div
-        className={`mt-2 text-center text-xs font-bold py-1 px-2 rounded ${
-          item.level === "medium" ||
-          item.level === "medium-priority" ||
-          item.level === "moderate"
-            ? "bg-orange-100 text-orange-800"
-            : "bg-gray-100"
-        }`}
-      >
-        Level:{" "}
-        {item.level && typeof item.level === "string"
-          ? item.level.toUpperCase()
-          : item.level}
-      </div>
-    </div>
-  );
+  const firstName = (user?.name || "").split(" ")[0];
 
   return (
-    <div className={`min-h-screen p-4 sm:p-6 md:p-8 ${DARK.bg} font-inter`}>
-      <header className="mb-6 p-4 text-left">
-        <h1 className={`text-3xl md:text-4xl font-extrabold ${DARK.textLight}`}>
-          {greeting}, {user ? user.name : "Patient"}!
+    <Page>
+      <div className="space-y-1">
+        <p className="text-sm text-muted-foreground">
+          {new Date().toLocaleDateString("en-PH", { weekday: "long", month: "long", day: "numeric" })}
+        </p>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          {greetingFor(new Date().getHours())}
+          {firstName ? `, ${firstName}` : ""}
         </h1>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* --- COLUMN 1: Main Content Card --- */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* --- Vitals Table (Triage History) --- */}
-          <div className="bg-white rounded-xl shadow-lg p-6 overflow-hidden">
-            <div className="flex items-center gap-2 mb-4 justify-between">
-              <h2 className="text-xl font-bold text-primary">Triage History</h2>
-              <button
-                className="text-green-700 font-semibold text-sm hover:underline"
-                onClick={() => navigate("/patient/health-records?tab=triage")}
-              >
-                See All
-              </button>
-            </div>
-            {/* Mobile Vitals View */}
-            <div className="md:hidden">
-              {isVitalsLoading ? (
-                <div className="text-center py-4 text-gray-500">
-                  Loading triage history...
-                </div>
-              ) : vitalsError ? (
-                <div className="text-center py-4 text-red-500">
-                  {vitalsError}
-                </div>
-              ) : vitalsData.length > 0 ? (
-                vitalsData
-                  .slice(0, 5)
-                  .map((item, idx) => (
-                    <MobileVitalsCard key={idx} item={item} />
-                  ))
-              ) : (
-                <div className="text-center py-4 text-gray-500">
-                  No triage history found.
-                </div>
-              )}
-            </div>
-            {/* Desktop Vitals Table */}
-            <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-200 min-w-0">
-              <table className="w-full table-auto text-sm">
-                <thead className="bg-primary">
-                  <tr>
-                    <th className="px-2 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      Patient ID
-                    </th>
-                    <th className="px-2 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      Date
-                    </th>
-                    <th className="px-1 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      Temp
-                    </th>
-                    <th className="px-1 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      HR
-                    </th>
-                    <th className="px-1 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      SpO₂
-                    </th>
-                    <th className="px-2 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      Complaint
-                    </th>
-                    <th className="px-2 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      Mental
-                    </th>
-                    <th className="px-2 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      Level
-                    </th>
-                    <th className="px-2 py-3 text-center font-semibold uppercase tracking-wider text-white">
-                      Doctor
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {isVitalsLoading ? (
-                    <tr>
-                      <td
-                        colSpan={9}
-                        className="py-4 text-center text-gray-500"
-                      >
-                        Loading triage history...
-                      </td>
-                    </tr>
-                  ) : vitalsError ? (
-                    <tr>
-                      <td colSpan={9} className="py-4 text-center text-red-500">
-                        {vitalsError}
-                      </td>
-                    </tr>
-                  ) : vitalsData.length > 0 ? (
-                    vitalsData.slice(0, 5).map((item, idx) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-gray-50 transition text-center"
-                      >
-                        <td className="px-2 py-3 font-medium text-green-700">
-                          {item.id}
-                        </td>
-                        <td className="px-2 py-3 text-primary">{item.date}</td>
-                        <td className="px-1 py-3 text-primary">{item.temp}</td>
-                        <td className="px-1 py-3 text-primary">{item.hr}</td>
-                        <td className="px-1 py-3 font-bold text-green-600">
-                          {item.spo2}
-                        </td>
-                        <td
-                          className="px-2 py-3 max-w-[100px] truncate text-primary"
-                          title={item.complaint}
-                        >
-                          {item.complaint}
-                        </td>
-                        <td className="px-2 py-3 text-primary">
-                          {item.mental}
-                        </td>
-                        <td
-                          className={`px-2 py-3 font-bold ${
-                            item.level === "medium" ||
-                            item.level === "medium-priority" ||
-                            item.level === "moderate"
-                              ? "bg-orange-50 text-warning-subtle-foreground"
-                              : ""
-                          }`}
-                        >
-                          {item.level && typeof item.level === "string"
-                            ? item.level.toUpperCase()
-                            : item.level}
-                        </td>
-                        <td className="px-2 py-3 text-green-800 break-words">
-                          {item.doctor}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={9}
-                        className="py-4 text-center text-gray-500"
-                      >
-                        No triage history found.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* --- Lab Results --- */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="flex items-center gap-2 mb-4 justify-between">
-              <h2 className="text-xl font-bold text-primary">Lab Results</h2>
-              <button
-                className="text-green-700 font-semibold text-sm hover:underline"
-                onClick={() => navigate("/patient/health-records?tab=lab")}
-              >
-                See All
-              </button>
-            </div>
-            {/* Data Table Container */}
-            <div
-              className={`rounded-xl overflow-hidden border border-gray-200`}
-            >
-              {/* Mobile Card List */}
-              <div className="sm:hidden">
-                {isLoading ? (
-                  <div className="py-8 text-center text-gray-500 font-medium">
-                    Loading results...
-                  </div>
-                ) : error ? (
-                  <div className="py-8 text-center text-red-500 font-medium">
-                    {error}
-                  </div>
-                ) : formattedResults.slice(0, 5).length > 0 ? (
-                  formattedResults
-                    .slice(0, 5)
-                    .map((result) => (
-                      <MobileResultCard key={result.labNo} result={result} />
-                    ))
-                ) : (
-                  <div className="py-8 text-center text-gray-500 font-medium">
-                    No results found.
-                  </div>
-                )}
-              </div>
-              {/* Desktop Table View */}
-              <div className="hidden sm:block overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className={DARK.header}>
-                    <tr>
-                      {tableHeaders.map((header) => (
-                        <th
-                          key={header.key}
-                          scope="col"
-                          className={`px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-white`}
-                        >
-                          {header.name}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className={`divide-y divide-gray-100 ${DARK.card}`}>
-                    {isLoading ? (
-                      <tr>
-                        <td
-                          colSpan={tableHeaders.length}
-                          className="py-8 text-center text-gray-500 font-medium"
-                        >
-                          Loading results...
-                        </td>
-                      </tr>
-                    ) : error ? (
-                      <tr>
-                        <td
-                          colSpan={tableHeaders.length}
-                          className="py-8 text-center text-red-500 font-medium"
-                        >
-                          {error}
-                        </td>
-                      </tr>
-                    ) : formattedResults.slice(0, 5).length > 0 ? (
-                      formattedResults.slice(0, 5).map((result) => (
-                        <tr
-                          key={result.labNo}
-                          className="hover:bg-gray-50 transition text-center"
-                        >
-                          <td
-                            className={`px-4 py-3 whitespace-nowrap text-sm font-medium ${DARK.textLight}`}
-                          >
-                            {result.labNo}
-                          </td>
-                          <td
-                            className={`px-4 py-3 whitespace-nowLg text-sm ${DARK.textMuted}`}
-                          >
-                            {result.branch}
-                          </td>
-                          <td
-                            className={`px-4 py-3 whitespace-nowrap text-sm ${DARK.textMuted}`}
-                          >
-                            {result.orderDate}
-                          </td>
-                          <td
-                            className={`px-4 py-3 whitespace-nowrap text-sm ${DARK.textMuted}`}
-                          >
-                            {result.patientID}
-                          </td>
-                          <td
-                            className={`px-4 py-3 whitespace-nowrap text-sm ${DARK.textMuted}`}
-                          >
-                            {result.account}
-                          </td>
-                          <td
-                            className={`px-4 py-3 whitespace-nowrap text-sm font-bold text-green-600`}
-                          >
-                            {result.type}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            <button
-                              onClick={() => handleDownload(result.labNo)}
-                              className="group p-2 rounded-full bg-green-700 hover:bg-green-800 transition"
-                              title="Download Result"
-                            >
-                              {DOWNLOAD_ICON_SVG}
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={tableHeaders.length}
-                          className="py-8 text-center text-gray-500 font-medium"
-                        >
-                          No results found for the selected criteria.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* --- COLUMN 2: Sidebar --- */}
-        <aside className="lg:col-span-1 space-y-6">
-          {/* Upcoming Appointment */}
-          <button
-            onClick={() => navigate("/patient/appointments")}
-            className="w-full bg-white rounded-xl shadow-lg p-6 text-left hover:bg-gray-50 transition"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-primary">
-                Upcoming Appointment
-              </h2>
-            </div>
-            <AppointmentWidget />
-          </button>
-
-          {/* Notifications Section */}
-          <button
-            onClick={() => navigate("/patient/notifications")}
-            className="w-full bg-white rounded-xl shadow-lg p-6 text-left hover:bg-gray-50 transition"
-          >
-            <h2 className="text-xl font-bold text-primary mb-4">
-              Notifications
-            </h2>
-            <NotificationWidget />
-          </button>
-
-          {/* Weather Section */}
-          <button
-            onClick={() => navigate("/patient/weather")}
-            className="w-full bg-white rounded-xl shadow-lg p-6 text-left hover:bg-gray-50 transition"
-          >
-            <h2 className="text-xl font-bold text-primary mb-4">Weather</h2>
-            <WeatherWidget />
-          </button>
-        </aside>
       </div>
-    </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {QUICK_ACTIONS.map(({ to, label, hint, icon: Icon, tone }) => (
+          <Link
+            key={to}
+            to={to}
+            className={cn(
+              "group flex items-center gap-3 rounded-xl border p-4 shadow-xs transition-shadow hover:shadow-md",
+              tone === "critical" ? "border-critical/30 bg-critical-subtle" : "border-border bg-surface",
+            )}
+          >
+            <span
+              className={cn(
+                "flex size-10 shrink-0 items-center justify-center rounded-lg",
+                tone === "critical" ? "bg-critical text-critical-foreground" : "bg-primary-subtle text-primary",
+              )}
+            >
+              <Icon className="size-5" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">{label}</span>
+              <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+            </span>
+            <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-6">
+          <CareReportsCard />
+          <LabResultsCard />
+        </div>
+        <div className="space-y-6">
+          <AppointmentCard />
+          <NotificationsCard />
+          <WeatherCard />
+        </div>
+      </div>
+    </Page>
   );
 }

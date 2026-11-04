@@ -1,3 +1,4 @@
+import { Callout } from "@/components/ui";
 import React, { useState, useEffect } from "react";
 import {
   Truck,
@@ -125,12 +126,10 @@ const NotificationWidget = () => {
         setNotifications(logisticsNotifs.slice(0, 5));
       } catch (err) {
         console.error("Failed to fetch notifications for widget", err);
-        // Fallback to demo data with type field
-        const mockWithType = DEMO_NOTIFICATIONS.map((n) => ({
-          ...n,
-          type: "logistics",
-        }));
-        setNotifications(mockWithType);
+        // Sample notifications only in dev builds.
+        setNotifications(
+          import.meta.env.DEV ? DEMO_NOTIFICATIONS.map((n) => ({ ...n, type: "logistics" })) : [],
+        );
       } finally {
         setLoading(false);
       }
@@ -789,7 +788,7 @@ const LogisDash = () => {
   });
   // Fall back to demo data only when explicitly in demo mode AND no live data yet
   const shipments =
-    liveShipments.length > 0 ? liveShipments : isDemoMode ? DEMO_SHIPMENTS : [];
+    liveShipments.length > 0 ? liveShipments : isDemoMode && import.meta.env.DEV ? DEMO_SHIPMENTS : [];
 
   // Get the authenticated user and their assigned hospital
   const { user } = useAuth();
@@ -869,7 +868,8 @@ const LogisDash = () => {
             "Requests API unavailable, using demo fallback",
             requestsResult.reason,
           );
-          setRequests(DEMO_RESOURCE_REQUESTS);
+          // Sample data only in dev builds; production shows the real (empty) state.
+          setRequests(import.meta.env.DEV ? DEMO_RESOURCE_REQUESTS : []);
           usingFallback = true;
         }
 
@@ -890,7 +890,7 @@ const LogisDash = () => {
             "Assets API unavailable, using demo fallback",
             assetsResult.reason,
           );
-          setAssets(DEMO_ASSETS);
+          setAssets(import.meta.env.DEV ? DEMO_ASSETS : []);
           usingFallback = true;
         }
 
@@ -953,13 +953,11 @@ const LogisDash = () => {
       <>
         {/* Demo Mode Banner */}
         {isDemoMode && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm text-yellow-800">
-            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-            <span>
-              <strong>Demo Mode:</strong> Some data shown is sample data because
-              one or more API endpoints are unavailable.
-            </span>
-          </div>
+          <Callout tone="warning" icon={AlertTriangle} title="Some live data is unavailable" className="mb-4">
+            {import.meta.env.DEV
+              ? "One or more API endpoints failed, so sample data is shown (dev build only)."
+              : "One or more services didn't respond. Figures may be incomplete; they refresh automatically."}
+          </Callout>
         )}
         {/* ROW 1: Top Cards */}
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-6">
