@@ -28,10 +28,15 @@ export default function LogInPage() {
       navigateToRoleBasedRoute(data.user, navigate, { from });
     } catch (err) {
       const status = err?.response?.status;
+      console.error("Login failed", err);
       setError(
         status === 401 || status === 422
           ? "That email and password don't match. Check them and try again."
-          : err?.response?.data?.message || "We couldn't sign you in. Check your connection and try again.",
+          : status === 403 || status === 429
+            ? err?.response?.data?.message || "Sign-in is temporarily blocked. Try again later."
+            : status >= 500
+              ? "Something went wrong on our side. Please try again in a moment."
+              : "We couldn't reach Kalinga. Check your connection and try again.",
       );
     } finally {
       setIsSubmitting(false);

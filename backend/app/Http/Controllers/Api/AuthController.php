@@ -20,10 +20,18 @@ class AuthController extends Controller
     private function issueToken(User $user, Request $request, string $name = 'auth_token'): string
     {
         $result = $user->createToken($name);
-        $result->accessToken->forceFill([
-            'ip_address' => $request->ip(),
-            'user_agent' => substr((string) $request->userAgent(), 0, 1000),
-        ])->save();
+        // Device metadata is best-effort: a database that hasn't run the
+        // 2026_10_10_000003 migration yet must not block sign-in.
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('personal_access_tokens', 'ip_address')) {
+                $result->accessToken->forceFill([
+                    'ip_address' => $request->ip(),
+                    'user_agent' => substr((string) $request->userAgent(), 0, 1000),
+                ])->save();
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Could not record token device metadata: '.$e->getMessage());
+        }
 
         return $result->plainTextToken;
     }
