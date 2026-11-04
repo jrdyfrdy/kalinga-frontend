@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import nodeApi from "../../services/nodeApi";
+import { Card, CardDescription, CardHeader, CardTitle, LoadingState } from "@/components/ui";
+
+const MANILA = [14.5995, 120.9842];
 
 // ✅ Fix marker icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -38,71 +41,42 @@ const MapCard = () => {
   }, []);
 
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
-        () => setUserLocation([14.5995, 120.9842]),
-      );
-    } else {
-      setUserLocation([14.5995, 120.9842]);
-    }
+    const fallback = () => setUserLocation((current) => current || MANILA);
+    if (!navigator.geolocation) return fallback();
+    // Don't wait forever on an unanswered permission prompt.
+    const timer = setTimeout(fallback, 8000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(timer);
+        setUserLocation([pos.coords.latitude, pos.coords.longitude]);
+      },
+      () => {
+        clearTimeout(timer);
+        fallback();
+      },
+      { timeout: 8000, maximumAge: 60000 },
+    );
+    return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div
-      className="card responder-widget map-widget-card"
-      style={{
-        paddingBottom: 0,
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <h3
-        className="card-title"
-        style={{ marginBottom: "0.75rem", textAlign: "center" }}
-      >
-        Nearest Hospitals Around You
-      </h3>
-
-      <div
-        style={{
-          flexGrow: 1,
-          width: "100%",
-          height: "100%",
-          minHeight: "380px",
-          borderRadius: "10px",
-          overflow: "hidden",
-          display: "flex",
-        }}
-      >
+    <Card className="flex flex-col overflow-hidden">
+      <CardHeader>
+        <CardTitle>Nearest hospitals</CardTitle>
+        <CardDescription>{hospitals.length ? `${hospitals.length} facilities on the map` : "Facilities near your location"}</CardDescription>
+      </CardHeader>
+      <div className="relative min-h-[380px] flex-1 border-t border-border">
         {userLocation ? (
-          <MapContainer
-            center={userLocation}
-            zoom={13}
-            style={{
-              width: "100%",
-              height: "100%",
-              borderRadius: "10px",
-            }}
-            className="leaflet-map"
-          >
+          <MapContainer center={userLocation} zoom={13} className="absolute inset-0 size-full">
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
-
-            {/* 📍 User location */}
             <Marker position={userLocation}>
-              <Popup>You are here 📍</Popup>
+              <Popup>You are here</Popup>
             </Marker>
-
-            {/* 🏥 Hospitals from DB */}
             {hospitals.map((h) => (
-              <Marker
-                key={h.id}
-                position={[parseFloat(h.latitude), parseFloat(h.longitude)]}
-              >
+              <Marker key={h.id} position={[parseFloat(h.latitude), parseFloat(h.longitude)]}>
                 <Popup>
                   <strong>{h.name}</strong>
                   <br />
@@ -116,16 +90,13 @@ const MapCard = () => {
                 </Popup>
               </Marker>
             ))}
-
             <SetViewOnLocation coords={userLocation} />
           </MapContainer>
         ) : (
-          <p style={{ textAlign: "center", padding: "2rem" }}>
-            Getting your location...
-          </p>
+          <LoadingState className="absolute inset-0" label="Finding your location…" />
         )}
       </div>
-    </div>
+    </Card>
   );
 };
 

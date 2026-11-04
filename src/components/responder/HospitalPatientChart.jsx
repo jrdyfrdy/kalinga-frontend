@@ -1,86 +1,69 @@
-// src/components/HospitalPatientChart.jsx
-import React, { useEffect, useState } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { useEffect, useState } from "react";
+import { Building2 } from "lucide-react";
 import nodeApi from "../../services/nodeApi";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, ErrorState, Skeleton } from "@/components/ui";
+import { useChartTheme } from "@/lib/chartTheme";
 
-const COLORS = ["#1A4718", "#FEC700", "#1877F2", "#cf0909ff"];
-
+/**
+ * Patients across DOH hospitals by state. A short labelled bar list reads
+ * faster than a donut and keeps every value visible (no colour-only legend).
+ */
 const HospitalPatientChart = () => {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const chart = useChartTheme();
+  const [state, setState] = useState({ status: "loading", rows: [] });
 
-  useEffect(() => {
-    const fetchDistribution = async () => {
-      try {
-        // Primary: Node backend
-        const { data: res } = await nodeApi.get(
-          "/hospitals/patient-distribution",
-        );
-        setData(res.data || []);
-      } catch (err) {
-        console.error("Failed to fetch patient distribution", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDistribution();
-  }, []);
+  const load = () => {
+    setState((s) => ({ ...s, status: "loading" }));
+    nodeApi
+      .get("/hospitals/patient-distribution")
+      .then(({ data }) => setState({ status: "ready", rows: Array.isArray(data?.data) ? data.data : [] }))
+      .catch(() => setState({ status: "error", rows: [] }));
+  };
+  useEffect(load, []);
+
+  const total = state.rows.reduce((sum, r) => sum + (Number(r.value) || 0), 0);
+  const max = Math.max(1, ...state.rows.map((r) => Number(r.value) || 0));
+  const colorFor = (name, index) =>
+    /critical/i.test(name) ? chart.status.critical : chart.seriesColor(index);
 
   return (
-    <div className="card responder-widget responder-widget--distribution">
-      <h3 className="card-title">Hospital Patient Distribution</h3>
-      {loading ? (
-        <p style={{ padding: "1rem" }}>Loading…</p>
-      ) : (
-        <div className="chart-container patient-chart-wrap">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="45%"
-                innerRadius={54}
-                outerRadius={88}
-                paddingAngle={2}
-                dataKey="value"
-                stroke="none"
-                isAnimationActive
-              >
-                {data.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(value, name) => [`${value} Patients`, name]}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)",
-                }}
-                itemStyle={{ fontWeight: 600, color: "#374151" }}
-              />
-              <Legend
-                layout="horizontal"
-                verticalAlign="bottom"
-                align="center"
-                iconType="circle"
-                wrapperStyle={{ paddingTop: "14px", fontSize: "12px" }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Hospital patient distribution</CardTitle>
+        {state.status === "ready" && total > 0 && (
+          <CardDescription className="tabular">{total.toLocaleString()} patients across DOH hospitals</CardDescription>
+        )}
+      </CardHeader>
+      <CardContent>
+        {state.status === "loading" ? (
+          <Skeleton className="h-32" />
+        ) : state.status === "error" ? (
+          <ErrorState compact title="Couldn't load patient distribution" onRetry={load} />
+        ) : state.rows.length === 0 ? (
+          <EmptyState compact icon={Building2} title="No patient data yet" />
+        ) : (
+          <ul className="space-y-3">
+            {state.rows.map((row, i) => {
+              const value = Number(row.value) || 0;
+              return (
+                <li key={row.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{row.name}</span>
+                    <span className="tabular text-muted-foreground">
+                      {value.toLocaleString()}
+                      {total > 0 && <span className="ml-1.5 text-xs">({Math.round((value / total) * 100)}%)</span>}
+                    </span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+                    <div className="h-full rounded-full" style={{ width: `${(value / max) * 100}%`, background: colorFor(row.name, i) }} />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

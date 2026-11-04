@@ -1,200 +1,142 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  FaExclamationTriangle,
-  FaUserMd,
-  FaHospital,
-  FaBell,
-  FaChevronDown,
-  FaChevronUp,
-  FaClock,
-  FaMapMarkerAlt,
-} from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { AlertTriangle, ArrowRight, Clock, Stethoscope } from "lucide-react";
 import nodeApi from "../../services/nodeApi";
-import "../../styles/reports-card.css";
+import {
+  Badge,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  ErrorState,
+  Skeleton,
+  StatusBadge,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
 
-const getSeverityClass = (severity) => {
-  switch (severity) {
-    case "critical": return "severity-critical";
-    case "high":     return "severity-high";
-    case "medium":   return "severity-medium";
-    default:         return "severity-low";
-  }
+const occupancyTone = (pct) => (pct >= 90 ? "bg-critical" : pct >= 75 ? "bg-warning" : "bg-success");
+const when = (value) => {
+  const d = value ? new Date(value) : null;
+  return d && !Number.isNaN(d.getTime())
+    ? d.toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+    : "";
 };
 
+function CapacityAlert({ alert }) {
+  return (
+    <li className="space-y-2 rounded-lg border border-border p-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-semibold">{alert.hospital_name}</p>
+        {alert.severity && <StatusBadge status={alert.severity} />}
+      </div>
+      {alert.message && <p className="text-sm text-muted-foreground">{alert.message}</p>}
+      {alert.occupancy != null && (
+        <div className="space-y-1">
+          <div className="h-1.5 overflow-hidden rounded-full bg-surface-2">
+            <div className={cn("h-full rounded-full", occupancyTone(alert.occupancy))} style={{ width: `${Math.min(100, alert.occupancy)}%` }} />
+          </div>
+          <p className="tabular text-xs text-muted-foreground">{alert.occupancy}% occupied</p>
+        </div>
+      )}
+      {alert.action && (
+        <p className="flex items-start gap-1.5 text-sm">
+          <ArrowRight className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
+          {alert.action}
+        </p>
+      )}
+      <p className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Clock className="size-3" aria-hidden="true" /> {when(alert.created_at)}
+      </p>
+    </li>
+  );
+}
+
+function SpecialistAlert({ alert }) {
+  return (
+    <li className="space-y-1.5 rounded-lg border border-border p-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-semibold">{alert.hospital_name}</p>
+        {alert.status && <Badge tone="warning">{alert.status}</Badge>}
+      </div>
+      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Stethoscope className="size-3.5" aria-hidden="true" /> {alert.title}
+      </p>
+      {alert.action && (
+        <p className="flex items-start gap-1.5 text-sm">
+          <ArrowRight className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
+          {alert.action}
+        </p>
+      )}
+    </li>
+  );
+}
+
+/** DOH hospital capacity and specialist-availability alerts. */
 const Reports = () => {
-  const [expandedSection, setExpandedSection] = useState("capacity");
-  const [capacityAlerts, setCapacityAlerts] = useState([]);
-  const [specialistAlerts, setSpecialistAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState({ status: "loading", capacity: [], specialist: [] });
 
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        // Primary: Node backend
-        const { data } = await nodeApi.get("/reports", { params: { limit: 20 } });
-        const reports = data.data || [];
-        setCapacityAlerts(
-          reports.filter((r) => r.type === "capacity" || r.type === "supply" || !r.type)
-        );
-        setSpecialistAlerts(reports.filter((r) => r.type === "specialist"));
-      } catch (err) {
-        console.error("Failed to fetch reports", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReports();
-  }, []);
+  const load = () => {
+    setState((s) => ({ ...s, status: "loading" }));
+    nodeApi
+      .get("/reports", { params: { limit: 20 } })
+      .then(({ data }) => {
+        const reports = data?.data || [];
+        setState({
+          status: "ready",
+          capacity: reports.filter((r) => r.type === "capacity" || r.type === "supply" || !r.type),
+          specialist: reports.filter((r) => r.type === "specialist"),
+        });
+      })
+      .catch(() => setState({ status: "error", capacity: [], specialist: [] }));
+  };
+  useEffect(load, []);
 
-  const toggleSection = (section) =>
-    setExpandedSection(expandedSection === section ? null : section);
-
-  const totalAlerts = capacityAlerts.length + specialistAlerts.length;
+  const list = (items, Item, emptyTitle) =>
+    items.length === 0 ? (
+      <EmptyState compact icon={AlertTriangle} title={emptyTitle} />
+    ) : (
+      <ul className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+        {items.map((a) => (
+          <Item key={a.id} alert={a} />
+        ))}
+      </ul>
+    );
 
   return (
-    <div className="reports-card">
-      <div className="reports-header">
-        <div className="reports-title">
-          <FaHospital className="title-icon" />
-          <div>
-            <h3>DOH Hospital Reports</h3>
-            <span className="subtitle">Real-time capacity &amp; specialist alerts</span>
+    <Card>
+      <CardHeader>
+        <CardTitle>DOH hospital reports</CardTitle>
+        <CardDescription>Capacity and specialist alerts</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {state.status === "loading" ? (
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-24" />
           </div>
-        </div>
-        <div className="alert-badge">
-          <FaBell />
-          <span>{totalAlerts}</span>
-        </div>
-      </div>
-
-      {loading && <p style={{ padding: "1rem" }}>Loading reports…</p>}
-
-      {/* Hospital Capacity Section */}
-      {!loading && (
-        <div className="reports-section">
-          <button
-            className={`section-header ${expandedSection === "capacity" ? "expanded" : ""}`}
-            onClick={() => toggleSection("capacity")}
-          >
-            <div className="section-title">
-              <FaExclamationTriangle className="section-icon warning" />
-              <span>Hospital Capacity Alerts</span>
-              <span className="alert-count">{capacityAlerts.length}</span>
-            </div>
-            {expandedSection === "capacity" ? <FaChevronUp /> : <FaChevronDown />}
-          </button>
-
-          <AnimatePresence>
-            {expandedSection === "capacity" && (
-              <motion.div
-                className="section-content"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                {capacityAlerts.length === 0 && (
-                  <p style={{ padding: "0.5rem 1rem" }}>No capacity alerts.</p>
-                )}
-                {capacityAlerts.map((alert, index) => (
-                  <motion.div
-                    key={alert.id}
-                    className={`alert-item ${getSeverityClass(alert.severity)}`}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div className="alert-header">
-                      <span className="hospital-name">{alert.hospital_name}</span>
-                      <span className={`severity-badge ${alert.severity}`}>{alert.severity}</span>
-                    </div>
-                    <p className="alert-message">{alert.message}</p>
-                    <div className="alert-meta">
-                      {alert.occupancy != null && (
-                        <div className="occupancy-bar">
-                          <div
-                            className="occupancy-fill"
-                            style={{ width: `${alert.occupancy}%` }}
-                          />
-                          <span>{alert.occupancy}% occupied</span>
-                        </div>
-                      )}
-                      <span className="alert-time">
-                        <FaClock /> {new Date(alert.created_at).toLocaleString()}
-                      </span>
-                    </div>
-                    {alert.action && (
-                      <div className="alert-action">
-                        <strong>Action:</strong> {alert.action}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-
-      {/* Specialist Availability Section */}
-      {!loading && (
-        <div className="reports-section">
-          <button
-            className={`section-header ${expandedSection === "specialist" ? "expanded" : ""}`}
-            onClick={() => toggleSection("specialist")}
-          >
-            <div className="section-title">
-              <FaUserMd className="section-icon resource" />
-              <span>Specialist Availability</span>
-              <span className="alert-count">{specialistAlerts.length}</span>
-            </div>
-            {expandedSection === "specialist" ? <FaChevronUp /> : <FaChevronDown />}
-          </button>
-
-          <AnimatePresence>
-            {expandedSection === "specialist" && (
-              <motion.div
-                className="section-content"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                {specialistAlerts.length === 0 && (
-                  <p style={{ padding: "0.5rem 1rem" }}>No specialist alerts.</p>
-                )}
-                {specialistAlerts.map((alert, index) => (
-                  <motion.div
-                    key={alert.id}
-                    className="specialist-item"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <div className="specialist-header">
-                      <span className="hospital-name">{alert.hospital_name}</span>
-                      <span className={`status-badge ${alert.status?.replace(/\s+/g, "-")}`}>
-                        {alert.status}
-                      </span>
-                    </div>
-                    <div className="specialist-info">
-                      <span className="specialty"><FaUserMd /> {alert.title}</span>
-                    </div>
-                    {alert.action && (
-                      <div className="redirect-info">
-                        <FaMapMarkerAlt />
-                        <span>Action: <strong>{alert.action}</strong></span>
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
-    </div>
+        ) : state.status === "error" ? (
+          <ErrorState compact title="Couldn't load hospital reports" onRetry={load} />
+        ) : (
+          <Tabs defaultValue="capacity">
+            <TabsList>
+              <TabsTrigger value="capacity">
+                Capacity <Badge tone={state.capacity.length ? "warning" : "neutral"}>{state.capacity.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="specialist">
+                Specialists <Badge tone={state.specialist.length ? "warning" : "neutral"}>{state.specialist.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="capacity">{list(state.capacity, CapacityAlert, "No capacity alerts")}</TabsContent>
+            <TabsContent value="specialist">{list(state.specialist, SpecialistAlert, "No specialist alerts")}</TabsContent>
+          </Tabs>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

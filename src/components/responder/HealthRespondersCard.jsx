@@ -1,74 +1,72 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { Users } from "lucide-react";
 import nodeApi from "../../services/nodeApi";
-import "../../styles/personnel-style.css";
+import { Card, CardContent, CardHeader, CardTitle, ErrorState, Skeleton } from "@/components/ui";
 
+const SEGMENTS = [
+  { key: "on_duty", label: "On duty", className: "bg-success" },
+  { key: "standby", label: "Standby", className: "bg-warning" },
+  { key: "off_duty", label: "Off duty", className: "bg-neutral-300 dark:bg-neutral-600" },
+];
+
+/** Responder availability as a segmented status bar (on duty / standby / off duty). */
 const HealthRespondersCard = () => {
-  const [stats, setStats] = useState({ on_duty: 0, standby: 0, total: 0 });
-  const [loading, setLoading] = useState(true);
+  const [state, setState] = useState({ status: "loading", stats: null });
 
-  useEffect(() => {
+  const load = () => {
+    setState((s) => ({ ...s, status: "loading" }));
     nodeApi
       .get("/responders/stats")
       .then(({ data }) => {
-        const d = data.data || {};
-        setStats({
-          on_duty: d.on_duty ?? 0,
-          standby: d.standby ?? 0,
-          total: (d.on_duty ?? 0) + (d.standby ?? 0) + (d.off_duty ?? 0),
-        });
+        const d = data?.data || {};
+        setState({ status: "ready", stats: { on_duty: d.on_duty ?? 0, standby: d.standby ?? 0, off_duty: d.off_duty ?? 0 } });
       })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
+      .catch(() => setState({ status: "error", stats: null }));
+  };
+  useEffect(load, []);
 
-  const onDutyPercent =
-    stats.total > 0 ? (stats.on_duty / stats.total) * 100 : 0;
+  const total = state.stats ? SEGMENTS.reduce((sum, s) => sum + state.stats[s.key], 0) : 0;
 
   return (
-    <div className="card evacuation responder-widget responder-widget--responders">
-      <h3 className="card-title">Health Responders</h3>
-
-      {loading ? (
-        <p style={{ textAlign: "center", padding: "1rem" }}>Loading…</p>
-      ) : (
-        <>
-          <div className="circle-chart responder-donut-wrap">
-            <svg viewBox="0 0 36 36">
-              <path
-                className="circle-bg"
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-              <path
-                className="circle-on"
-                strokeDasharray={`${onDutyPercent}, 100`}
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              />
-            </svg>
-            <div className="circle-label responder-total-label">
-              <strong>{stats.total}</strong>
-              <span>Total</span>
+    <Card>
+      <CardHeader>
+        <CardTitle>Health responders</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {state.status === "loading" ? (
+          <Skeleton className="h-24" />
+        ) : state.status === "error" ? (
+          <ErrorState compact title="Couldn't load responder availability" onRetry={load} />
+        ) : (
+          <>
+            <div className="flex items-baseline gap-2">
+              <Users className="size-5 self-center text-muted-foreground" aria-hidden="true" />
+              <span className="tabular text-3xl font-bold">{total}</span>
+              <span className="text-sm text-muted-foreground">responders</span>
             </div>
-          </div>
-
-          <div className="legend responder-legend">
-            <div className="responder-legend-item">
-              <span
-                className="responder-legend-dot"
-                style={{ background: "#1A4718" }}
-              ></span>
-              On-Duty ({stats.on_duty})
+            <div className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full bg-surface-2" role="img" aria-label={SEGMENTS.map((s) => `${state.stats[s.key]} ${s.label.toLowerCase()}`).join(", ")}>
+              {total > 0 &&
+                SEGMENTS.map((s) =>
+                  state.stats[s.key] > 0 ? (
+                    <span key={s.key} className={s.className} style={{ width: `${(state.stats[s.key] / total) * 100}%` }} />
+                  ) : null,
+                )}
             </div>
-            <div className="responder-legend-item">
-              <span
-                className="responder-legend-dot"
-                style={{ background: "#FEC700" }}
-              ></span>
-              Stand-by ({stats.standby})
-            </div>
-          </div>
-        </>
-      )}
-    </div>
+            <dl className="grid grid-cols-3 gap-2">
+              {SEGMENTS.map((s) => (
+                <div key={s.key} className="rounded-lg bg-surface-2/60 p-3">
+                  <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className={`size-2 rounded-full ${s.className}`} aria-hidden="true" />
+                    {s.label}
+                  </dt>
+                  <dd className="tabular mt-1 text-lg font-semibold">{state.stats[s.key]}</dd>
+                </div>
+              ))}
+            </dl>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

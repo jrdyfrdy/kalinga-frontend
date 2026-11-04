@@ -1,196 +1,110 @@
-import React, { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { useEffect, useMemo, useState } from "react";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Package } from "lucide-react";
 import nodeApi from "../../services/nodeApi";
-import "../../styles/personnel-style.css";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, ErrorState, Skeleton } from "@/components/ui";
+import { useChartTheme } from "@/lib/chartTheme";
 
-const COLORS = ["#1E2A78", "#C0392B", "#145A32", "#F1C40F"];
 // /resources/summary returns { category, quantity, hospital_name } rows.
 const labelFor = (category) => {
   const value = String(category || "").trim();
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : "Uncategorized";
 };
+const MAX_CENTERS = 8;
+const MAX_CATEGORIES = 5; // the palette's validated range; extras fold into "Other"
 
+/**
+ * Stock by center as stacked horizontal bars (one row per center, one
+ * segment per resource category). Replaces a donut + a pie per center.
+ */
 const ResourcesCard = () => {
-  const [allCentersData, setAllCentersData] = useState([]);
-  const [centers, setCenters] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const chart = useChartTheme();
+  const [state, setState] = useState({ status: "loading", rows: [] });
 
-  useEffect(() => {
+  const load = () => {
+    setState((s) => ({ ...s, status: "loading" }));
     nodeApi
       .get("/resources/summary")
-      .then(({ data }) => {
-        const rows = data.data || [];
+      .then(({ data }) => setState({ status: "ready", rows: data?.data || [] }))
+      .catch(() => setState({ status: "error", rows: [] }));
+  };
+  useEffect(load, []);
 
-        // Aggregate totals per resource type across all centers
-        const totals = {};
-        rows.forEach(({ category, quantity }) => {
-          const label = labelFor(category);
-          totals[label] = (totals[label] || 0) + Number(quantity || 0);
-        });
-        setAllCentersData(
-          Object.entries(totals).map(([name, value]) => ({ name, value })),
-        );
+  const { categories, centers, totals } = useMemo(() => {
+    const totalsByCat = {};
+    state.rows.forEach(({ category, quantity }) => {
+      const c = labelFor(category);
+      totalsByCat[c] = (totalsByCat[c] || 0) + Number(quantity || 0);
+    });
+    // Stable category order: largest first, folding the tail into "Other".
+    const ranked = Object.entries(totalsByCat).sort((a, b) => b[1] - a[1]).map(([c]) => c);
+    const kept = ranked.slice(0, MAX_CATEGORIES);
+    const bucket = (c) => (kept.includes(c) ? c : "Other");
+    const cats = ranked.length > MAX_CATEGORIES ? [...kept, "Other"] : kept;
 
-        // Group by center name for per-center pie charts
-        const byCenter = {};
-        rows.forEach(({ category, quantity, hospital_name }) => {
-          const name = hospital_name?.trim() || "Unassigned";
-          if (!byCenter[name]) byCenter[name] = [];
-          const label = labelFor(category);
-          const existing = byCenter[name].find((d) => d.name === label);
-          if (existing) existing.value += Number(quantity || 0);
-          else byCenter[name].push({ name: label, value: Number(quantity || 0) });
-        });
+    const byCenter = {};
+    state.rows.forEach(({ category, quantity, hospital_name }) => {
+      const name = hospital_name?.trim() || "Unassigned";
+      byCenter[name] = byCenter[name] || { name, total: 0 };
+      const c = bucket(labelFor(category));
+      byCenter[name][c] = (byCenter[name][c] || 0) + Number(quantity || 0);
+      byCenter[name].total += Number(quantity || 0);
+    });
+    const sorted = Object.values(byCenter).sort((a, b) => b.total - a.total);
+    const top = sorted.slice(0, MAX_CENTERS);
+    const rest = sorted.slice(MAX_CENTERS);
+    if (rest.length) {
+      const other = { name: `${rest.length} other centers`, total: 0 };
+      rest.forEach((center) => cats.forEach((c) => {
+        other[c] = (other[c] || 0) + (center[c] || 0);
+        other.total += center[c] || 0;
+      }));
+      top.push(other);
+    }
+    return { categories: cats, centers: top, totals: totalsByCat };
+  }, [state.rows]);
 
-        let formattedCenters = Object.entries(byCenter).map(([name, data]) => ({
-          name,
-          data,
-        }));
-
-        // Let's summarize the total quantity for each center to find the small ones
-        const THRESHOLD = 0.05; // 5% total threshold
-        const totalOverallQuantity = rows.reduce(
-          (acc, curr) => acc + Number(curr.quantity),
-          0,
-        );
-
-        const mainCenters = [];
-        const otherCentersData = {};
-
-        formattedCenters.forEach((center) => {
-          const centerTotal = center.data.reduce(
-            (acc, item) => acc + item.value,
-            0,
-          );
-          if (
-            centerTotal / totalOverallQuantity < THRESHOLD &&
-            formattedCenters.length > 5
-          ) {
-            // Merge into others
-            center.data.forEach((item) => {
-              otherCentersData[item.name] =
-                (otherCentersData[item.name] || 0) + item.value;
-            });
-          } else {
-            mainCenters.push(center);
-          }
-        });
-
-        if (Object.keys(otherCentersData).length > 0) {
-          mainCenters.push({
-            name: "Other Centers",
-            data: Object.entries(otherCentersData).map(([name, value]) => ({
-              name,
-              value,
-            })),
-          });
-        }
-
-        setCenters(mainCenters);
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="card resources-card responder-widget">
-        <h3 className="card-title">Resources</h3>
-        <p style={{ padding: "1rem" }}>Loading…</p>
-      </div>
-    );
-  }
+  const grand = Object.values(totals).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="card resources-card responder-widget">
-      <h3 className="card-title">Resources</h3>
-
-      <div className="resources-main-row">
-        {/* Legend */}
-        <div className="resources-legend">
-          <h4>All Centers</h4>
-          <ul>
-            {allCentersData.map((item, i) => (
-              <li key={i}>
-                <span
-                  className="legend-box"
-                  style={{ background: COLORS[i % COLORS.length] }}
-                ></span>
-                {item.name} — {item.value.toLocaleString()}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Donut */}
-        <div className="resources-donut">
-          <ResponsiveContainer width={250} height={250}>
-            <PieChart>
-              <Pie
-                data={allCentersData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={3}
-                dataKey="value"
-              >
-                {allCentersData.map((_, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
+    <Card>
+      <CardHeader>
+        <CardTitle>Resources by center</CardTitle>
+        {grand > 0 && <CardDescription className="tabular">{grand.toLocaleString()} units in stock</CardDescription>}
+      </CardHeader>
+      <CardContent>
+        {state.status === "loading" ? (
+          <Skeleton className="h-64" />
+        ) : state.status === "error" ? (
+          <ErrorState compact title="Couldn't load resources" onRetry={load} />
+        ) : centers.length === 0 ? (
+          <EmptyState compact icon={Package} title="No resources recorded yet" />
+        ) : (
+          <div style={{ height: Math.max(220, centers.length * 44 + 80) }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={centers} layout="vertical" margin={{ left: 8, right: 16 }} barCategoryGap={10}>
+                <CartesianGrid {...chart.gridProps} horizontal={false} vertical />
+                <XAxis type="number" {...chart.axisProps} tickFormatter={(v) => v.toLocaleString()} />
+                <YAxis type="category" dataKey="name" width={170} {...chart.axisProps} tick={{ ...chart.axisProps.tick, width: 160 }} />
+                <Tooltip {...chart.tooltipProps} formatter={(value, name) => [`${Number(value).toLocaleString()} units`, name]} />
+                <Legend {...chart.legendProps} />
+                {categories.map((c, i) => (
+                  <Bar
+                    key={c}
+                    dataKey={c}
+                    stackId="stock"
+                    fill={c === "Other" ? chart.status.neutral : chart.seriesColor(i)}
+                    stroke={chart.surface}
+                    strokeWidth={2}
+                    radius={i === categories.length - 1 ? [0, 4, 4, 0] : 0}
                   />
                 ))}
-              </Pie>
-              <Tooltip
-                formatter={(value, name) => [`${value} Units`, name]}
-                contentStyle={{
-                  borderRadius: "8px",
-                  border: "1px solid #e5e7eb",
-                  boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)",
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Individual Centers */}
-        <div className="resources-right">
-          {centers.map((center, i) => (
-            <div key={i} className="center-pie">
-              <h5>{center.name}</h5>
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie
-                    data={center.data}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    dataKey="value"
-                    labelLine={false}
-                  >
-                    {center.data.map((_, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value, name) => [`${value} Units`, name]}
-                    contentStyle={{
-                      borderRadius: "8px",
-                      border: "1px solid #e5e7eb",
-                      boxShadow: "0 8px 20px rgba(15, 23, 42, 0.08)",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

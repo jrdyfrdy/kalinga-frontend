@@ -1,135 +1,110 @@
-// src/components/TriageCard.jsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { Activity } from "lucide-react";
 import nodeApi from "../../services/nodeApi";
-import "../../styles/triage-style.css";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  ErrorState,
+  Skeleton,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+} from "@/components/ui";
+import { cn } from "@/lib/utils";
 
+const LEVELS = [
+  { key: "low", label: "Low", dot: "bg-success" },
+  { key: "medium", label: "Medium", dot: "bg-info" },
+  { key: "high", label: "High", dot: "bg-warning", tint: "bg-warning-subtle text-warning-subtle-foreground" },
+  { key: "veryHigh", label: "Very high", dot: "bg-orange-500", tint: "bg-warning-subtle text-warning-subtle-foreground" },
+  { key: "critical", label: "Critical", dot: "bg-critical", tint: "bg-critical-subtle text-critical-subtle-foreground font-semibold" },
+];
+
+/** Patients by triage level per DOH hospital, refreshed every 30 s. */
 const TriageCard = () => {
-  const [triageData, setTriageData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
-
-  const fetchTriage = async () => {
-    try {
-      const { data } = await nodeApi.get("/triage/stats");
-      const stats = data?.data || [];
-
-      setTriageData(
-        stats.map((h) => ({
-          hospital: h.hospital_name,
-          low: h.low || 0,
-          medium: h.medium || 0,
-          high: h.high || 0,
-          veryHigh: h.very_high || 0,
-          critical: h.critical || 0,
-        })),
-      );
-      setFetchError(null);
-    } catch (err) {
-      console.error("Failed to fetch triage data", err);
-      setFetchError("Failed to load triage data.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [state, setState] = useState({ status: "loading", rows: [] });
 
   useEffect(() => {
+    let cancelled = false;
+    const fetchTriage = () =>
+      nodeApi
+        .get("/triage/stats")
+        .then(({ data }) => {
+          if (cancelled) return;
+          setState({
+            status: "ready",
+            rows: (data?.data || []).map((h) => ({
+              hospital: h.hospital_name,
+              low: h.low || 0,
+              medium: h.medium || 0,
+              high: h.high || 0,
+              veryHigh: h.very_high || 0,
+              critical: h.critical || 0,
+            })),
+          });
+        })
+        .catch(() => !cancelled && setState((s) => ({ ...s, status: s.rows.length ? "ready" : "error" })));
     fetchTriage();
     const interval = setInterval(fetchTriage, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
-    <div className="card triage-card">
-      <h3 className="card-title">DOH Hospitals Triage System</h3>
-
-      {loading && <p style={{ padding: "1rem" }}>Loading triage data…</p>}
-      {fetchError && (
-        <p style={{ color: "red", padding: "1rem" }}>{fetchError}</p>
-      )}
-
-      {!loading && !fetchError && (
-        <div className="triage-content">
-          <div className="triage-table-wrapper">
-            <table className="triage-table">
-              <thead>
-                <tr>
-                  <th>DOH Accredited Hospital</th>
-                  <th className="low">Low</th>
-                  <th className="medium">Medium</th>
-                  <th className="high">High</th>
-                  <th className="very-high">Very High</th>
-                  <th className="critical">Critical</th>
-                </tr>
-              </thead>
-              <tbody>
-                {triageData.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ textAlign: "center" }}>
-                      No triage data available
-                    </td>
-                  </tr>
-                ) : (
-                  triageData.map((row, i) => (
-                    <tr key={i}>
-                      <td>{row.hospital}</td>
-                      <td className="low">{row.low}</td>
-                      <td className="medium">{row.medium}</td>
-                      <td className="high">{row.high}</td>
-                      <td className="very-high">{row.veryHigh}</td>
-                      <td className="critical">{row.critical}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div
-            className="triage-mobile-list"
-            aria-label="Triage summary by hospital"
-          >
-            {triageData.length === 0 ? (
-              <p className="triage-mobile-empty">No triage data available</p>
-            ) : (
-              triageData.map((row, i) => (
-                <article key={i} className="triage-mobile-item">
-                  <h4>{row.hospital}</h4>
-                  <div className="triage-mobile-metrics">
-                    <span className="metric low">Low: {row.low}</span>
-                    <span className="metric medium">Medium: {row.medium}</span>
-                    <span className="metric high">High: {row.high}</span>
-                    <span className="metric very-high">
-                      Very High: {row.veryHigh}
+    <Card>
+      <CardHeader>
+        <CardTitle>DOH hospital triage</CardTitle>
+        <CardDescription>Patients waiting by triage level · updates every 30 seconds</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {state.status === "loading" ? (
+          <Skeleton className="h-40" />
+        ) : state.status === "error" ? (
+          <ErrorState compact title="Couldn't load triage data" />
+        ) : state.rows.length === 0 ? (
+          <EmptyState compact icon={Activity} title="No triage data yet" />
+        ) : (
+          <Table>
+            <THead>
+              <tr>
+                <TH>Hospital</TH>
+                {LEVELS.map((l) => (
+                  <TH key={l.key} className="text-right">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={cn("size-2 rounded-full", l.dot)} aria-hidden="true" />
+                      {l.label}
                     </span>
-                    <span className="metric critical">
-                      Critical: {row.critical}
-                    </span>
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="triage-legend">
-        <span>
-          <span className="legend-dot low"></span> Low
-        </span>
-        <span>
-          <span className="legend-dot medium"></span> Medium
-        </span>
-        <span>
-          <span className="legend-dot high"></span> High
-        </span>
-        <span>
-          <span className="legend-dot very-high"></span> Very High
-        </span>
-        <span>
-          <span className="legend-dot critical"></span> Critical
-        </span>
-      </div>
-    </div>
+                  </TH>
+                ))}
+              </tr>
+            </THead>
+            <TBody>
+              {state.rows.map((row) => (
+                <TR key={row.hospital}>
+                  <TD className="font-medium">{row.hospital}</TD>
+                  {LEVELS.map((l) => (
+                    <TD key={l.key} className="text-right">
+                      <span className={cn("tabular inline-block min-w-8 rounded-md px-2 py-0.5 text-center", row[l.key] > 0 && l.tint)}>
+                        {row[l.key]}
+                      </span>
+                    </TD>
+                  ))}
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
